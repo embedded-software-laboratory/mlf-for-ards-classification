@@ -1,0 +1,91 @@
+process:
+  load_models: False
+  load_timeseries_data: False
+  perform_imputation: False
+  perform_unit_conversion: False
+  calculate_missing_params: False
+  perform_ards_onset_detection: False
+  perform_filtering: False
+  perform_feature_selection: False
+  perform_data_segregation: False 
+  perform_timeseries_training: False
+  perform_timeseries_classification: False
+  calculate_evaluation_metrics: False
+  perform_cross_validation: False
+  save_models: False
+
+  load_image_data: True
+  train_image_models: True
+  test_image_models: True
+
+timeseries_models_to_execute:
+  - Random_forest
+  - XGBoost
+
+image_models_to_execute:
+  - VisionTransformer
+
+loading_paths:
+  Random Forest: "default"
+  Support Vector Machine: "Save/Cross validation results/Support Vector Machine_0"
+  Bayesian Net: "Save/Cross validation results/Bayesian Net_3"
+  Recurrent Neural Network: "Save/Cross validation results/Recurrent neural network_1"
+
+data:
+  timeseries_file_path: "Save/uka_data_050623.npy_preprocessed_01_fixed.csv"
+  database: "UKA"
+  image_file_path: "Data/Image_data"
+  pneumonia_dataset: "balanced"
+  ards_dataset: "weighted"
+
+data_processing:
+  filtering:
+    filter:
+    - A
+    - C
+
+  imputation: 
+    impute_empty_cells: True
+    default_imputation_method: "forward"
+    params_to_impute:
+      - ards, forward
+      - all
+
+  params_to_calculate:
+    - horovitz
+  ards_onset_detection:
+    detection_rule: "first_horovitz"
+    #eventuell verändern.. bsp. lowest horowitz
+    return_rule: "datapoint" 
+    series_start_point: -50000
+    series_end_point: 50000
+    remove_ards_patients_without_onset: True
+    impute_missing_rows: False
+    update_ards_values: False
+
+feature_selection:
+  method: "univariate"
+  variance: 0.16
+  k: 15
+
+data_segregation:
+  training_test_ratio: 0.5
+  percentage_of_ards_patients: None
+
+evaluation:
+  cross_validation:
+    n_splits: 4
+    shuffle: False
+
+image_model_parameters:
+  method: last_block
+  mode: mode1
+  num_epochs_pneumonia: 1
+  num_epochs_ards: 1
+  batch_size_pneumonia: 32
+  batch_size_ards: 32
+  SEED_pneumonia: 123
+  SEED_ards: 105
+  learning_rate: 0.05 
+  k_folds: 2
+  path: "Data/Image_data"
