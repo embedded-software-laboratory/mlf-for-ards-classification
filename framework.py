@@ -56,6 +56,8 @@ class Framework:
         dataframe = self.dataProcessor.process_data(dataframe)
         if self.process["perform_feature_selection"] == True:
             dataframe = self.feature_selector.perform_feature_selection(dataframe)
+        if not os.path.isdir("./Save"):
+            os.makedirs("./Save")
         dataframe.to_csv("./Save/" + os.path.basename(self.timeseries_file_path) +(datetime.now().strftime("%m-%d-%Y_%H-%M-%S")) + "_preprocessed.csv", index=True)
         print("Finished preprocessing and saved result to file!")
         if self.process["perform_data_segregation"] == True:
@@ -111,7 +113,7 @@ class Framework:
                 # data in json dict
                 result[model_name]["cross_validation"] = cross_validation_results[model_name]
         if result:
-            with (open('results'+(datetime.now().strftime("%m-%d-%Y_%H-%M-%S"))+'.json', 'w', encoding='utf-8') as f):
+            with (open("./Save/" + 'results'+(datetime.now().strftime("%m-%d-%Y_%H-%M-%S"))+'.json', 'w', encoding='utf-8') as f):
                 json.dump(result, f, ensure_ascii=False, indent=4)
                 plot_eval(data=result, file_name=f.name)
 

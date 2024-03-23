@@ -1,22 +1,22 @@
 process:
   load_models: False
-  load_timeseries_data: False
+  load_timeseries_data: True
   perform_imputation: False
   perform_unit_conversion: False
   calculate_missing_params: False
   perform_ards_onset_detection: False
   perform_filtering: False
   perform_feature_selection: False
-  perform_data_segregation: False 
-  perform_timeseries_training: False
-  perform_timeseries_classification: False
-  calculate_evaluation_metrics: False
-  perform_cross_validation: False
+  perform_data_segregation: True 
+  perform_timeseries_training: True
+  perform_timeseries_classification: True
+  calculate_evaluation_metrics: True
+  perform_cross_validation: True
   save_models: False
 
-  load_image_data: True
-  train_image_models: True
-  test_image_models: True
+  load_image_data: False
+  train_image_models: False
+  test_image_models: False
 
 timeseries_models_to_execute:
   - Random_forest
@@ -32,7 +32,7 @@ loading_paths:
   Recurrent Neural Network: "Save/Cross validation results/Recurrent neural network_1"
 
 data:
-  timeseries_file_path: "Save/uka_data_050623.npy_preprocessed_01_fixed.csv"
+  timeseries_file_path: "Data\\40variablen_calibration.npy_preprocessed_05.csv"
   database: "UKA"
   image_file_path: "Data/Image_data"
   pneumonia_dataset: "balanced"
@@ -69,8 +69,8 @@ feature_selection:
   k: 15
 
 data_segregation:
-  training_test_ratio: 0.5
-  percentage_of_ards_patients: None
+  training_test_ratio: 0.8
+  percentage_of_ards_patients: 0.1
 
 evaluation:
   cross_validation:

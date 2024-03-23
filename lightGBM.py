@@ -104,7 +104,7 @@ class LightGBMModel(model_interface.Model):
         file = open(filepath + ".txt", "rb")
         self.model = pickle.load(file)
 
-LightGBMModel().save("./Save/LightGBMModel")
+#LightGBMModel().save("./Save/LightGBMModel")
 
 # Laden
-LightGBMModel().load("./Save/LightGBMModel")
+#LightGBMModel().load("./Save/LightGBMModel")
