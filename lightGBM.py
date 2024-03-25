@@ -43,6 +43,8 @@ class LightGBMModel(model_interface.Model):
         #What about early stopping round als attribut wenn das Model eskaliert?
         self.model = self._init_gbm()
 
+        #klappt das?
+
     def train_model(self, training_data):
         # Daten und Labels extrahieren
         label = training_data["ards"]
