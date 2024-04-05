@@ -16,10 +16,6 @@ class DataProcessor:
 
     def process_data(self, dataframe):
         print("Start data preprocessing...")
-        if self.process["perform_filtering"] == True:
-            print("Filter data...")
-            dataframe = self.filter.filter_data(dataframe)
-            print("Done!")
         if self.process["perform_imputation"] == True:
             print("Impute missing data...")
             dataframe = self.data_imputator.impute_missing_data(dataframe)
@@ -35,6 +31,10 @@ class DataProcessor:
         if self.process["perform_ards_onset_detection"] == True:
             print("Detect ARDS onset..")
             dataframe = self.onset_determiner.determine_ards_onset(dataframe)
+            print("Done!")
+        if self.process["perform_filtering"] == True:
+            print("Filter data...")
+            dataframe = self.filter.filter_data(dataframe)
             print("Done!")
         print("Data preprocessing finished!")
         return dataframe
