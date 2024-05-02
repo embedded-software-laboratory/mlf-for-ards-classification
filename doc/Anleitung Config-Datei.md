@@ -64,7 +64,7 @@ Falls als Pfad "default" angegeben wird oder ein Modell in dieser Liste gar nich
 ## data
 
 Hier wird definiert, wo die Patientendaten liegen, die geladen werden und zum Training oder zur Klassifizierung / Evaluation verwendet werden sollen. 
-Mit dem Unterpunkt "file_path" wird der Dateipfad für die Zeitreihenmodelle angegeben. Aktuell werden npy-Dateien und csv-Dateien unterstützt in dem Format, dass vom Data-Extractor erzeugt wird. Falls npy verwendet wird, muss ebenfalls die dazugehörige vars-Datei, die vom Data-Extractor beim Download erzeugt wird, im gleichen Ordner liegen.
+Mit dem Unterpunkt "file_path" wird der Dateipfad für die Zeitreihenmodelle angegeben. Aktuell werden npy-Dateien und csv-Dateien unterstützt in dem Format, dass vom [Data-Extractor](https://git-ce.rwth-aachen.de/smith-project/ARDS-MLP/data-basis/data-extraction) erzeugt wird. Falls npy verwendet wird, muss ebenfalls die dazugehörige vars-Datei, die vom Data-Extractor beim Download erzeugt wird, im gleichen Ordner liegen.
 Im Unterpunkt "database" wird angegeben, aus welcher Datenbank die Daten kommen. Dies ist für die Umrechnung der Einheiten relevant, s.o. Aktuell unterstützt werden "eICU", "MIMIC3", "MIMIC4" und "UKA".
 Unter "image_file_path" wird angegeben, wo die Datensätze für die Bilddaten-Modelle liegen. Dies muss ein Ordner sein, der die folgenden Elemente enthält:
 	- Einen Ordner "chexpert" und einen Ordner "mimic", der jeweils die Trainings-, und im Falle von mimic den ARDS-Testdatensatz enthält. Jeder Datensatz besteht aus einem Ordner, der die Bilder enthält ("image") und einem Ordner, der die Label enthält ("label"). 
