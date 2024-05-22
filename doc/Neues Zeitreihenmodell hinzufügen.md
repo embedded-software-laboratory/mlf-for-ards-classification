@@ -7,7 +7,7 @@ Folgende Schritte müssen also abgearbeitet werden:
 1. Datei "neues_modell.py" anlegen ("neues_modell" sollte hierbei durch den Namen des KI-Modells ersetzt werden).
 2. In dieser Datei die Klasse "NeuesModell" anlegen, welche die Klasse model_interface.Model erbt (der Name sollte hier natürlich auch angepasst werden). 
 3. Alle Methoden der Klasse model_interface.Model entsprechend der untenstehenden Vorgaben implementieren. (Weitere Hilfsfunktionen können selbstverständlich auch implementiert werden.)
-4. Die Datei "framework.py" öffnen und dort den Import "from neues_modell.py import NeuesModell" zu Beginn des Skripts einfügen (ans Anpassen der Namen denken).
+4. Die Datei "framework.py" öffnen und dort den Import "from neues_modell import NeuesModell" zu Beginn des Skripts einfügen (ans Anpassen der Namen denken).
 5. Damit das Framework beim nächsten Start das Modell auch berücksichtigt, muss in der Datei config.yml der Punkt "timeseries_models_to_execute" um den Klassennamen des neuen Modells ergänzt werden sowie ggf. der Modellname mit einem entsprechenden Pfad in den Punkt "loading_paths" eingefügt werden. Für weitere Infos hierzu siehe die Anleitung zur Config-Datei.
 
 Im Anschluss daran sollte das neu implementierte Modell zusammen mit allen anderen mit diesem Framework benutzt werden können.
