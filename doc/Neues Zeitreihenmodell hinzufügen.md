@@ -17,7 +17,7 @@ Im Anschluss daran sollte das neu implementierte Modell zusammen mit allen ander
 
 Im Folgenden wird erläutert, was jede Funktion der neuen Model-Klasse tun muss, welche Inputs sie bekommt und was sie zurückgeben muss. Es ist wichtig, sich an die Vorgaben genau zu halten, damit das Framework fehlerfrei funktioniert.
 
-### def __init__(self): (Konstruktor)
+### def \__init__(self): (Konstruktor)
 
 Hier muss folgende Zeile enthalten sein:
 self.name = "Neues Modell" (Der Name kann beliebig gewählt werden, sollte aber natürlich aussagekräftig sein). 
