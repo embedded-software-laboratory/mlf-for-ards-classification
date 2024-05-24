@@ -18,11 +18,17 @@ from feature_analysis import Feature_analysis
 from datetime import datetime
 import json
 from plot_data import plot_eval
+from cli import make_parser
 
 class Framework:
     def __init__(self):
-        file = open("config.yml", "r")
-        config = yaml.safe_load(file)
+        args = make_parser().parse_args()
+        if args.config_file:
+            with open(args.config_file, 'r') as f:
+                config = yaml.safe_load(f)
+        else:
+            config = json.loads(args.config)
+
         self.loader = FileLoader()
         self.timeseries_models = []
         self.timeseries_classes = []

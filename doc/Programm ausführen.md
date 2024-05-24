@@ -14,4 +14,4 @@ Alternativ können auch Python und alle benötigten Pakete per Hand installiert 
 Sobald die o.g. Installationsschritte ausgeführt wurden, kann das Programm wie folgt gestartet werden:
 1. Anaconda-Konsole öffnen und in den Implementation-Ordner navigieren
 2. Die Anaconda-Umgebung aktivieren, mit folgender Anweisung: conda activate mlp_framework
-3. Die Anweisung *python main.py* ausführen
+3. Die Anweisung *python main.py -f config.yml* ausführen
