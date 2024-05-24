@@ -23,11 +23,11 @@ from cli import make_parser
 class Framework:
     def __init__(self):
         args = make_parser().parse_args()
-        if args.config_file:
+        if args.config:
+            config = json.loads(args.config)
+        else:
             with open(args.config_file, 'r') as f:
                 config = yaml.safe_load(f)
-        else:
-            config = json.loads(args.config)
 
         self.loader = FileLoader()
         self.timeseries_models = []
