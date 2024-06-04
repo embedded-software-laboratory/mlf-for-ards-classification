@@ -98,11 +98,11 @@ class LightGBMModel(model_interface.Model):
         )
         return lightGBM
 
-    def save(self, filepath="./Save/LightGBMModel"):
+    def save(self, filepath):
         file = open(filepath + ".txt", "wb")
         pickle.dump(self.model, file)
 
-    def load(self, filepath="./Save/LightGBMModel"):
+    def load(self, filepath):
         file = open(filepath + ".txt", "rb")
         self.model = pickle.load(file)
 

@@ -55,6 +55,9 @@ class Framework:
         self.image_file_path = config["data"]["image_file_path"]
         self.method = config["image_model_parameters"]["method"]
         self.mode = config["image_model_parameters"]["mode"]
+        self.outdir = config["out_dir"] or "./Save/" + str(datetime.now().strftime("%m-%d-%Y_%H-%M-%S")) + "/"
+        if not self.outdir.endswith("/"):
+            self.outdir += "/"
 
     def load_timeseries_data(self):
         dataframe = self.loader.load_file(self.timeseries_file_path)
@@ -62,9 +65,9 @@ class Framework:
         dataframe = self.dataProcessor.process_data(dataframe)
         if self.process["perform_feature_selection"] == True:
             dataframe = self.feature_selector.perform_feature_selection(dataframe)
-        if not os.path.isdir("./Save"):
-            os.makedirs("./Save")
-        dataframe.to_csv("./Save/" + os.path.basename(self.timeseries_file_path) +(datetime.now().strftime("%m-%d-%Y_%H-%M-%S")) + "_preprocessed.csv", index=True)
+        if not os.path.isdir(self.outdir):
+            os.makedirs(self.outdir, exist_ok=True)
+        dataframe.to_csv(self.outdir + os.path.basename(self.timeseries_file_path) + "_preprocessed.csv", index=True)
         print("Finished preprocessing and saved result to file!")
         if self.process["perform_data_segregation"] == True:
             training_data, test_data = self.segregator.segregate_data(dataframe)
@@ -113,21 +116,21 @@ class Framework:
                 result[model.name] = self.evaluator.evaluate(model, self.timeseries_test_data)
 
         if self.process["perform_cross_validation"] == True:
-            cross_validation_results = self.evaluator.perform_cross_validation(self.timeseries_test_data)
+            cross_validation_results = self.evaluator.perform_cross_validation(self.timeseries_test_data, self.outdir)
             for model_name in list(cross_validation_results.keys()):
                 # for each model, add corresponding cross validation results to already existing
                 # data in json dict
                 result[model_name]["cross_validation"] = cross_validation_results[model_name]
         if result:
-            with (open("./Save/" + 'results'+(datetime.now().strftime("%m-%d-%Y_%H-%M-%S"))+'.json', 'w', encoding='utf-8') as f):
+            with (open(self.outdir + 'results.json', 'w', encoding='utf-8') as f):
                 json.dump(result, f, ensure_ascii=False, indent=4)
                 plot_eval(data=result, file_name=f.name)
 
     def save_models(self):
-        if not os.path.isdir("./Save"):
-            os.makedirs("./Save")
+        if not os.path.isdir(self.outdir):
+            os.makedirs(self.outdir)
         for model in self.timeseries_models:
-            model.save("./Save/" + model.name)
+            model.save(self.outdir + model.name)
             #file.write(str(model_serialized))
         print("Successfully stored all models!")
 
@@ -137,12 +140,18 @@ class Framework:
                 if self.loading_paths[model.name] != "default":
                     model.load(self.loading_paths[model.name])
                 else:
-                    model.load("./Save/" + model.name)
+                    model.load(self.outdir + model.name)
             else:
-                model.load("./Save/" + model.name)
+                model.load(self.outdir + model.name)
         print("Successfully loaded all models!")
 
     def execute(self):
+        # Store configuration in outdir
+        if not os.path.isdir(self.outdir):
+            os.makedirs(self.outdir)
+        with open(self.outdir + 'config.json', 'w') as f:
+            json.dump(self.process, f)
+
         if self.process["load_models"] == True:
             self.load_models()
         
