@@ -29,6 +29,7 @@ class Framework:
             with open(args.config_file, 'r') as f:
                 config = yaml.safe_load(f)
 
+        self.config = config
         self.loader = FileLoader()
         self.timeseries_models = []
         self.timeseries_classes = []
@@ -150,7 +151,7 @@ class Framework:
         if not os.path.isdir(self.outdir):
             os.makedirs(self.outdir)
         with open(self.outdir + 'config.json', 'w') as f:
-            json.dump(self.process, f)
+            json.dump(self.config, f)
 
         if self.process["load_models"] == True:
             self.load_models()
