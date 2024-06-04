@@ -31,7 +31,8 @@ class Evaluation:
             'sens' : sensitivity,
             'spec' : specificity,
             'f1' : f1,
-            'mcc' : mcc
+            'mcc' : mcc,
+            'jaccard': 1, # TODO: Actual Jaccard
         }
 
         return metric_dict
