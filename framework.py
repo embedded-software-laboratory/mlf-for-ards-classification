@@ -4,6 +4,7 @@ from support_vector_machine import Support_vector_machine
 from bayesian_net import Bayesian_network
 from recurrent_neural_network import Recurrent_neural_network
 from xgboost_model import XGBoost
+from adaboost import AdaBoost
 from lightGBM import LightGBMModel
 from cnn import CNN
 from vision_transformer import VisionTransformer
@@ -19,6 +20,7 @@ from datetime import datetime
 import json
 from plot_data import plot_eval
 from cli import make_parser
+import pandas as pd
 
 class Framework:
     def __init__(self):
