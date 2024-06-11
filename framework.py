@@ -4,6 +4,7 @@ from support_vector_machine import Support_vector_machine
 from bayesian_net import Bayesian_network
 from recurrent_neural_network import Recurrent_neural_network
 from xgboost_model import XGBoost
+from adaboost import AdaBoost
 from lightGBM import LightGBMModel
 from cnn import CNN
 from vision_transformer import VisionTransformer
@@ -18,6 +19,7 @@ from feature_analysis import Feature_analysis
 from datetime import datetime
 import json
 from plot_data import plot_eval
+import pandas as pd
 
 class Framework:
     def __init__(self):
@@ -107,7 +109,7 @@ class Framework:
                 result[model.name] = self.evaluator.evaluate(model, self.timeseries_test_data)
 
         if self.process["perform_cross_validation"] == True:
-            cross_validation_results = self.evaluator.perform_cross_validation(self.timeseries_test_data)
+            cross_validation_results = self.evaluator.perform_cross_validation(pd.concat([self.timeseries_training_data, self.timeseries_test_data]))
             for model_name in list(cross_validation_results.keys()):
                 # for each model, add corresponding cross validation results to already existing
                 # data in json dict
