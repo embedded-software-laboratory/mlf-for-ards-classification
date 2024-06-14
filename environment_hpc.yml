@@ -1,4 +1,4 @@
-name: ai
+name: mlp_framework
 channels:
   - defaults
 dependencies:
