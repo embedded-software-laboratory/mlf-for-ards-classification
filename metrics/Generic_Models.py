@@ -1,35 +1,44 @@
-from typing import Any
+from __future__ import annotations
+
+from typing import Any, Callable
 import numpy as np
 
 from pydantic import BaseModel
 
 
+class GenericSplit(BaseModel):
+    split_name: str
+    contained_metrics: list[GenericMetric]
+
+
+class GenericThresholdOptimizer(BaseModel):
+    threshold_optimizer_name: str
+    contained_splits: list[GenericSplit]
+    threshold_calc_func: Callable
+
 
 class GenericMetric(BaseModel):
     metric_name: str
-
-    : bool
-    crossvalidation_split: int = None
-
-    threshold_optimized: bool
-    threshold_optimization_name: str =crossvalidated None
+    metric_calc_func: Callable
+    metric_mean_func: Callable[[list[GenericMetric]], GenericMetric] = None
+    metric_value: GenericMetricValue
 
 
 
+class GenericMetricValue(BaseModel):
+    metric_value: ListMetricValue | IntMetricValue | FloatMetricValue
 
 
-class ListMetric(GenericMetric):
+class ListMetricValue(GenericMetricValue):
     metric_value: list[Any]
 
-class IntMetric(GenericMetric):
+
+class IntMetricValue(GenericMetricValue):
     metric_value: int
 
-class FloatMetric(GenericMetric):
+
+class FloatMetricValue(GenericMetricValue):
     metric_value: float
-
-
-
-
 
 
 class GenericMetricOld:

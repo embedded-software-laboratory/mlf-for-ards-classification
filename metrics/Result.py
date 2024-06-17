@@ -3,15 +3,13 @@ from typing import Any
 from pydantic import BaseModel
 from datasets import Dataset
 from model_interface import Model
-from .Generic_Metric import GenericMetric
+from .Generic_Models import *
 
 
 class Result(BaseModel):
-
-
     result_name: str
     storage_location: str
-    contained_metrics: dict[str, GenericMetric]
+    contained_threshold_optimizer: dict[str, GenericThresholdOptimizer]
 
     training_dataset: Dataset
     test_dataset: Dataset
@@ -20,16 +18,6 @@ class Result(BaseModel):
     used_model_name: str = None
 
     contained_metrics: dict[str, GenericMetric]
-
-    def contained_metrics(self) -> dict[str, GenericMetric]:
-        return self.contained_metrics
-    def update(self):
-
-
-    def name(self) -> str:
-        return self.result_name
-
-
 
 
 class IResultSpec:
