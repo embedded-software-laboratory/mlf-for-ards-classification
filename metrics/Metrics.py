@@ -2,7 +2,7 @@ import json
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
-from .Generic_Metric import GenericMetric
+from .Generic_Models import GenericMetric
 from sklearn.metrics import auc
 
 matplotlib.rcParams.update({'font.size': 20})
