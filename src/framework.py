@@ -48,7 +48,7 @@ class Framework:
         self.image_file_path = config["data"]["image_file_path"]
         self.method = config["image_model_parameters"]["method"]
         self.mode = config["image_model_parameters"]["mode"]
-        self.outdir = config["out_dir"] or "./Save/" + str(datetime.now().strftime("%m-%d-%Y_%H-%M-%S")) + "/"
+        self.outdir = "./Save/" + str(datetime.now().strftime("%m-%d-%Y_%H-%M-%S")) + "/"
         if not self.outdir.endswith("/"):
             self.outdir += "/"
 

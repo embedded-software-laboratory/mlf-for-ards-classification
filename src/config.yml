@@ -33,7 +33,7 @@ loading_paths:
   Recurrent Neural Network: "Save/Cross validation results/Recurrent neural network_1"
 
 data:
-  timeseries_file_path: "Data\\uka_data_050623.npy"
+  timeseries_file_path: "/hpcwork/rwth1474/Data/time_series/uka_data_050623.npy"
   database: "UKA"
   image_file_path: "Data/Image_data"
   pneumonia_dataset: "balanced"
