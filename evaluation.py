@@ -31,7 +31,8 @@ class Evaluation:
             'sens' : sensitivity,
             'spec' : specificity,
             'f1' : f1,
-            'mcc' : mcc
+            'mcc' : mcc,
+            'jaccard': 1, # TODO: Actual Jaccard
         }
 
         return metric_dict
@@ -55,17 +56,17 @@ class Evaluation:
         specificity = tn/(tn+fp)
         return f1, acc, mcc, sensitivity, specificity
     
-    def perform_cross_validation(self, data):
+    def perform_cross_validation(self, data, outdir):
         # dictionary instead of array
         results = {}
         for modelClass in self.timeseries_classes:
             model = modelClass()
-            result = self.cross_validate_model(model, data)
+            result = self.cross_validate_model(model, data, outdir)
             # add data under model name in dict
             results[model.name] = result
         return results
     
-    def cross_validate_model(self, model, test_data) :
+    def cross_validate_model(self, model, test_data, outdir) :
         """Function that perfroms crossvalidation"""
 
         labels = test_data["ards"]
@@ -84,9 +85,10 @@ class Evaluation:
 
             # Learn model for the splut
             model.train_model(predictors_train.assign(ards=labels_train))
-            if not os.path.isdir("./Save/Cross validation results"):
-                os.makedirs("./Save/Cross validation results")
-            model.save("./Save/Cross validation results/"  + model.name + "_" + str(i))
+            target_dir = outdir + "cross_validation/"
+            if not os.path.isdir(target_dir):
+                os.makedirs(target_dir)
+            model.save(target_dir + model.name + "_" + str(i))
 
             # Evaluation of model
             _, _, auc_score_training = self._compute_roc_auc_cv(train_set, model, predictors, labels) 

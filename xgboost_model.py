@@ -1,7 +1,6 @@
 import model_interface
 from xgboost import XGBClassifier
 from sklearn.preprocessing import LabelEncoder
-import sklearn
 
 class XGBoost(model_interface.Model):
 

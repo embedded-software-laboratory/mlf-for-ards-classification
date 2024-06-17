@@ -1,10 +1,10 @@
 process:
   load_models: False
   load_timeseries_data: True
-  perform_imputation: False
-  perform_unit_conversion: False
+  perform_imputation: True
+  perform_unit_conversion: True
   calculate_missing_params: False
-  perform_ards_onset_detection: False
+  perform_ards_onset_detection: True
   perform_filtering: False
   perform_feature_selection: False
   perform_data_segregation: True 
@@ -21,6 +21,7 @@ process:
 timeseries_models_to_execute:
   - Random_forest
   - XGBoost
+  - AdaBoost
 
 image_models_to_execute:
   - VisionTransformer
@@ -32,7 +33,7 @@ loading_paths:
   Recurrent Neural Network: "Save/Cross validation results/Recurrent neural network_1"
 
 data:
-  timeseries_file_path: "Data\\40variablen_calibration.npy_preprocessed_05.csv"
+  timeseries_file_path: "Data\\uka_data_050623.npy"
   database: "UKA"
   image_file_path: "Data/Image_data"
   pneumonia_dataset: "balanced"
@@ -54,12 +55,12 @@ data_processing:
   params_to_calculate:
     - horovitz
   ards_onset_detection:
-    detection_rule: "first_horovitz"
+    detection_rule: "lowest_horovitz"
     #eventuell verändern.. bsp. lowest horowitz
     return_rule: "datapoint" 
     series_start_point: -50000
     series_end_point: 50000
-    remove_ards_patients_without_onset: True
+    remove_ards_patients_without_onset: False
     impute_missing_rows: False
     update_ards_values: False
 
@@ -70,7 +71,7 @@ feature_selection:
 
 data_segregation:
   training_test_ratio: 0.8
-  percentage_of_ards_patients: 0.1
+  percentage_of_ards_patients: None
 
 evaluation:
   cross_validation:

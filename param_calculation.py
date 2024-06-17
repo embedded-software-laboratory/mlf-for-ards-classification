@@ -46,8 +46,6 @@ class ParamCalculator:
             return dataframe
         if "height" not in dataframe.columns:
             raise RuntimeError("Body height is required to calculate individual tidal volume, but this parameter is missing in the given dataset.")
-        if "weight" not in dataframe.columns:
-            raise RuntimeError("Weight is required to calculate individual tidal volume, but this parameter is missing in the given dataset.")
         if "tidal-volume" not in dataframe.columns:
             raise RuntimeError("Tidal volume is required to calculate individual tidal volume, but this parameter is missing in the given dataset.")
         ideal_body_weight = 0

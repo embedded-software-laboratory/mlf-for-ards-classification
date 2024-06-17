@@ -2,5 +2,6 @@ __pycache__
 Data
 Save
 Runscripts
-.tmp
 .mamba
+.tmp
+.idea

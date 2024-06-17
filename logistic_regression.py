@@ -77,11 +77,11 @@ class Logistic_regression(model_interface.Model):
         return logistic_regression
 
 
-    def save(self, filepath="./Save/Logistic_regression"):
+    def save(self, filepath):
             file = open(filepath + ".txt", "wb")
             pickle.dump(self.model, file)
 
-    def load(self, filepath="./Save/Logistic_regression"):
+    def load(self, filepath):
             file = open(filepath + ".txt", "rb")
             self.model = pickle.load(file)
 
