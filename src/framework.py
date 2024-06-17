@@ -1,24 +1,15 @@
-from feature_selection import Feature_selection
-from random_forest import Random_forest
-from support_vector_machine import Support_vector_machine
-from bayesian_net import Bayesian_network
-from recurrent_neural_network import Recurrent_neural_network
-from xgboost_model import XGBoost
-from adaboost import AdaBoost
-from lightGBM import LightGBMModel
-from cnn import CNN
-from vision_transformer import VisionTransformer
-from datasets import DatasetGenerator
-from load_file import FileLoader
-from data_segregator import Data_segregator
+from processing import Feature_selection
+from models import VisionTransformer
+from processing import DatasetGenerator
+from processing import FileLoader
+from processing import Data_segregator
 from evaluation import Evaluation
-from data_processing import DataProcessor
+from processing import DataProcessor
 import os
 import yaml
-from feature_analysis import Feature_analysis
 from datetime import datetime
 import json
-from plot_data import plot_eval
+from visualization import plot_eval
 from cli import make_parser
 
 class Framework:
@@ -47,7 +38,7 @@ class Framework:
         self.image_ards_test_data = None
         self.pneumonia_dataset = config["data"]["pneumonia_dataset"]
         self.ards_dataset = config["data"]["ards_dataset"]
-        self.dataProcessor = DataProcessor(config["data_processing"], config["data"]["database"], config["process"])
+        self.dataProcessor = DataProcessor(config["processing"], config["data"]["database"], config["process"])
         self.feature_selector = Feature_selection(config["feature_selection"])
         self.segregator = Data_segregator(config["data_segregation"])
         self.dataset_generator = DatasetGenerator()

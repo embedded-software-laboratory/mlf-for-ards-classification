@@ -1,6 +1,6 @@
-from image_model_interface import ImageModel
+from models.image_model_interface import ImageModel
 import torch
-from datasets import Datasets
+from processing.datasets import Datasets
 from torch import nn
 from sklearn.model_selection import KFold
 from torch.optim.lr_scheduler import ExponentialLR
@@ -8,7 +8,6 @@ import time
 import os
 import csv
 import re
-import numpy as np
 import timm
 
 class VisionTransformer(ImageModel):

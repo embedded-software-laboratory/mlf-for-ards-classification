@@ -1,5 +1,4 @@
 from lightgbm import LGBMClassifier
-from joblib import *
 import pickle
 import model_interface
 

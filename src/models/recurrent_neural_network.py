@@ -1,9 +1,8 @@
 import model_interface
 import keras
 from keras.layers import LSTM, Dropout, Dense
-from keras.models import load_model
 import numpy as np
-import h5py
+
 
 class Recurrent_neural_network(model_interface.Model):
 
