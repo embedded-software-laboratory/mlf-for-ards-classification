@@ -20,7 +20,6 @@ from datetime import datetime
 import json
 from plot_data import plot_eval
 from cli import make_parser
-import pandas as pd
 
 class Framework:
     def __init__(self):
