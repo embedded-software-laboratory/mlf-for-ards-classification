@@ -1,16 +1,16 @@
-from processing import Feature_selection
-from models import VisionTransformer
-from processing import DatasetGenerator
-from processing import FileLoader
-from processing import Data_segregator
-from evaluation import Evaluation
-from processing import DataProcessor
+from processing import *
+from models import *
+from metrics import *
+from evaluation import *
+
+from visualization import plot_eval
+from cli import make_parser
+
 import os
 import yaml
 from datetime import datetime
 import json
-from visualization import plot_eval
-from cli import make_parser
+
 
 class Framework:
     def __init__(self):
@@ -25,7 +25,7 @@ class Framework:
         self.loader = FileLoader()
         self.timeseries_models = []
         self.timeseries_classes = []
-        for model in config["timeseries_models_to_execute"]: 
+        for model in config["timeseries_models_to_execute"]:
             self.timeseries_models.append(eval(model + "()"))
             self.timeseries_classes.append(eval(model))
         self.evaluator = Evaluation(self.timeseries_classes, config["evaluation"])
@@ -71,9 +71,15 @@ class Framework:
 
     def load_image_data(self):
         for dl_method in self.image_dl_methods:
-            self.image_pneumonia_training_data = self.dataset_generator.build_dataset(self.pneumonia_dataset, dl_method, 'PNEUMONIA', path=self.image_file_path, augment=False)
-            self.image_ards_training_data = self.dataset_generator.build_dataset(self.ards_dataset, dl_method, 'ARDS',  path=self.image_file_path, augment=False)
-            self.image_ards_test_data = self.dataset_generator.build_dataset('test', dl_method, 'ARDS', path=self.image_file_path, augment=False)
+            self.image_pneumonia_training_data = self.dataset_generator.build_dataset(self.pneumonia_dataset, dl_method,
+                                                                                      'PNEUMONIA',
+                                                                                      path=self.image_file_path,
+                                                                                      augment=False)
+            self.image_ards_training_data = self.dataset_generator.build_dataset(self.ards_dataset, dl_method, 'ARDS',
+                                                                                 path=self.image_file_path,
+                                                                                 augment=False)
+            self.image_ards_test_data = self.dataset_generator.build_dataset('test', dl_method, 'ARDS',
+                                                                             path=self.image_file_path, augment=False)
 
     def learn_timeseries_models(self):
         for model in self.timeseries_models:
@@ -82,14 +88,14 @@ class Framework:
 
     def learn_image_models(self):
         for model in self.image_models:
-            info_list = [self.pneumonia_dataset, self.ards_dataset, model.model_name, [self.method, self.method], self.mode]
+            info_list = [self.pneumonia_dataset, self.ards_dataset, model.model_name, [self.method, self.method],
+                         self.mode]
             model.train_image_model(self.image_pneumonia_training_data, self.image_ards_training_data, info_list)
 
     def test_image_models(self):
         for model in self.image_models:
             info_list = [self.pneumonia_dataset, self.ards_dataset, model.model_name, self.method, self.mode]
-            model.test_image_model(self.image_ards_test_data, info_list) 
-        
+            model.test_image_model(self.image_ards_test_data, info_list)
 
     def predict(self, test_data):
         print("------------")
@@ -147,7 +153,7 @@ class Framework:
 
         if self.process["load_models"] == True:
             self.load_models()
-        
+
         if self.process["load_timeseries_data"] == True:
             self.load_timeseries_data()
 
@@ -170,6 +176,3 @@ class Framework:
 
         if self.process["test_image_models"] == True:
             self.test_image_models()
-
-
-        
