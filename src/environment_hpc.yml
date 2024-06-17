@@ -16,6 +16,7 @@ dependencies:
   - torchmetrics=1.1.2
   - torchvision=0.15.2
   - statsmodels=0.14.0
+  - pydantic
   - pip:
     - albumentations==1.4.2
     - torch==2.2.1
