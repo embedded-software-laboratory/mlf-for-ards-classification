@@ -1,4 +1,4 @@
-from model_interface import Model
+from models.model_interface import Model
 from sklearn.ensemble import AdaBoostClassifier
 import pickle
 

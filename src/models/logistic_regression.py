@@ -1,11 +1,11 @@
-import model_interface
+from models.model_interface import Model
 from sklearn.linear_model import LogisticRegression
 import pickle
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 import pandas as pd
 
 
-class Logistic_regression(model_interface.Model):
+class Logistic_regression(Model):
 
     def __init__(self):
             super().__init__()

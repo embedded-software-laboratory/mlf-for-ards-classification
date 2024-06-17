@@ -1,10 +1,10 @@
-import model_interface
+from models.model_interface import Model
 import keras
 from keras.layers import LSTM, Dropout, Dense
 import numpy as np
 
 
-class Recurrent_neural_network(model_interface.Model):
+class Recurrent_neural_network(Model):
 
     def __init__(self):
         super().__init__()
