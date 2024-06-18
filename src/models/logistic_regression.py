@@ -1,11 +1,11 @@
-import model_interface
+from models.model_interface import Model
 from sklearn.linear_model import LogisticRegression
 import pickle
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 import pandas as pd
 
 
-class Logistic_regression(model_interface.Model):
+class Logistic_regression(Model):
 
     def __init__(self):
             super().__init__()
@@ -85,10 +85,10 @@ class Logistic_regression(model_interface.Model):
             file = open(filepath + ".txt", "rb")
             self.model = pickle.load(file)
 
-Logistic_regression().save("./Save/Logistic_regression")
+Logistic_regression().save("../Save/Logistic_regression")
 
     # Laden
-Logistic_regression().load("./Save/Logistic_regression")
+Logistic_regression().load("../Save/Logistic_regression")
 
 #Grid Search: In grid search, you define a grid of hyperparameter values that you want to search over. The algorithm then evaluates the model performance for each combination of hyperparameters and returns the combination that performs the best.
 

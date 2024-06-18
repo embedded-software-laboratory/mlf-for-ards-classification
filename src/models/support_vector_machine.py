@@ -1,8 +1,8 @@
-import model_interface
+from models.model_interface import Model
 from sklearn import svm
 import pickle
 
-class Support_vector_machine(model_interface.Model):
+class Support_vector_machine(Model):
 
     def __init__(self):
         super().__init__()

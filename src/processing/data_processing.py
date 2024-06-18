@@ -1,8 +1,8 @@
-from unit_converter import UnitConverter
-from data_imputator import DataImputator
-from param_calculation import ParamCalculator
-from onset_determiner import OnsetDeterminer
-from filter import Filter
+from processing.unit_converter import UnitConverter
+from processing.data_imputator import DataImputator
+from processing.param_calculation import ParamCalculator
+from processing.onset_determiner import OnsetDeterminer
+from processing.filter import Filter
 
 class DataProcessor:
     def __init__(self, config, database_name, process):

@@ -1,10 +1,10 @@
-import model_interface
+from models.model_interface import Model
 from pomegranate import DiscreteDistribution, ConditionalProbabilityTable, Node, BayesianNetwork
 import numpy as np
 import pomegranate
 import json
 
-class Bayesian_network(model_interface.Model):
+class Bayesian_network(Model):
 
     def __init__(self):
         super().__init__()

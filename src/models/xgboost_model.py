@@ -1,8 +1,8 @@
-import model_interface
+from models.model_interface import Model
 from xgboost import XGBClassifier
 from sklearn.preprocessing import LabelEncoder
 
-class XGBoost(model_interface.Model):
+class XGBoost(Model):
 
     def __init__(self):
         self.name = "XGBoost"

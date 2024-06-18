@@ -1,9 +1,8 @@
 from lightgbm import LGBMClassifier
-from joblib import *
 import pickle
-import model_interface
+from models.model_interface import Model
 
-class LightGBMModel(model_interface.Model):
+class LightGBMModel(Model):
     def __init__(self):
         super().__init__()
         self.name = "LightGBMModel"

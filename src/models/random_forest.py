@@ -1,8 +1,8 @@
-import model_interface
+from models.model_interface import Model
 from sklearn.ensemble import RandomForestClassifier
 import pickle
 
-class Random_forest(model_interface.Model):
+class Random_forest(Model):
 
     def __init__(self):
         super().__init__()
