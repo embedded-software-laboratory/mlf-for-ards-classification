@@ -39,7 +39,7 @@ data:
   pneumonia_dataset: "balanced"
   ards_dataset: "weighted"
 
-data_processing:
+processing:
   filtering:
     filter:
     - A

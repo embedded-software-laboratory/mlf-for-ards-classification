@@ -121,6 +121,7 @@ class Framework:
                 # data in json dict
                 result[model_name]["cross_validation"] = cross_validation_results[model_name]
         if result:
+            print(f"Save results to {self.outdir + 'results.json'}")
             with (open(self.outdir + 'results.json', 'w', encoding='utf-8') as f):
                 json.dump(result, f, ensure_ascii=False, indent=4)
                 plot_eval(data=result, file_name=f.name)
