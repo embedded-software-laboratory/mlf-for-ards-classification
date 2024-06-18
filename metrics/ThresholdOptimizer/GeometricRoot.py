@@ -1,7 +1,9 @@
-from metrics import *
+import numpy as np
+
 from IThresholdOptimizer import IThresholdOptimizer
 
 
-class StandardOptimizer(IThresholdOptimizer):
+class GeometricRoot(IThresholdOptimizer):
     def calculate_optimal_threshold(self, tpr: list[float], fpr: list[float], threshold: list[float]) -> float:
-        return 0.5
+
+        return threshold[optimal_idx]
