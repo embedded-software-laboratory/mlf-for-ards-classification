@@ -1,7 +1,5 @@
-from __future__ import annotations
-from abc import ABC, abstractmethod
-
 from typing import Any
+
 from pydantic import BaseModel
 from datasets import Dataset
 from model_interface import Model
@@ -28,7 +26,7 @@ class ResultFactory:
         threshold_optimizers = result_config['used_threshold_optimizers']
         number_of_splits = result_config['number_of_splits']
         contained_metrics = result_config['metrics']
-        
+
         pass
 
 
