@@ -1,10 +1,11 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
+
 from typing import Any
 from pydantic import BaseModel
 from datasets import Dataset
 from model_interface import Model
-from .Generic_Models import *
+from metrics.Generic_Models import *
 
 
 class Result(BaseModel):
@@ -19,6 +20,7 @@ class Result(BaseModel):
     used_model_name: str = None
 
 
+
 class ResultFactory:
 
 
@@ -28,9 +30,6 @@ class ResultFactory:
         contained_metrics = result_config['metrics']
         
         pass
-
-
-
 
 
 
