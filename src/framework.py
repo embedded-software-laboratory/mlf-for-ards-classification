@@ -69,6 +69,9 @@ class Framework:
         else:
             self.timeseries_test_data = self.timeseries_training_data = dataframe
 
+        self.timeseries_test_data.to_csv(self.outdir + "test_data.csv", header=True, index=False)
+        self.timeseries_training_data.to_csv(self.outdir + "training_data.csv", header=True, index=False)
+
     def load_image_data(self):
         for dl_method in self.image_dl_methods:
             self.image_pneumonia_training_data = self.dataset_generator.build_dataset(self.pneumonia_dataset, dl_method,
