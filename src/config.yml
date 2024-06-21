@@ -10,6 +10,7 @@ process:
   perform_data_segregation: True 
   perform_timeseries_training: True
   perform_timeseries_classification: True
+  perform_threshold_optimization: True
   calculate_evaluation_metrics: True
   perform_cross_validation: True
   save_models: False
@@ -31,6 +32,11 @@ loading_paths:
   Support Vector Machine: "Save/Cross validation results/Support Vector Machine_0"
   Bayesian Net: "Save/Cross validation results/Bayesian Net_3"
   Recurrent Neural Network: "Save/Cross validation results/Recurrent neural network_1"
+
+storage_path: ""
+
+
+
 
 data:
   timeseries_file_path: "/hpcwork/rwth1474/Data/time_series/uka_data_050623.npy"
@@ -77,6 +83,8 @@ evaluation:
   cross_validation:
     n_splits: 4
     shuffle: False
+  threshold_optimization_algorithms: ["Standard", "MaxTPR", "MaxTPRMinFPR", "GeometricRoot"]
+  evaluation_metrics: [""]
 
 image_model_parameters:
   method: last_block

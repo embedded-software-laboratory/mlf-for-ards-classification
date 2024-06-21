@@ -38,12 +38,13 @@ In diesem Abschnitt wird festgelegt, welche Schritte ausgeführt werden sollen. 
 	Diese Schritt muss nur aktiviert werden, wenn in einem Durchlauf die Modelle trainiert und anschließend evaluiert werden sollen. Falls dieser Schritt deaktiviert wird, wird der komplette geladene Datensatz sowohl für die Klassifizierung und Evaluation als auch fürs Training verwendet; daher ergibt eine Deaktivierung der Aufteilung nur Sinn wenn entweder Klassifizierung/Evaluation oder Modell-Training durchgeführt werden soll. 
 10. **perform_timeseries_training**: Wenn dies aktiviert wird, werden alle unter dem Punkt "timeseries_models_to_execute" angegebenen Zeitreihenmodelle mit den geladenen Daten trainiert. Wenn im gleichen Durchlauf eine Evaluation durchgeführt werden soll, sollte der Punkt "perform_data_segregation" ebenfalls aktiviert werden. 
 11. **perform_timeseries_classification**: Falls aktiviert, werden werden alle verfügbaren Zeitreihenmodelle die geladenen Daten klassifizieren und für jede Zeile entsprechend 1 für "ARDS" oder 0 für "Nicht ARDS" ausgeben.
-12. **calculate_evaluation_metrics**: Falls aktiviert, wird das Framework die geladenen Testdaten dazu verwenden, die Modelle diese klassifizieren zu lassen und zu berechnen, wie gut die Ergebnisse der Modelle sind. Dafür werden verschiedene Metriken berechnet. 
-13. **perform_cross_validation**: Falls aktiviert, werden die Modelle mit den geladenen Daten kreuzvalidiert. Hierfür können unter "evaluation" noch einige Parameter eingestellt werden. 
-14. **save_models**: Falls True, werden alle trainierten Modelle im Ordner "Save" gespeichert. 
-15. **load_image_data**: Hierüber kann gesteuert werden, ob Bilddaten für das Training der Röntgenbild-Modelle geladen werden sollen. Falls True, werden die Bilder von dem unter data/image_file_path angegebenem Dateipfad geladen.
-16. **train_image_models**: Falls aktiviert, werden die unter "image_models_to_execute" angegebenen Modelle für Röntenbilder trainiert. Dies umfasst das Training für die Erkennung von Lungenentzündungen sowie das Transfer-Learning zu ARDS. 
-17. **test_image_models**: Falls aktiviert,w erden die trainierten Bilddaten-Modelle mit dem geladenen ARDS-Bilddatensatz evaluiert. 
+12. **perform_threshold_optimization**: Falls aktiviert und für das ausgewählte Modell möglich, wird nach unterschiedlichen Algorithmen die optimale Entscheidungsgrenze bestimmt, welche Algorithmen dafür verwendet werden wird unter evaluation threshold_optimization_algorithms festgelegt.
+13. **calculate_evaluation_metrics**: Falls aktiviert, wird das Framework die geladenen Testdaten dazu verwenden, die Modelle diese klassifizieren zu lassen und zu berechnen, wie gut die Ergebnisse der Modelle sind. Dafür werden verschiedene Metriken berechnet. 
+14. **perform_cross_validation**: Falls aktiviert, werden die Modelle mit den geladenen Daten kreuzvalidiert. Hierfür können unter "evaluation" noch einige Parameter eingestellt werden. 
+15. **save_models**: Falls True, werden alle trainierten Modelle im Ordner "Save" gespeichert. 
+16. **load_image_data**: Hierüber kann gesteuert werden, ob Bilddaten für das Training der Röntgenbild-Modelle geladen werden sollen. Falls True, werden die Bilder von dem unter data/image_file_path angegebenem Dateipfad geladen.
+17. **train_image_models**: Falls aktiviert, werden die unter "image_models_to_execute" angegebenen Modelle für Röntenbilder trainiert. Dies umfasst das Training für die Erkennung von Lungenentzündungen sowie das Transfer-Learning zu ARDS. 
+18. **test_image_models**: Falls aktiviert,w erden die trainierten Bilddaten-Modelle mit dem geladenen ARDS-Bilddatensatz evaluiert. 
 
 
 ## timeseries_models_to_execute
@@ -165,9 +166,11 @@ Hier wird festgelegt, wie genau die geladenen Daten in Trainings- und Testdaten 
 
 ## evaluation: 
 
-Hier können einige Einstellungen für die Kreuzvalidierung vorgenommen werden.
-- **n_splits**: Hier wird die Anzahl an Teilmengen, in die die Testdaten zur Kreuzvalidierung aufgeteilt werden sollen, angegeben.
-- **shuffle**: (True oder False) - hierüber wird angegeben, ob die Daten vor dem Aufteilen gemischt werden sollen. 
+- **cross_validation**: Hier können einige Einstellungen für die Kreuzvalidierung vorgenommen werden.
+  - **n_splits**: Hier wird die Anzahl an Teilmengen, in die die Testdaten zur Kreuzvalidierung aufgeteilt werden sollen, angegeben.
+  - **shuffle**: (True oder False) - hierüber wird angegeben, ob die Daten vor dem Aufteilen gemischt werden sollen.
+- **threshold_optimization_algorithms**: Aufzählung der Algorithmen, die jeweils eine optimale Entscheidungsgrenze ermitteln
+- **evaluation_metrics**: Liste der Namen der Metriken, die während der Evaluation berechnet werden
 
 ## image_model_parameters
 

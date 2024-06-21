@@ -10,6 +10,7 @@ import os
 import yaml
 from datetime import datetime
 import json
+from pathlib import Path
 
 
 class Framework:
@@ -48,7 +49,8 @@ class Framework:
         self.image_file_path = config["data"]["image_file_path"]
         self.method = config["image_model_parameters"]["method"]
         self.mode = config["image_model_parameters"]["mode"]
-        self.outdir = "./Save/" + str(datetime.now().strftime("%m-%d-%Y_%H-%M-%S")) + "/"
+        self.outdir = config["storage_path"] if config["storage_path"] else "./Save/" + str(datetime.now().strftime("%m-%d-%Y_%H-%M-%S")) + "/"
+        Path(self.outdir).mkdir(parents=True, exist_ok=True)
         if not self.outdir.endswith("/"):
             self.outdir += "/"
 
@@ -167,7 +169,13 @@ class Framework:
         if self.process["perform_timeseries_classification"] == True:
             self.predict(self.timeseries_test_data)
 
-        self.evaluate_models()
+        if (self.process["calculate_evaluation_metrics"] and not self.process["perform_cross_validation"]) == True:
+            self.evaluate_models()
+        elif self.process["perform_cross_validation"] == True:
+            self.evaluate_models()
+
+        if self.process["evaluate_models"] == True:
+            self.evaluate_models()
 
         if self.process["save_models"] == True:
             self.save_models()
