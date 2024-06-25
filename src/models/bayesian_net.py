@@ -38,6 +38,9 @@ class Bayesian_network(Model):
             temp.append(p[0].probability(1))
             result.append(temp)
         return np.array(result)
+
+    def has_predict_proba(self):
+        return True
     
     def save(self, filepath):
         file = open(filepath + ".json", "w")

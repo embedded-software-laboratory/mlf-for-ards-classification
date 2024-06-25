@@ -235,3 +235,6 @@ class ImageModel():
     
     def get_created_model(self, device, model_name, dataset_pneumonia, method, mode):
         raise NotImplementedError
+
+    def has_predict_proba(self):
+        raise NotImplementedError

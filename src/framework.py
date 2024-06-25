@@ -29,7 +29,7 @@ class Framework:
         for model in config["timeseries_models_to_execute"]:
             self.timeseries_models.append(eval(model + "()"))
             self.timeseries_classes.append(eval(model))
-        self.evaluator = Evaluation(self.timeseries_classes, config["evaluation"])
+        self.evaluator = Evaluation_Old(self.timeseries_classes, config["evaluation"])
         self.image_dl_methods = ["VIT"]
         self.image_models = [VisionTransformer(config["image_model_parameters"], "vit-small-16")]
         self.timeseries_training_data = None
@@ -49,7 +49,8 @@ class Framework:
         self.image_file_path = config["data"]["image_file_path"]
         self.method = config["image_model_parameters"]["method"]
         self.mode = config["image_model_parameters"]["mode"]
-        self.outdir = config["storage_path"] if config["storage_path"] else "./Save/" + str(datetime.now().strftime("%m-%d-%Y_%H-%M-%S")) + "/"
+        self.outdir = config["storage_path"] if config["storage_path"] else "./Save/" + str(
+            datetime.now().strftime("%m-%d-%Y_%H-%M-%S")) + "/"
         Path(self.outdir).mkdir(parents=True, exist_ok=True)
         if not self.outdir.endswith("/"):
             self.outdir += "/"
@@ -169,13 +170,7 @@ class Framework:
         if self.process["perform_timeseries_classification"] == True:
             self.predict(self.timeseries_test_data)
 
-        if (self.process["calculate_evaluation_metrics"] and not self.process["perform_cross_validation"]) == True:
-            self.evaluate_models()
-        elif self.process["perform_cross_validation"] == True:
-            self.evaluate_models()
-
-        if self.process["evaluate_models"] == True:
-            self.evaluate_models()
+        self.evaluate_models()
 
         if self.process["save_models"] == True:
             self.save_models()

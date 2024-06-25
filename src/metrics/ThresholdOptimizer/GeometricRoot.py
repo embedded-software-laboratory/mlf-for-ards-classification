@@ -4,6 +4,6 @@ from IThresholdOptimizer import IThresholdOptimizer
 
 
 class GeometricRoot(IThresholdOptimizer):
-    def calculate_optimal_threshold(self, tpr: list[float], fpr: list[float], threshold: list[float]) -> float:
+    def calculate_optimal_threshold(self, tpr: np.ndarray, fpr: np.ndarray, threshold: np.ndarray) -> float:
 
-        return threshold[optimal_idx]
+        return threshold[np.argmax(tpr*(1-fpr))]

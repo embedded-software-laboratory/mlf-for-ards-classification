@@ -30,3 +30,6 @@ class XGBoost(Model):
 
     def load(self, filepath):
         self.model.load_model(filepath + ".ubj")
+
+    def has_predict_proba(self):
+        return True

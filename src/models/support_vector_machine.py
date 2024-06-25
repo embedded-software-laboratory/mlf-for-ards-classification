@@ -32,3 +32,6 @@ class Support_vector_machine(Model):
     def load(self, filepath):
         file = open(filepath + ".txt", "rb")
         self.model = pickle.load(file)
+
+    def has_predict_proba(self):
+        return True

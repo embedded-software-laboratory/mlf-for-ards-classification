@@ -297,3 +297,6 @@ class VisionTransformer(ImageModel):
         model = self.unfreeze_model(model, method)    
         model.to(device)
         return model
+
+    def has_predict_proba(self):
+        return True

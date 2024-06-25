@@ -18,6 +18,9 @@ class AdaBoost(Model):
 
     def predict_proba(self, data):
         return self.model.predict_proba(data)
+
+    def has_predict_proba(self):
+        return True
     
     def save(self, filepath):
         with open(filepath + ".pkl",'wb') as f:

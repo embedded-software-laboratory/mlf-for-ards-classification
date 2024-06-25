@@ -69,3 +69,6 @@ class Recurrent_neural_network(Model):
             X_local.append(X[start:end])
             y_local.append(y[end-1])
         return np.array(X_local), np.array(y_local)
+
+    def has_predict_proba(self):
+        return False

@@ -40,6 +40,10 @@ class Logistic_regression(Model):
 
     def predict_proba(self, data):
         return self.model.predict_proba(data)
+
+    def has_predict_proba(self):
+        return True
+
     #Die Methode muss ein Array zurückgeben, welches für jede Zeile des Dataframes ein Array mit zwei Werten enthält. Der erste Wert gibt die Wahrscheinlichkeit an, dass es sich bei diesem Datensatz nicht um ARDS handelt, und der zweite gibt die Wahrscheinlichkeit an, dass es sich um ARDS handelt.
 
     def calculate_vif(self, data):

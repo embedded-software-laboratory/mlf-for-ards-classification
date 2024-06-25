@@ -428,4 +428,7 @@ class CNN(ImageModel):
 
     def get_created_model(self, device, model_name, dataset_pneumonia, method, mode):
         return self.get_model(device, model_name, dataset_pneumonia, method)
+
+    def has_predict_proba(self):
+        return False
             

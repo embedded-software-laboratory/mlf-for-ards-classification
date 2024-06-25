@@ -14,6 +14,9 @@ class Model:
     def predict_proba(self, data):
         raise NotImplementedError
 
+    def has_predict_proba(self):
+        raise NotImplementedError
+
     def save(self, filepath):
         raise NotImplementedError
 
