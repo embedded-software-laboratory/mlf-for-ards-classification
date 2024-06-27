@@ -1,4 +1,4 @@
-from models.model_interface import Model
+from ml_models.model_interface import Model
 from sklearn.linear_model import LogisticRegression
 import pickle
 from statsmodels.stats.outliers_influence import variance_inflation_factor

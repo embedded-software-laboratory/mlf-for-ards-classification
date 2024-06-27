@@ -1,10 +1,11 @@
-from models.model_interface import Model
+from ml_models.model_interface import Model
 from sklearn.ensemble import AdaBoostClassifier
 import pickle
 
 class AdaBoost(Model):
 
     def __init__(self): 
+        super().__init__()
         self.name = "AdaBoost"
         self.model = AdaBoostClassifier(n_estimators=100, algorithm="SAMME", random_state=0)
 

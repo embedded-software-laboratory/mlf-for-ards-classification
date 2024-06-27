@@ -1,6 +1,6 @@
 from lightgbm import LGBMClassifier
 import pickle
-from models.model_interface import Model
+from ml_models.model_interface import Model
 
 class LightGBMModel(Model):
     def __init__(self):

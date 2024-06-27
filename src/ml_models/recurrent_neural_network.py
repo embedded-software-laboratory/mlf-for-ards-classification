@@ -1,4 +1,4 @@
-from models.model_interface import Model
+from ml_models.model_interface import Model
 import keras
 from keras.layers import LSTM, Dropout, Dense
 import numpy as np

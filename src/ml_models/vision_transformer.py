@@ -1,6 +1,6 @@
-from models.image_model_interface import ImageModel
+from ml_models.image_model_interface import ImageModel
 import torch
-from processing.datasets import Datasets
+from processing.datasets import ImageDatasets
 from torch import nn
 from sklearn.model_selection import KFold
 from torch.optim.lr_scheduler import ExponentialLR
@@ -34,7 +34,7 @@ class VisionTransformer(ImageModel):
 
         # generate model if it exists
         if model_name_og in timm_models_list: 
-            model = timm.create_model(model_name_og, pretrained=True, img_size=Datasets.get_image_size(None, "VIT")[1], in_chans=1)
+            model = timm.create_model(model_name_og, pretrained=True, img_size=ImageDatasets.get_image_size(None, "VIT")[1], in_chans=1)
         else:
             raise Exception("Pretrained ViT model not supported")
 

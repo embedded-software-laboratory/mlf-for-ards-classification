@@ -1,5 +1,5 @@
 
-#(informal) interface for all ards detection models
+#(informal) interface for all ards detection ml_models
 class Model:
     def __init__(self):
         self.model = None

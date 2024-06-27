@@ -1,5 +1,5 @@
 import torch
-from models.image_model_interface import ImageModel
+from ml_models.image_model_interface import ImageModel
 from torch import nn
 import torchvision
 from libauc.losses import AUCMLoss, CrossEntropyLoss

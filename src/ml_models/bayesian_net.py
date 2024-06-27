@@ -1,4 +1,4 @@
-from models.model_interface import Model
+from ml_models.model_interface import Model
 from pomegranate import DiscreteDistribution, ConditionalProbabilityTable, Node, BayesianNetwork
 import numpy as np
 import pomegranate
