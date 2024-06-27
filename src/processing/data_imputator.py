@@ -5,10 +5,12 @@ class DataImputator:
     def __init__(self, config) -> None:
         self.available_imputation_methods = ["forward", "backfill", "mean", "linear_interpolation"]
         self.set_imputation_method(config["default_imputation_method"])
+        self.imputation_method = None
         self.params_to_impute = config["params_to_impute"]
         self.default_imputation_method = config["default_imputation_method"]
         self.impute_empty_cells = config["impute_empty_cells"]
-        self.binary_variables = ["ards", "heart-failure", "hypervolemia", "mech-vent", "pneumonia", "xray", "sepsis", "chest-injury"]
+        self.binary_variables = ["ards", "heart-failure", "hypervolemia", "mech-vent", "pneumonia", "xray", "sepsis",
+                                 "chest-injury"]
 
     def impute_missing_data(self, dataframe):
         for param in self.params_to_impute:
@@ -31,19 +33,22 @@ class DataImputator:
                     if self.imputation_method == "mean":
                         temp_dataframe = pd.DataFrame(columns=[series_name])
                         for name, frame in dataframe.groupby("patient_id")[series_name]:
-                            temp_dataframe = pd.concat([temp_dataframe, pd.DataFrame(frame.fillna(value = frame.mean(skipna = True)))], ignore_index=True)
+                            temp_dataframe = pd.concat(
+                                [temp_dataframe, pd.DataFrame(frame.fillna(value=frame.mean(skipna=True)))],
+                                ignore_index=True)
                         dataframe[series_name] = temp_dataframe
                     if self.imputation_method == "linear_interpolation":
                         temp_dataframe = pd.DataFrame(columns=[series_name])
                         for name, frame in dataframe.groupby("patient_id")[series_name]:
-                            temp_dataframe = pd.concat([temp_dataframe, pd.DataFrame(frame.interpolate(method = "linear", limit_direction="both"))], ignore_index=True)
+                            temp_dataframe = pd.concat([temp_dataframe, pd.DataFrame(
+                                frame.interpolate(method="linear", limit_direction="both"))], ignore_index=True)
                         dataframe[series_name] = temp_dataframe
 
-        dataframe.dropna(subset = ['ards'], inplace=True, ignore_index=True, how="any", axis=0)
-        if self.impute_empty_cells == False:
+        dataframe.dropna(subset=['ards'], inplace=True, ignore_index=True, how="any", axis=0)
+        if not self.impute_empty_cells:
             dataframe.dropna(how="all", axis=1, ignore_index=True, inplace=True)
             dataframe.dropna(how="any", axis=0, ignore_index=True, inplace=True)
-        else: 
+        else:
             dataframe.fillna(value=-100000, axis=1, inplace=True)
         print(dataframe)
         return dataframe
@@ -52,15 +57,18 @@ class DataImputator:
         if method in self.available_imputation_methods:
             self.imputation_method = method
         else:
-            raise RuntimeError("Imputation method " + method + " not available/implemented! Currently available methods are " + str(self.available_imputation_methods))
-        
-    def impute_rows(self, dataframe, target_start_time, target_end_time):
+            raise RuntimeError(
+                "Imputation method " + method + " not available/implemented! Currently available methods are " + str(
+                    self.available_imputation_methods))
+
+    @staticmethod
+    def impute_rows(dataframe, target_start_time, target_end_time):
         while dataframe["time"][dataframe.index[0]] > target_start_time:
             empty_data = pd.DataFrame({col: [np.nan for _ in range(1)] for col in dataframe.columns})
             dataframe = pd.concat([empty_data, dataframe], ignore_index=True)
             dataframe["time"].interpolate(method="spline", order=1, inplace=True, limit_direction="both")
             dataframe.fillna(value=-100000, axis=1, inplace=True)
-        while dataframe["time"][dataframe.index[len(dataframe.index)-1]] < target_end_time:
+        while dataframe["time"][dataframe.index[len(dataframe.index) - 1]] < target_end_time:
             empty_data = pd.DataFrame({col: [np.nan for _ in range(1)] for col in dataframe.columns})
             dataframe = pd.concat([dataframe, empty_data], ignore_index=True)
             dataframe["time"].interpolate(method="spline", order=1, inplace=True, limit_direction="both")

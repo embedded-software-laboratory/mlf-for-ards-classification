@@ -1,5 +1,5 @@
 from processing import *
-from models import *
+from ml_models import *
 from metrics import *
 from evaluation import *
 
@@ -42,7 +42,7 @@ class Framework:
         self.dataProcessor = DataProcessor(config["processing"], config["data"]["database"], config["process"])
         self.feature_selector = Feature_selection(config["feature_selection"])
         self.segregator = Data_segregator(config["data_segregation"])
-        self.dataset_generator = DatasetGenerator()
+        self.dataset_generator = ImageDatasetGenerator()
         self.process = config["process"]
         self.loading_paths = config["loading_paths"]
         self.timeseries_file_path = config["data"]["timeseries_file_path"]
@@ -65,7 +65,7 @@ class Framework:
             os.makedirs(self.outdir, exist_ok=True)
         dataframe.to_csv(self.outdir + os.path.basename(self.timeseries_file_path) + "_preprocessed.csv", index=True)
         print("Finished preprocessing and saved result to file!")
-        if self.process["perform_data_segregation"] == True:
+        if self.process["perform_data_segregation"]:
             training_data, test_data = self.segregator.segregate_data(dataframe)
             self.timeseries_training_data = training_data
             self.timeseries_test_data = test_data
@@ -115,17 +115,17 @@ class Framework:
 
     def evaluate_models(self):
         result = {}
-        if self.process["calculate_evaluation_metrics"] == True:
+        if self.process["calculate_evaluation_metrics"]:
             for model in self.timeseries_models:
                 # for each model, add corresponding dict to results dict
-                result[model.name] = self.evaluator.evaluate(model, self.timeseries_test_data)
+                result[model.name]["Test set evaluation"] = self.evaluator.evaluate(model, self.timeseries_test_data)
 
-        if self.process["perform_cross_validation"] == True:
-            cross_validation_results = self.evaluator.perform_cross_validation(self.timeseries_test_data, self.outdir)
-            for model_name in list(cross_validation_results.keys()):
-                # for each model, add corresponding cross validation results to already existing
-                # data in json dict
-                result[model_name]["cross_validation"] = cross_validation_results[model_name]
+        if self.process["perform_cross_validation"]:
+            for model in self.timeseries_models:
+                cross_validation_results = self.evaluator.perform_cross_validation(self.timeseries_test_data,
+                                                                                   self.outdir)
+                result[model.name]["crossvalidation"] = cross_validation_results
+        # TODO
         if result:
             print(f"Save results to {self.outdir + 'results.json'}")
             with (open(self.outdir + 'results.json', 'w', encoding='utf-8') as f):
@@ -158,28 +158,28 @@ class Framework:
         with open(self.outdir + 'config.json', 'w') as f:
             json.dump(self.config, f)
 
-        if self.process["load_models"] == True:
+        if self.process["load_models"]:
             self.load_models()
 
-        if self.process["load_timeseries_data"] == True:
+        if self.process["load_timeseries_data"]:
             self.load_timeseries_data()
 
-        if self.process["perform_timeseries_training"] == True:
+        if self.process["perform_timeseries_training"]:
             self.learn_timeseries_models()
 
-        if self.process["perform_timeseries_classification"] == True:
+        if self.process["perform_timeseries_classification"]:
             self.predict(self.timeseries_test_data)
 
         self.evaluate_models()
 
-        if self.process["save_models"] == True:
+        if self.process["save_models"]:
             self.save_models()
 
-        if self.process["load_image_data"] == True:
+        if self.process["load_image_data"]:
             self.load_image_data()
 
-        if self.process["train_image_models"] == True:
+        if self.process["train_image_models"]:
             self.learn_image_models()
 
-        if self.process["test_image_models"] == True:
+        if self.process["test_image_models"]:
             self.test_image_models()

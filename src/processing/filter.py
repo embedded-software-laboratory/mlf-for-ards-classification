@@ -1,6 +1,7 @@
 import sys
 
-class Filter():
+
+class Filter:
 
     def __init__(self, config) -> None:
         self.filter = []
@@ -8,24 +9,26 @@ class Filter():
         self.set_filter(config["filter"])
 
     def filter_data(self, dataframe):
-        for filter in self.filter:
-            if filter == "A": 
+        for filter_to_apply in self.filter:
+            if filter_to_apply == "A":
                 dataframe = self.filter_a(dataframe)
-            if filter == "B": 
+            if filter_to_apply == "B":
                 dataframe = self.filter_b(dataframe)
-            if filter == "C": 
+            if filter_to_apply == "C":
                 dataframe = self.filter_c(dataframe)
         return dataframe
 
-    def filter_a(self, dataframe):
+    @staticmethod
+    def filter_a(dataframe):
         for patient_id in dataframe["patient_id"].unique():
             patient_subframe = dataframe[dataframe["patient_id"] == patient_id]
             if not 1 in patient_subframe["ards"].values:
                 if (patient_subframe["horovitz"] < 200).any():
                     dataframe = dataframe.drop(patient_subframe.index)
         return dataframe
-    
-    def filter_b(self, dataframe):
+
+    @staticmethod
+    def filter_b(dataframe):
         if "hypervolemia" not in dataframe.columns or "pulmonary-edema" not in dataframe.columns or "hypervolemia" not in dataframe.columns:
             print("Skipping filter b since not all necessary columns are present")
             return dataframe
@@ -33,18 +36,19 @@ class Filter():
             patient_subframe = dataframe[dataframe["patient_id"] == patient_id]
             if not 1 in patient_subframe["ards"].values:
                 if not (patient_subframe[dataframe["horovitz"] < 200]).empty:
-                    if not 1 in patient_subframe["hypervolemia"].values and not 1 in patient_subframe["pulmonary-edema"].values and not 1 in patient_subframe["heart-failure"].values:
+                    if not 1 in patient_subframe["hypervolemia"].values and not 1 in patient_subframe[
+                        "pulmonary-edema"].values and not 1 in patient_subframe["heart-failure"].values:
                         dataframe = dataframe.drop(patient_subframe.index)
         return dataframe
-    
-    def filter_c(self, dataframe):
+
+    @staticmethod
+    def filter_c(dataframe):
         for patient_id in dataframe["patient_id"].unique():
             patient_subframe = dataframe[dataframe["patient_id"] == patient_id]
             if 1 in patient_subframe["ards"].values:
                 if (patient_subframe[dataframe["horovitz"] < 300][dataframe["peep"] >= 5]).empty:
                     dataframe = dataframe.drop(patient_subframe.index)
         return dataframe
-
 
     def set_filter(self, filter_list):
         for filter in filter_list:
