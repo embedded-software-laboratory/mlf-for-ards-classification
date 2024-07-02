@@ -171,6 +171,7 @@ Hier wird festgelegt, wie genau die geladenen Daten in Trainings- und Testdaten 
   - **shuffle**: (True oder False) - hierüber wird angegeben, ob die Daten vor dem Aufteilen gemischt werden sollen.
 - **threshold_optimization_algorithms**: Aufzählung der Algorithmen, die jeweils eine optimale Entscheidungsgrenze ermitteln
 - **evaluation_metrics**: Liste der Namen der Metriken, die während der Evaluation berechnet werden
+- **evaluation_name**: Name unter dem das Evaluationsergebnis angezeigt und abgespeichert werden soll
 
 ## image_model_parameters
 
