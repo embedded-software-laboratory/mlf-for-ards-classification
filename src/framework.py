@@ -1,7 +1,7 @@
 from processing import *
 from ml_models import *
 from metrics import *
-from evaluation import *
+from evaluation import Evaluation
 
 from visualization import plot_eval
 from cli import make_parser
@@ -29,7 +29,7 @@ class Framework:
         for model in config["timeseries_models_to_execute"]:
             self.timeseries_models.append(eval(model + "()"))
             self.timeseries_classes.append(eval(model))
-        self.evaluator = Evaluation_Old(self.timeseries_classes, config["evaluation"])
+        #self.evaluator = Evaluation_Old(self.timeseries_classes, config["evaluation"])
         self.image_dl_methods = ["VIT"]
         self.image_models = [VisionTransformer(config["image_model_parameters"], "vit-small-16")]
         self.timeseries_training_data = None
@@ -115,17 +115,18 @@ class Framework:
 
     def evaluate_models(self):
         result = {}
-        if self.process["calculate_evaluation_metrics"]:
-            for model in self.timeseries_models:
-                # for each model, add corresponding dict to results dict
-                result[model.name]["Test set evaluation"] = self.evaluator.evaluate(model, self.timeseries_test_data)
+        for model in self.timeseries_models:
+            evaluator = Evaluation(config=self.config, model=model, dataset_training=self.timeseries_training_data,
+                                   dataset_test=self.timeseries_test_data)
 
-        if self.process["perform_cross_validation"]:
-            for model in self.timeseries_models:
-                cross_validation_results = self.evaluator.perform_cross_validation(self.timeseries_test_data,
-                                                                                   self.outdir)
+            if self.process["calculate_evaluation_metrics"]:
+                # for each model, add corresponding dict to results dict
+                result[model.name]["Test set evaluation"] = evaluator.evaluate(model, self.timeseries_test_data)
+
+            if self.process["perform_cross_validation"]:
+                cross_validation_results = evaluator.cross_validate(self.timeseries_training_data, self.outdir)
                 result[model.name]["crossvalidation"] = cross_validation_results
-        # TODO
+        # TODO write serialization function
         if result:
             print(f"Save results to {self.outdir + 'results.json'}")
             with (open(self.outdir + 'results.json', 'w', encoding='utf-8') as f):
@@ -170,7 +171,8 @@ class Framework:
         if self.process["perform_timeseries_classification"]:
             self.predict(self.timeseries_test_data)
 
-        self.evaluate_models()
+        if self.process["calculate_evaluation_metrics"] or self.process["perform_cross_validation"]:
+            self.evaluate_models()
 
         if self.process["save_models"]:
             self.save_models()
