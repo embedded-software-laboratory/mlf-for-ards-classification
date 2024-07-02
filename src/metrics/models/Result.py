@@ -1,28 +1,34 @@
 from processing.datasets import Dataset
-from models.model_interface import Model
+from ml_models.model_interface import Model
 from metrics.models.Generic_Models import *
 from sklearn.metrics import roc_curve
 from metrics.Metrics import *
 
+from pydantic import BaseModel, ValidationInfo, field_validator
+
 
 class EvaluationInformation:
-    def __init__(self, config, model, dataset_training, dataset_test, model_name):
+    def __init__(self, config, model, dataset_training=None, dataset_test=None):
+
         self.model = model
-        self.storage_location = config['storage_location'] # TODO check what is correct
-        self.dataset_training = dataset_training
-        self.dataset_test = dataset_test
-        self.model_name = model_name
+        self.eval_storage_location = config['storage_location']  # TODO check what is correct
+        self.dataset_training = dataset_training  # TODO replace by representation of dataset
+        self.dataset_test = dataset_test  # TODO replace by representation of dataset
+        self.model_name = model.name
+        self.eval_name = config['evaluation']['eval_name']
+        self.cross_validation_performed = config["process"]["perform_cross_validation"]
+        self.evaluation_performed = config["process"]["calculate_evaluation_metrics"]
+        if self.cross_validation_performed:
 
-
-        if config["process"]["perform_cross_validation"]:
             self.n_splits = config["evaluation"]["cross_validation"]["n_splits"]
             self.shuffle = config["evaluation"]["cross_validation"]["shuffle"]
+            self.random_state = config["evaluation"]["cross_validation"]["random_state"]
         else:
             self.n_splits = 0
 
         self.model_has_proba = model.has_predict_proba()
         self.requested_metrics = config["evaluation_metrics"]
-        self.contained_metrics = []
+        self.contained_metrics = []  # TODO check how to communicate incompatible metrics
         for metric in self.requested_metrics:
             if not eval(metric + "().needs_probabilities()"):
                 self.contained_metrics.append(metric)
@@ -44,23 +50,69 @@ class Result(BaseModel):
     result_name: str
     storage_location: str
 
-    training_dataset: Dataset
-    test_dataset: Dataset
+    training_dataset: Dataset = None  # TODO add data set information
+    test_dataset: Dataset = None  # TODO add data set information
 
     used_model_type: Model
     used_model_name: str = None
-    contained_optimizers: GenericThresholdOptimization
+    contained_optimizers: dict[str, GenericThresholdOptimization]
+
+    crossvalidation_performed: bool
+    crossvalidation_random_state: int = None
+    crossvalidation_shuffle: bool = None
+    crossvalidation_splits: int = None
+    evaluation_performed: bool
+
+    @field_validator('crossvalidation_random_state', 'crossvalidation_splits')
+    @classmethod
+    def check_crossvalidation_settings_int(cls, v: int, info: ValidationInfo):
+        if info.data['crossvalidation_performed']:
+            if isinstance(v, int):
+                assert v is not None, f'{info.field_name} must be set if crossvalidation_performed is set to True'
+                assert v >= 0, f'{info.field_name} must be greater than zero if crossvalidation_performed is set to False'
+        return v
+
+    @field_validator('crossvalidation_shuffle', )
+    @classmethod
+    def check_crossvalidation_shuffle_settings_bool(cls, v: bool, info: ValidationInfo):
+        if info.data['crossvalidation_performed']:
+            if isinstance(v, bool):
+                assert v is not None, f'{info.field_name} must be set if crossvalidation_performed is set to True'
+        return v
 
 
 class ResultFactory:
-
-    def factory_method(self, optimizer_list: list[GenericThresholdOptimization], evaluation: EvaluationInformation) \
+    @staticmethod
+    def factory_method(evaluation: EvaluationInformation, optimizer_list: list[GenericThresholdOptimization]) \
             -> Result:
-        return Result()
+        result_name = evaluation.eval_name
+        used_model_name = evaluation.model_name
+        used_model_type = evaluation.model
+        cross_validation_performed = evaluation.cross_validation_performed
+        n_splits = None
+        shuffle = None
+        random_state = None
+        if cross_validation_performed:
+            n_splits = evaluation.n_splits
+            shuffle = evaluation.shuffle
+            random_state = evaluation.random_state
+        evaluation_performed = evaluation.evaluation_performed
+        dict_optimizer = {}
+        for optimizer in optimizer_list:
+            dict_optimizer[optimizer.name] = optimizer
+        storage_location = evaluation.eval_storage_location
+
+        return Result(result_name=result_name, storage_location=storage_location,
+                      training_dataset=evaluation.dataset_training, test_dataset=evaluation.dataset_test,
+                      used_model_type=used_model_type, used_model_name=used_model_name,
+                      contained_optimizers=dict_optimizer, crossvalidation_performed=cross_validation_performed,
+                      cross_validation_random_state=random_state, cross_validation_shuffle=shuffle,
+                      cross_validation_splints=n_splits, evaluation_performed=evaluation_performed)
 
 
 class SplitFactory:
-    def factory_method(self, evaluation: EvaluationInformation, split_name: str, optimizer_name: str) -> GenericSplit:
+    @staticmethod
+    def factory_method(evaluation: EvaluationInformation, split_name: str, optimizer_name: str) -> GenericSplit:
         contained_metrics_dict = {}
         metric_information = {"prediction_probs": evaluation.predicted_probas,
                               "prediction_labels": evaluation.predicted_labels,
@@ -87,7 +139,8 @@ class SplitFactory:
 
 
 class MeanSplitFactory:
-    def factory_method(self, splits: list[GenericSplit]) -> GenericSplit:
+    @staticmethod
+    def factory_method(splits: list[GenericSplit]) -> GenericSplit:
         metric_dict = {}
 
         for split in splits:
@@ -96,14 +149,15 @@ class MeanSplitFactory:
                     metric_dict[metric.name] = [metric]
                 else:
                     metric_dict[metric.name].append(metric)
-        for metric_name, metric_list in metric_dict.items():
+        for metric_name, metric_list in metric_dict.items:
             average_metric = eval("metric_list[0].metric_spec().calculate_metric_mean(metric_list)")
             metric_dict[metric_name] = average_metric
         return GenericSplit(split_name="mean", contained_metrics=metric_dict)
 
 
 class OptimizerFactory:
-    def factory_method(self, splits: list[GenericSplit], optimizer_name) -> GenericThresholdOptimization:
+    @staticmethod
+    def factory_method(splits: list[GenericSplit], optimizer_name) -> GenericThresholdOptimization:
         contained_splits = {}
         for split in splits:
             contained_splits[split.split_name] = split
