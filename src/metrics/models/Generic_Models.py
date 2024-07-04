@@ -8,12 +8,12 @@ from pydantic import BaseModel
 
 class GenericSplit(BaseModel):
     split_name: str
-    contained_optimization: dict[GenericMetric]
+    contained_optimization: dict[str, GenericMetric]
 
 
 class GenericThresholdOptimization(BaseModel):
     optimization_name: str
-    contained_metrics: dict[GenericSplit]
+    contained_metrics: dict[str, GenericSplit]
 
 
 class GenericMetric(BaseModel):
