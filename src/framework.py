@@ -131,7 +131,7 @@ class Framework:
             print(f"Save results to {self.outdir + 'results.json'}")
             with (open(self.outdir + 'results.json', 'w', encoding='utf-8') as f):
                 json.dump(result, f, ensure_ascii=False, indent=4)
-                plot_eval(data=result, file_name=f.name)
+                #plot_eval(data=result, file_name=f.name)
 
     def save_models(self):
         if not os.path.isdir(self.outdir):
