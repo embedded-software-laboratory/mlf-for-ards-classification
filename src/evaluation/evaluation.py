@@ -2,7 +2,6 @@ from datetime import datetime
 
 from sklearn.metrics import accuracy_score, auc, confusion_matrix, f1_score, matthews_corrcoef, roc_curve, make_scorer
 from sklearn.model_selection import StratifiedKFold
-from metrics import *
 from metrics.models.Result import *
 
 import os
