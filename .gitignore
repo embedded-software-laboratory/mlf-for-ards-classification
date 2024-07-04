@@ -5,3 +5,4 @@ Runscripts
 .mamba
 .tmp
 .idea
+*.ipynb_checkpoints/

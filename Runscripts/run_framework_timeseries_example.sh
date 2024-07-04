@@ -26,5 +26,5 @@ module load GCCcore/.12.2.0
 export CONDA_ROOT=$HOME/miniconda3
 . $CONDA_ROOT/etc/profile.d/conda.sh
 export PATH="$CONDA_ROOT/bin:$PATH"
-conda activate ai
+conda activate mlp_framework
 python main.py
