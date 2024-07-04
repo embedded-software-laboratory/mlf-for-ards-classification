@@ -1,6 +1,5 @@
 from processing import *
 from ml_models import *
-from metrics import *
 from evaluation import Evaluation
 
 from visualization import plot_eval
