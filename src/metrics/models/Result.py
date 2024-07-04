@@ -50,8 +50,8 @@ class Result(BaseModel):
     result_name: str
     storage_location: str
 
-    training_dataset: Dataset = None  # TODO add data set information
-    test_dataset: Dataset = None  # TODO add data set information
+    training_dataset: object = None  # TODO add data set information
+    test_dataset: object = None  # TODO add data set information
 
     used_model_type: Model
     used_model_name: str = None
