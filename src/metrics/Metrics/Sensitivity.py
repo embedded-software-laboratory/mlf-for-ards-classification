@@ -1,4 +1,3 @@
-from metrics import GenericMetric
 from metrics.models.Generic_Models import *
 from metrics.Metrics.IMetricSpec import IFloatMetricSpec
 from sklearn.metrics import confusion_matrix
