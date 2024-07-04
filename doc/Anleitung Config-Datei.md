@@ -172,4 +172,21 @@ Hier können einige Einstellungen für die Kreuzvalidierung vorgenommen werden.
 ## image_model_parameters
 
 Hier können einige Parameter definieren, die den Trainingsprozess für die Bilddatenmodelle steuern. 
-- **method**: 
+- **method**: Hier wird eingestellt, welche Schichten des ursprünglichen Modells (vor dem Transfer auf das neue Problem; beim Transfer Learning werden diese Schichten eingefroren und neue Schichten dem Modell hinzugefügt) für ein finales Fine-Tuning "entfroren" werden sollen. Zur Auswahl stehen:
+	- *model*: Das ganze Modell wird entfroren
+	- *last_block*: Der letzte Block wird entfroren
+	- *classifier*: Die Schicht des Klassifizierers wird entfroren.
+- **mode**: Hiermit wird ausgewählt, ob die ursprünglichen oder die augmentierten Datensätze für das Training und das Testen verwendet werden sollen.
+	- *mode1": Nicht-augmentierte Datensätze
+	- *mode2": Nicht-augmentiertes Training, augmentiertes Testen
+	- *mode3": Augmentiertes Training, nicht-augmentiertes Testen
+	- *mode4": Augmentiertes Training und Testen
+- **num_epochs_pneumonia**: Anzahl der Trainingsdurchläufe für das Pneumonie-Modell
+- **num_epochs_ards**: Anzahl der Trainingsdurchläufe für das ARDS-Modell
+- **batch_size_pneumonia**: Anzahl der Batches, in die der Trainingsdatensatz für das Pneumonie-Modell für einen einzigen Trainingsdurchlauf aufgeteilt wird
+- **batch_size_ards**: Anzahl der Batches, in die der Trainingsdatensatz für das ARDS-Modell für einen einzigen Trainingsdurchlauf aufgeteilt wird
+- **SEED_pneumonia**: Für verschiedene beim Training des Pneumonie-Modells verwendete Zufallsfunktionen manuell festgelegter Seed, um Reproduzierbarkeit sicherzustellen
+- **SEED_ards**: Für verschiedene beim Training des ARDS-Modells verwendete Zufallsfunktionen manuell festgelegter Seed, um Reproduzierbarkeit sicherzustellen
+- **learning_rate**: Lernrate (Hyperparameter, der vorgibt, wie stark die Gewichte des Netzwerks beim Trainingsdurchlauf angepasst werden)
+- **k_folds*: Anzahl der Teilmengen, in die die Trainingsdatensätze für die Kreuzvalidierung aufgeteilt werden. 
+-- **path*: Pfad zu den Datensätzen für die Bilddatenmodelle, siehe *image_file_path*
