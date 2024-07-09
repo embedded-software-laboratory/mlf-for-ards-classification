@@ -15,11 +15,12 @@ class Evaluation:
         self.eval_info = EvaluationInformation(config, model)
 
     def evaluate(self, model, test_data) -> Result:
+        feature_data = test_data.loc[:, test_data.columns != 'ards']
         if model.has_predict_proba():
-            self.eval_info.predicted_probas = model.predict_proba(test_data)
+            self.eval_info.predicted_probas = model.predict_proba(feature_data)
 
         else:
-            self.eval_info.prediction_labels = model.predict(test_data)
+            self.eval_info.prediction_labels = model.predict(feature_data)
 
         self.eval_info.true_labels = test_data['ards']
         if self.config["process"]["perform_threshold_optimization"]:
