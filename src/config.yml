@@ -85,7 +85,7 @@ evaluation:
     shuffle: False
     random_state: 42
   threshold_optimization_algorithms: ["Standard", "MaxTPR", "MaxTPRMinFPR", "GeometricRoot"]
-  evaluation_metrics: ["AUC", "Accuracy", "F1", "FPR", "MCC", "OptimalProbability", "Sensitivity", "Specificity", "TPR"]
+  evaluation_metrics: ["AUC", "Accuracy", "F1Score", "FPR", "MCC", "OptimalProbability", "Sensitivity", "Specificity", "TPR"]
   evaluation_name: "Evaluation X"
 
 image_model_parameters:

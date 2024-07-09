@@ -37,7 +37,7 @@ class EvaluationInformation:
                 self.contained_metrics.append(metric)
 
         if self.model_has_proba:
-            self.threshold_optimizers = config["evaluation"]["threshold_optimizers"]
+            self.threshold_optimizers = config["evaluation"]["threshold_optimization_algorithms"]
         else:
             self.threshold_optimizers = ["Standard"]
 
