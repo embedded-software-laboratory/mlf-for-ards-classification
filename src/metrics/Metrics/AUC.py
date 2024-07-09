@@ -9,7 +9,7 @@ class AUC(IFloatMetricSpec):
         predicition_probs = metric_parameters['prediction_probs']
         fpr, tpr, _ = roc_curve(true_label, predicition_probs)
         auc_score = auc(fpr, tpr)
-        return GenericMetric(metric_name="AUC", metric_value=FloatValue(metric_value=auc_score), metric_spec=AUC)
+        return GenericMetric(metric_name="AUC", metric_value=FloatValue(metric_value=auc_score), metric_spec=AUC())
 
     def needs_probabilities(self) -> bool:
         return True

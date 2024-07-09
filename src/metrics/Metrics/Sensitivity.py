@@ -11,7 +11,7 @@ class Sensitivity(IFloatMetricSpec):
 
         return GenericMetric(metric_name="Sensitivity",
                              metric_value=FloatValue(metric_value=(tp / (tp + fn))),
-                             metric_spec=Sensitivity)
+                             metric_spec=Sensitivity())
 
     def needs_probabilities(self) -> bool:
         return False

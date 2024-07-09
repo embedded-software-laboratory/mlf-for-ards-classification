@@ -11,7 +11,7 @@ class Specificity(IFloatMetricSpec):
 
         return GenericMetric(metric_name="Specificity",
                              metric_value=FloatValue(metric_value=(tn / (tn + fp))),
-                             metric_spec=Specificity)
+                             metric_spec=Specificity())
 
     def needs_probabilities(self) -> bool:
         return False

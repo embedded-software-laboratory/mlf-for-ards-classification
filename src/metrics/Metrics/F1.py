@@ -10,7 +10,7 @@ class F1Score(IFloatMetricSpec):
         true_class = metric_params['true_class']
         return GenericMetric(metric_name="F1-Score",
                              metric_value=FloatValue(metric_value=f1_score(predicted_class, true_class)),
-                             metric_spec=F1Score)
+                             metric_spec=F1Score())
 
     def needs_probabilities(self) -> bool:
         return False

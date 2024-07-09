@@ -10,11 +10,9 @@ class OptimalProbability(IFloatMetricSpec):
         threshold = metric_parameters['thresholds']
         calc_func = metric_parameters['calc_func']
         optimal_prob = calc_func(fpr, tpr, threshold)
-        print(type(OptimalProbability))
-        print(isinstance(OptimalProbability(), IFloatMetricSpec))
         return GenericMetric(metric_name="Optimal Decision Threshold",
                              metric_value=FloatValue(metric_value=optimal_prob),
-                             metric_spec=OptimalProbability)
+                             metric_spec=OptimalProbability())
 
     def needs_probabilities(self) -> bool:
         return True

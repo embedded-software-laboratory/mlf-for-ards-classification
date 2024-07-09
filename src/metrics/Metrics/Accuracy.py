@@ -10,7 +10,7 @@ class Accuracy(IFloatMetricSpec):
         true_class = metric_params['true_class']
         return GenericMetric(metric_name="Accuracy",
                              metric_value=FloatValue(metric_value=accuracy_score(true_class, predicted_class)),
-                             metric_spec=Accuracy)
+                             metric_spec=Accuracy())
 
     def needs_probabilities(self) -> bool:
         return False
