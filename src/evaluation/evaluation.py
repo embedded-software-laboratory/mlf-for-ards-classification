@@ -17,7 +17,7 @@ class Evaluation:
     def evaluate(self, model, test_data) -> Result:
         feature_data = test_data.loc[:, test_data.columns != 'ards']
         if model.has_predict_proba():
-            self.eval_info.predicted_probas = model.predict_proba(feature_data)
+            self.eval_info.predicted_probas = model.predict_proba(feature_data)[:, 1]
 
         else:
             self.eval_info.prediction_labels = model.predict(feature_data)
@@ -70,9 +70,7 @@ class Evaluation:
                 model.save(save_path)
 
             if model.has_predict_proba():
-                test = model.predict_proba(predictors_test.assign(ards=labels_test))[:,1]
-                print(test.shape)
-                self.eval_info.predicted_probas = test
+                self.eval_info.predicted_probas = model.predict_proba(predictors_test.assign(ards=labels_test))[:,1]
 
             else:
                 self.eval_info.prediction_labels = model.predict(predictors_test.assign(ards=labels_test))
