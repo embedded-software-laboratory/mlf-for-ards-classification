@@ -1,3 +1,4 @@
+from metrics.ThresholdOptimizer import IThresholdOptimizer
 from metrics.ThresholdOptimizer import GeometricRoot
 from metrics.ThresholdOptimizer import MaxTPR
 from metrics.ThresholdOptimizer import MaxTPRMinFPR

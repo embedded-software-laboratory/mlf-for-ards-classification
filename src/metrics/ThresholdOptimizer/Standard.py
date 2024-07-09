@@ -1,5 +1,5 @@
 from metrics import *
-from IThresholdOptimizer import IThresholdOptimizer
+from metrics.ThresholdOptimizer.IThresholdOptimizer import IThresholdOptimizer
 
 
 class StandardOptimizer(IThresholdOptimizer):

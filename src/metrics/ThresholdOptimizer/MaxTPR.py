@@ -1,6 +1,6 @@
 import numpy as np
 
-from IThresholdOptimizer import IThresholdOptimizer
+from metrics.ThresholdOptimizer.IThresholdOptimizer import IThresholdOptimizer
 
 
 class MaxTPR(IThresholdOptimizer):

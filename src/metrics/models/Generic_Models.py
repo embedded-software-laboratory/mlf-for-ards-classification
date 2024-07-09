@@ -20,7 +20,9 @@ class GenericMetric(BaseModel):
     metric_name: str
     metric_value: GenericValue
     metric_spec: IMetricSpec
-
+    
+    class Config:
+        arbitrary_types_allowed = True
 
 class GenericValue(BaseModel):
     metric_value: Union[ListValue, IntValue, FloatValue, StringValue]
