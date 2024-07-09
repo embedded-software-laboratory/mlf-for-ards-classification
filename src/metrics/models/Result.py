@@ -129,7 +129,7 @@ class SplitFactory:
             metric_information["tpr"] = tpr
             metric_information["thresholds"] = thresholds
             optimal_threshold = OptimalProbability().calculate_metric(metric_information)
-            prediction_labels = (evaluation.predicted_probas[:, 1] > optimal_threshold).astype(int)
+            prediction_labels = (evaluation.predicted_probas > optimal_threshold).astype(int)
         else:
             prediction_labels = evaluation.predicted_labels
         metric_information["prediction_labels"] = prediction_labels
