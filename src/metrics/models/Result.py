@@ -4,7 +4,7 @@ from metrics.models.Generic_Models import *
 from sklearn.metrics import roc_curve
 from metrics.Metrics import *
 
-from pydantic import BaseModel, ValidationInfo, field_validator
+from pydantic import BaseModel, ValidationInfo, field_validator, ConfigDict
 
 
 class EvaluationInformation:
@@ -47,6 +47,8 @@ class EvaluationInformation:
 
 
 class Result(BaseModel):
+    class Config:
+        arbitrary_types_allowed = True
     result_name: str
     storage_location: str
 
