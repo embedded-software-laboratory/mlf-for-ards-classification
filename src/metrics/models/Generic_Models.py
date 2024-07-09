@@ -20,12 +20,19 @@ class GenericMetric(BaseModel):
     metric_name: str
     metric_value: GenericValue
     metric_spec: IMetricSpec
-    
+
+    def __lt__(self, other):
+        return self.metric_value < other
+
     class Config:
         arbitrary_types_allowed = True
 
+
 class GenericValue(BaseModel):
     metric_value: Union[ListValue, IntValue, FloatValue, StringValue]
+
+    def __lt__(self, other):
+        return self.metric_value < other
 
 
 class ListValue(GenericValue):
