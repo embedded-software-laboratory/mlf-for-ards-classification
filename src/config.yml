@@ -1,10 +1,10 @@
 process:
   load_models: False
   load_timeseries_data: True
-  perform_imputation: True
-  perform_unit_conversion: True
+  perform_imputation: False
+  perform_unit_conversion: False
   calculate_missing_params: False
-  perform_ards_onset_detection: True
+  perform_ards_onset_detection: False
   perform_filtering: False
   perform_feature_selection: False
   perform_data_segregation: True 
@@ -39,7 +39,7 @@ storage_path: "Save/Result"
 
 
 data:
-  timeseries_file_path: "/hpcwork/rwth1474/Data/time_series/uka_data_050623.npy"
+  timeseries_file_path: "./Save/Result/uka_data_050623_preprocessed.csv" #"/hpcwork/rwth1474/Data/time_series/uka_data_050623.npy"
   database: "UKA"
   image_file_path: "Data/Image_data"
   pneumonia_dataset: "balanced"

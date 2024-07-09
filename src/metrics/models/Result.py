@@ -3,6 +3,7 @@ from ml_models.model_interface import Model
 from metrics.models.Generic_Models import *
 from sklearn.metrics import roc_curve
 from metrics.Metrics import *
+from metrics.ThresholdOptimizer import GeometricRoot, MaxTPR, MaxTPRMinFPR, Standard
 
 from pydantic import BaseModel, ValidationInfo, field_validator, ConfigDict
 
@@ -116,10 +117,11 @@ class SplitFactory:
     @staticmethod
     def factory_method(evaluation: EvaluationInformation, split_name: str, optimizer_name: str) -> GenericSplit:
         contained_metrics_dict = {}
+        optimizer = eval(optimizer_name + "()")
         metric_information = {"prediction_probs": evaluation.predicted_probas,
                               "prediction_labels": evaluation.predicted_labels,
                               "true_labels": evaluation.true_labels,
-                              "calc_func": eval(optimizer_name + "().calculate_optimal_threshold")}
+                              "calc_func": optimizer.calculate_optimal_threshold}
 
         if evaluation.model_has_proba:
             fpr, tpr, thresholds = roc_curve(evaluation.true_labels, evaluation.predicted_probas)
