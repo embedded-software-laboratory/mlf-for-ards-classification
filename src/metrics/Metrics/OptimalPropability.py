@@ -7,7 +7,7 @@ class OptimalProbability(IFloatMetricSpec):
 
         fpr = metric_parameters['fpr']
         tpr = metric_parameters['tpr']
-        threshold = metric_parameters['threshold']
+        threshold = metric_parameters['thresholds']
         calc_func = metric_parameters['calc_func']
         optimal_prob = calc_func(fpr, tpr, threshold)
 
