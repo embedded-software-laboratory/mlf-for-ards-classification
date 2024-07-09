@@ -33,7 +33,7 @@ loading_paths:
   Bayesian Net: "Save/Cross validation results/Bayesian Net_3"
   Recurrent Neural Network: "Save/Cross validation results/Recurrent neural network_1"
 
-storage_path: ""
+storage_path: "Save/Result"
 
 
 
@@ -85,7 +85,7 @@ evaluation:
     shuffle: False
     random_state: 42
   threshold_optimization_algorithms: ["Standard", "MaxTPR", "MaxTPRMinFPR", "GeometricRoot"]
-  evaluation_metrics: [""]
+  evaluation_metrics: ["AUC", "Accuracy", "F1", "FPR", "MCC", "OptimalProbability", "Sensitivity", "Specificity", "TPR"]
   evaluation_name: "Evaluation X"
 
 image_model_parameters:
