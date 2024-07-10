@@ -119,7 +119,7 @@ class SplitFactory:
         contained_metrics_dict = {}
         optimizer = eval(optimizer_name + "()")
         metric_information = {"prediction_probs": evaluation.predicted_probas,
-                              "prediction_labels": evaluation.predicted_labels,
+                              "predicted_label": evaluation.predicted_labels,
                               "true_labels": evaluation.true_labels,
                               "calc_func": optimizer.calculate_optimal_threshold}
 

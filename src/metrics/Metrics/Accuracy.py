@@ -6,7 +6,7 @@ from sklearn.metrics import accuracy_score
 class Accuracy(IFloatMetricSpec):
 
     def calculate_metric(self, metric_params: dict) -> GenericMetric:
-        predicted_class = metric_params['predicted_class']
+        predicted_class = metric_params['predicted_label']
         true_class = metric_params['true_labels']
         return GenericMetric(metric_name="Accuracy",
                              metric_value=FloatValue(metric_value=accuracy_score(true_class, predicted_class)),

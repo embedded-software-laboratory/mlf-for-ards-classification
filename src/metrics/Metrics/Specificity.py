@@ -5,7 +5,7 @@ from sklearn.metrics import confusion_matrix
 
 class Specificity(IFloatMetricSpec):
     def calculate_metric(self, metric_parameters: dict) -> GenericMetric:
-        prediction_labels = metric_parameters['prediction_labels']
+        prediction_labels = metric_parameters['predicted_label']
         true_labels = metric_parameters['true_labels']
         tn, fp, fn, tp = confusion_matrix(true_labels, prediction_labels).ravel()
 
