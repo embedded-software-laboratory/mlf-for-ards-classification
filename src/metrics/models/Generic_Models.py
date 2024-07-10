@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Callable, Union
 import numpy as np
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationInfo, field_validator
 
 
 class GenericSplit(BaseModel):
@@ -20,6 +20,13 @@ class GenericMetric(BaseModel):
     metric_name: str
     metric_value: GenericValue
     metric_spec: IMetricSpec
+
+    @field_validator('metric_spec')
+    @classmethod
+    def metric_spec_validator(cls, v):
+        if isinstance(v, IMetricSpec):
+            return v
+        return v
 
     def __lt__(self, other):
         return self.metric_value < other
