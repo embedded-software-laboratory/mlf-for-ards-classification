@@ -19,6 +19,7 @@ class IFloatMetricSpec(IMetricSpec):
         super().__init__()
         self.metric_spec = IFloatMetricSpec
         self.metric_type = GenericMetric
+
     def calculate_metric(self, metric_parameters: dict) -> GenericMetric:
         raise NotImplementedError
 
@@ -51,4 +52,3 @@ class IListMetricSpec(IMetricSpec):
         average_value = ListValue(metric_value=["Mean calculation makes no sense here"])
         return GenericMetric(metric_name=metric_list[0].metric_name, metric_value=average_value,
                              metric_spec=metric_list[0].metric_spec)
-

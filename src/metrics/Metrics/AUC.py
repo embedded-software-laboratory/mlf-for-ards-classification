@@ -5,7 +5,7 @@ from sklearn.metrics import roc_curve, auc
 
 class AUC(IFloatMetricSpec):
     def calculate_metric(self, metric_parameters: dict) -> GenericMetric:
-        true_label = metric_parameters['true_label']
+        true_label = metric_parameters['true_labels']
         predicition_probs = metric_parameters['prediction_probs']
         fpr, tpr, _ = roc_curve(true_label, predicition_probs)
         auc_score = auc(fpr, tpr)
