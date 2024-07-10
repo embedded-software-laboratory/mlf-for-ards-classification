@@ -20,7 +20,7 @@ class Evaluation:
             self.eval_info.predicted_probas = model.predict_proba(feature_data)[:, 1]
 
         else:
-            self.eval_info.prediction_labels = model.predict(feature_data)
+            self.eval_info.predicted_labels = model.predict(feature_data)
 
         self.eval_info.true_labels = test_data['ards']
         if self.config["process"]["perform_threshold_optimization"]:

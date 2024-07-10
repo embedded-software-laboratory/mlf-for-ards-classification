@@ -132,7 +132,7 @@ class SplitFactory:
             prediction_labels = (evaluation.predicted_probas > optimal_threshold).astype(int)
         else:
             prediction_labels = evaluation.predicted_labels
-        metric_information["prediction_labels"] = prediction_labels
+        metric_information["predicted_label"] = prediction_labels
         metric_information["true_labels"] = evaluation.true_labels
 
         for metric in evaluation.contained_metrics:
