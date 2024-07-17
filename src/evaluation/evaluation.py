@@ -73,10 +73,10 @@ class Evaluation:
                 model.save(save_path)
 
             if model.has_predict_proba():
-                self.eval_info.predicted_probas = model.predict_proba(predictors_test.assign(ards=labels_test))[:,1]
+                self.eval_info.predicted_probas = model.predict_proba(predictors_test)[:,1]
 
             else:
-                self.eval_info.prediction_labels = model.predict(predictors_test.assign(ards=labels_test))
+                self.eval_info.prediction_labels = model.predict(predictors_test)
 
             self.eval_info.true_labels = labels_test
 
