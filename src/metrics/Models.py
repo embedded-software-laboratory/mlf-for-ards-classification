@@ -23,13 +23,6 @@ class GenericMetric(BaseModel):
     metric_value: GenericValue
     metric_spec: IMetricSpec
 
-    @field_validator('metric_spec')
-    @classmethod
-    def metric_spec_validator(cls, v):
-        print(type(v))
-        print(isinstance(v, FloatMetricSpec))
-        assert isinstance(v, IMetricSpec)
-        return v
 
     def __lt__(self, other):
         return self.metric_value < other
