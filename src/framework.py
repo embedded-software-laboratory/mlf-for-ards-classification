@@ -115,16 +115,19 @@ class Framework:
     def evaluate_models(self):
         result = {}
         for model in self.timeseries_models:
+            model_result = {}
             evaluator = Evaluation(config=self.config, model=model, dataset_training=self.timeseries_training_data,
                                    dataset_test=self.timeseries_test_data)
 
             if self.process["calculate_evaluation_metrics"]:
                 # for each model, add corresponding dict to results dict
-                result[model.name]["Test set evaluation"] = evaluator.evaluate(model, self.timeseries_test_data)
+
+                model_result["Test_set_evaluation"] = evaluator.evaluate(model, self.timeseries_test_data)
 
             if self.process["perform_cross_validation"]:
                 cross_validation_results = evaluator.cross_validate(self.timeseries_training_data, self.outdir)
-                result[model.name]["crossvalidation"] = cross_validation_results
+                model_result["Cross_validation"] = cross_validation_results
+            result[model.name] = model_result
         # TODO write serialization function
         if result:
             print(f"Save results to {self.outdir + 'results.json'}")

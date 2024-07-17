@@ -7,6 +7,7 @@ from metrics.Metrics import *
 
 from sklearn.metrics import roc_curve
 
+
 class ResultFactory:
     @staticmethod
     def factory_method(evaluation: EvaluationInformation, optimizer_list: list[GenericThresholdOptimization]) \
