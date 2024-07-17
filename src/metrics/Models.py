@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Union
-import numpy as np
+from pydantic import BaseModel, ValidationInfo, field_validator, ConfigDict
 
-from pydantic import BaseModel, ValidationInfo, field_validator
+
+from ml_models.model_interface import Model
+
+from typing import Any, Callable, Union
 
 
 class GenericSplit(BaseModel):
@@ -24,9 +26,9 @@ class GenericMetric(BaseModel):
     @field_validator('metric_spec')
     @classmethod
     def metric_spec_validator(cls, v):
-        print(issubclass(v, IFloatMetricSpec))
+        print(issubclass(v, FloatMetricSpec))
         print(type(v))
-        print(isinstance(v, IFloatMetricSpec))
+        print(isinstance(v, FloatMetricSpec))
         assert isinstance(v, IMetricSpec)
         return v
 
@@ -60,6 +62,44 @@ class StringValue(GenericValue):
     metric_value: str
 
 
+class Result(BaseModel):
+    class Config:
+        arbitrary_types_allowed = True
+
+    result_name: str
+    storage_location: str
+
+    training_dataset: object = None  # TODO add data set information
+    test_dataset: object = None  # TODO add data set information
+
+    used_model_type: Model
+    used_model_name: str = None
+    contained_optimizers: dict[str, GenericThresholdOptimization]
+
+    crossvalidation_performed: bool
+    crossvalidation_random_state: int = None
+    crossvalidation_shuffle: bool = None
+    crossvalidation_splits: int = None
+    evaluation_performed: bool
+
+    @field_validator('crossvalidation_random_state', 'crossvalidation_splits')
+    @classmethod
+    def check_crossvalidation_settings_int(cls, v: int, info: ValidationInfo):
+        if info.data['crossvalidation_performed']:
+            if isinstance(v, int):
+                assert v is not None, f'{info.field_name} must be set if crossvalidation_performed is set to True'
+                assert v >= 0, f'{info.field_name} must be greater than zero if crossvalidation_performed is set to False'
+        return v
+
+    @field_validator('crossvalidation_shuffle', )
+    @classmethod
+    def check_crossvalidation_shuffle_settings_bool(cls, v: bool, info: ValidationInfo):
+        if info.data['crossvalidation_performed']:
+            if isinstance(v, bool):
+                assert v is not None, f'{info.field_name} must be set if crossvalidation_performed is set to True'
+        return v
+
+
 class IMetricSpec:
 
     def calculate_metric(self, metric_parameters: dict) -> GenericValue:
@@ -72,11 +112,11 @@ class IMetricSpec:
         raise NotImplementedError
 
 
-class IFloatMetricSpec(IMetricSpec):
+class FloatMetricSpec(IMetricSpec):
 
     def __init__(self):
         super().__init__()
-        self.metric_spec = IFloatMetricSpec
+        self.metric_spec = FloatMetricSpec
         self.metric_type = GenericMetric
 
     def calculate_metric(self, metric_parameters: dict) -> FloatValue:
@@ -89,7 +129,7 @@ class IFloatMetricSpec(IMetricSpec):
         return FloatValue(metric_value=metric_value_sum / len(average_parameters))
 
 
-class IIntMetricSpec(IMetricSpec):
+class IntMetricSpec(IMetricSpec):
     def calculate_metric(self, metric_parameters: dict) -> IntValue:
         raise NotImplementedError
 
@@ -100,9 +140,10 @@ class IIntMetricSpec(IMetricSpec):
         return FloatValue(metric_value=metric_value_sum / len(average_parameters))
 
 
-class IListMetricSpec(IMetricSpec):
+class ListMetricSpec(IMetricSpec):
     def calculate_metric(self, metric_parameters: dict) -> ListValue:
         raise NotImplementedError
 
     def calculate_metric_mean(self, average_parameters: dict) -> ListValue:
         return ListValue(metric_value=["Mean calculation makes no sense"])
+

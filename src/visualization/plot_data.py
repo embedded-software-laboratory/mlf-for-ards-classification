@@ -4,7 +4,7 @@ import sys
 import sklearn.metrics as metrics
 import matplotlib.pyplot as plt
 import numpy as np
-from metrics.models.Result import Result
+from metrics.Models import Result
 
 
 def load_json(file_path: str):
