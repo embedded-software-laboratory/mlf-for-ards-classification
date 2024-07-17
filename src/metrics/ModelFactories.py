@@ -26,7 +26,7 @@ class ResultFactory:
         evaluation_performed = evaluation.evaluation_performed
         dict_optimizer = {}
         for optimizer in optimizer_list:
-            dict_optimizer[optimizer.name] = optimizer
+            dict_optimizer[optimizer.optimization_name] = optimizer
         storage_location = evaluation.eval_storage_location
 
         return Result(result_name=result_name, storage_location=storage_location,
@@ -89,4 +89,4 @@ class OptimizerFactory:
         contained_splits = {}
         for split in splits:
             contained_splits[split.split_name] = split
-        return GenericThresholdOptimization(contained_splits=contained_splits, optimizer_name=optimizer_name)
+        return GenericThresholdOptimization(contained_splits=contained_splits, optimization_name=optimizer_name)
