@@ -114,10 +114,10 @@ class FloatMetricSpec(IMetricSpec):
     def calculate_metric(self, metric_parameters: dict) -> FloatValue:
         raise NotImplementedError
 
-    def calculate_metric_mean(self, average_parameters: dict) -> FloatValue:
+    def calculate_metric_mean(self, average_parameters: list) -> FloatValue:
         metric_value_sum = 0.0
-        for _, value in average_parameters.items():
-            metric_value_sum += value
+        for value in average_parameters:
+            metric_value_sum += value.metric_value.metric_value
         return FloatValue(metric_value=metric_value_sum / len(average_parameters))
 
 
@@ -125,10 +125,10 @@ class IntMetricSpec(IMetricSpec):
     def calculate_metric(self, metric_parameters: dict) -> IntValue:
         raise NotImplementedError
 
-    def calculate_metric_mean(self, average_parameters: dict) -> FloatValue:
-        metric_value_sum = 0.0
-        for _, value in average_parameters.items():
-            metric_value_sum += value
+    def calculate_metric_mean(self, average_parameters: list) -> FloatValue:
+        metric_value_sum = 0
+        for value in average_parameters:
+            metric_value_sum += value.metric_value.metric_value
         return FloatValue(metric_value=metric_value_sum / len(average_parameters))
 
 
@@ -136,6 +136,6 @@ class ListMetricSpec(IMetricSpec):
     def calculate_metric(self, metric_parameters: dict) -> ListValue:
         raise NotImplementedError
 
-    def calculate_metric_mean(self, average_parameters: dict) -> ListValue:
+    def calculate_metric_mean(self, average_parameters: list) -> ListValue:
         return ListValue(metric_value=["Mean calculation makes no sense"])
 
