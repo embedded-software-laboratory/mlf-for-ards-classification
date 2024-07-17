@@ -125,7 +125,7 @@ class Framework:
                 model_result["Test_set_evaluation"] = evaluator.evaluate(model, self.timeseries_test_data)
 
             if self.process["perform_cross_validation"]:
-                cross_validation_results = evaluator.cross_validate(self.timeseries_training_data, self.outdir)
+                cross_validation_results = evaluator.cross_validate(model, self.timeseries_training_data)
                 model_result["Cross_validation"] = cross_validation_results
             result[model.name] = model_result
         # TODO write serialization function
