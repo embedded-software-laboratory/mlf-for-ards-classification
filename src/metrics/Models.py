@@ -10,12 +10,12 @@ from typing import Any, Callable, Union
 
 class GenericSplit(BaseModel):
     split_name: str
-    contained_optimization: dict[str, GenericMetric]
+    contained_metrics: dict[str, GenericMetric]
 
 
 class GenericThresholdOptimization(BaseModel):
     optimization_name: str
-    contained_metrics: dict[str, GenericSplit]
+    contained_splits: dict[str, GenericSplit]
 
 
 class GenericMetric(BaseModel):
