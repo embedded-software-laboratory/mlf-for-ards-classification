@@ -26,7 +26,6 @@ class GenericMetric(BaseModel):
     @field_validator('metric_spec')
     @classmethod
     def metric_spec_validator(cls, v):
-        print(issubclass(v, FloatMetricSpec))
         print(type(v))
         print(isinstance(v, FloatMetricSpec))
         assert isinstance(v, IMetricSpec)

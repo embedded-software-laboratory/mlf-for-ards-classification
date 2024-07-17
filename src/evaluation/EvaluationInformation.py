@@ -1,5 +1,5 @@
 from ml_models.model_interface import Model
-
+from metrics.Metrics import *
 
 class EvaluationInformation:
     def __init__(self, config, model: Model, dataset_training=None, dataset_test=None):

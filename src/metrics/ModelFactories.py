@@ -2,6 +2,9 @@ from evaluation.EvaluationInformation import EvaluationInformation
 from metrics.Models import GenericThresholdOptimization, Result, GenericSplit
 from metrics.Metrics import OptimalProbability
 
+from metrics.ThresholdOptimizer import *
+from metrics.Metrics import *
+
 from sklearn.metrics import roc_curve
 
 class ResultFactory:
