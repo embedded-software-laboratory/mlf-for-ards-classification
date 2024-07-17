@@ -72,13 +72,14 @@ class MeanSplitFactory:
         metric_dict = {}
 
         for split in splits:
-            for metric in split.contained_metrics:
-                if metric.name not in metric_dict:
-                    metric_dict[metric.name] = [metric]
+            for _, metric in split.contained_metrics.items():
+                if metric.metric_name not in metric_dict:
+                    metric_dict[metric.metric_name] = [metric]
                 else:
-                    metric_dict[metric.name].append(metric)
-        for metric_name, metric_list in metric_dict.items:
-            average_metric = eval("metric_list[0].metric_spec().calculate_metric_mean(metric_list)")
+                    metric_dict[metric.metric_name].append(metric)
+        for metric_name, metric_list in metric_dict.items():
+            metric = eval("metric_list[0].metric_spec()")
+            average_metric = metric.calculate_metric_mean(metric_list)
             metric_dict[metric_name] = average_metric
         return GenericSplit(split_name="mean", contained_metrics=metric_dict)
 
