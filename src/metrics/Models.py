@@ -94,7 +94,6 @@ class Result(BaseModel):
 
     # TODO read model when reading model from json
     @field_serializer('used_model_type', when_used='json')
-    @abstractmethod
     def serialize_model(self) -> str:
         return self.used_model_type.storage_location
 
