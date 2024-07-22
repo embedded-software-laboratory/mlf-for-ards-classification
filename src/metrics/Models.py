@@ -10,7 +10,8 @@ from typing import Any, Callable, Union
 
 class GenericSplit(BaseModel):
     split_name: str
-    contained_metrics: dict[str, GenericMetric]
+    contained_metrics: dict
+    
 
 
 class GenericThresholdOptimization(BaseModel):

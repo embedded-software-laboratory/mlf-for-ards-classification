@@ -82,7 +82,7 @@ data_segregation:
 evaluation:
   cross_validation:
     n_splits: 4
-    shuffle: False
+    shuffle: True
     random_state: 42
   threshold_optimization_algorithms: ["Standard", "MaxTPR", "MaxTPRMinFPR", "GeometricRoot"]
   evaluation_metrics: ["AUC", "Accuracy", "F1Score", "FPR", "MCC", "OptimalProbability", "Sensitivity", "Specificity", "TPR"]
