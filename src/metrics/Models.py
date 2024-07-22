@@ -92,6 +92,12 @@ class Result(BaseModel):
                 assert v is not None, f'{info.field_name} must be set if crossvalidation_performed is set to True'
         return v
 
+    # TODO read model when reading model from json
+    @field_serializer('used_model_type', when_used='json')
+    @abstractmethod
+    def serialize_model(self) -> str:
+        return self.used_model_type.storage_location
+
 
 class IMetricSpec:
 
