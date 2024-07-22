@@ -30,3 +30,13 @@ class AdaBoost(Model):
     def load(self, filepath):
         with open(filepath + ".pkl", 'rb') as f:
             self.model = pickle.load(f)
+
+    @property
+    def storage_location(self):
+        return self.storage_location
+
+    @storage_location.setter
+    def storage_location(self, location):
+        self.storage_location = location
+
+

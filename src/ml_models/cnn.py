@@ -431,4 +431,12 @@ class CNN(ImageModel):
 
     def has_predict_proba(self):
         return False
+
+    @property
+    def storage_location(self):
+        return self.storage_location
+
+    @storage_location.setter
+    def storage_location(self, location):
+        self.storage_location = location
             

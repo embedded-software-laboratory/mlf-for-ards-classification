@@ -34,6 +34,7 @@ class ImageModel():
         self.auroc = AUROC(task="binary")
 
         self.model = None
+        self.storage_path = None
 
 
 

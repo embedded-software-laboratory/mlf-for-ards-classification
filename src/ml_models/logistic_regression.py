@@ -89,6 +89,14 @@ class Logistic_regression(Model):
             file = open(filepath + ".txt", "rb")
             self.model = pickle.load(file)
 
+    @property
+    def storage_location(self):
+        return self.storage_location
+
+    @storage_location.setter
+    def storage_location(self, location):
+        self.storage_location = location
+
 Logistic_regression().save("../Save/Logistic_regression")
 
     # Laden

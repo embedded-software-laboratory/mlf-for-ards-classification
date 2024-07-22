@@ -4,6 +4,7 @@ class Model:
     def __init__(self):
         self.model = None
         self.name = None
+        self.storage_location = None
 
     def train_model(self, training_data):
         raise NotImplementedError

@@ -108,6 +108,14 @@ class LightGBMModel(Model):
     def has_predict_proba(self):
         return True
 
+    @property
+    def storage_location(self):
+        return self.storage_location
+
+    @storage_location.setter
+    def storage_location(self, location):
+        self.storage_location = location
+
 #LightGBMModel().save("./Save/LightGBMModel")
 
 # Laden
