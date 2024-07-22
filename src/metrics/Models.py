@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pydantic import BaseModel, ValidationInfo, field_validator, ConfigDict
+from pydantic import BaseModel, ValidationInfo, field_validator, ConfigDict, field_serializer
 
 
 from ml_models.model_interface import Model
