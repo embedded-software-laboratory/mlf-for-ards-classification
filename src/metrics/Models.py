@@ -93,9 +93,9 @@ class Result(BaseModel):
         return v
 
     # TODO read model when reading model from json
-    @field_serializer('used_model_type', when_used='json')
-    def serialize_model(self) -> str:
-        return self.used_model_type.storage_location
+    @field_serializer('used_model_type')
+    def serialize_model(used_model_type: Model):
+        return used_model_type.storage_location
 
 
 class IMetricSpec:
