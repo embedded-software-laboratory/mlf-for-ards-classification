@@ -1,5 +1,5 @@
 
-from sklearn.metrics import accuracy_score, auc, confusion_matrix, f1_score, matthews_corrcoef, roc_curve, make_scorer
+from sklearn.metrics import accuracy_score, auc, confusion_matrix, f1_score, matthews_corrcoef, roc_curve, make_scorer, jaccard_score
 from sklearn.model_selection import StratifiedKFold
 
 import os
@@ -20,7 +20,7 @@ class Evaluation:
         
         # Compute evaluation results
         fpr, tpr, auc_score = self._compute_roc_auc(model, predictors, labels) 
-        f1, acc, mcc, sensitivity, specificity = self._compute_metrics(model, predictors, labels)
+        f1, acc, mcc, sensitivity, specificity, jaccard = self._compute_metrics(model, predictors, labels)
 
         # Store results in file
         metric_dict = {
@@ -32,7 +32,7 @@ class Evaluation:
             'spec' : specificity,
             'f1' : f1,
             'mcc' : mcc,
-            'jaccard': 1, # TODO: Actual Jaccard
+            'jaccard': jaccard,
         }
 
         return metric_dict
@@ -54,7 +54,8 @@ class Evaluation:
         mcc = matthews_corrcoef(labels, predictions)
         sensitivity = tp/(tp+fn)
         specificity = tn/(tn+fp)
-        return f1, acc, mcc, sensitivity, specificity
+        jaccard = jaccard_score(labels, predictions)
+        return f1, acc, mcc, sensitivity, specificity, jaccard
     
     def perform_cross_validation(self, data, outdir):
         # dictionary instead of array
