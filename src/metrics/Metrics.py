@@ -1,6 +1,6 @@
-from metrics.Models import GenericValue, GenericMetric, ListValue, FloatValue, StringValue, IntValue
+from metrics.Models import GenericValue,  ListValue, FloatValue, StringValue, IntValue
 from sklearn.metrics import accuracy_score, matthews_corrcoef, confusion_matrix, roc_curve, f1_score, auc
-
+import metrics.Models.GenericMetric as GenericMetric
 from metrics.Models import *
 
 
