@@ -1,6 +1,7 @@
-from metrics.Models import GenericValue,  ListValue, FloatValue, StringValue, IntValue
+import metrics
+from metrics.Models import GenericValue, GenericMetric, ListValue, FloatValue, StringValue, IntValue
 from sklearn.metrics import accuracy_score, matthews_corrcoef, confusion_matrix, roc_curve, f1_score, auc
-import metrics.Models.GenericMetric as GenericMetric
+
 from metrics.Models import *
 
 
@@ -9,10 +10,10 @@ from metrics.Models import *
 
 class Accuracy(FloatMetricSpec):
 
-    def calculate_metric(self, metric_params: dict) -> GenericMetric:
+    def calculate_metric(self, metric_params: dict) -> metrics.GenericMetric:
         predicted_class = metric_params['predicted_label']
         true_class = metric_params['true_labels']
-        return GenericMetric(metric_name="Accuracy",
+        return metrics.GenericMetric(metric_name="Accuracy",
                              metric_value=FloatValue(metric_value=accuracy_score(true_class, predicted_class)),
                              metric_spec=Accuracy())
 
