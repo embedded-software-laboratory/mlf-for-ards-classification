@@ -95,6 +95,7 @@ class Result(BaseModel):
     # TODO read model when reading model from json
     @field_serializer('used_model_type')
     def serialize_model(used_model_type: Model):
+        print("Storage serialized")
         return used_model_type.storage_location
 
 
