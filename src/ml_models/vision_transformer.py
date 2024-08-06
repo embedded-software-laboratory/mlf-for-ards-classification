@@ -303,8 +303,8 @@ class VisionTransformer(ImageModel):
 
     @property
     def storage_location(self):
-        return self.storage_location
+        return self._storage_location
 
     @storage_location.setter
     def storage_location(self, location):
-        self.storage_location = location
+        self._storage_location = location
