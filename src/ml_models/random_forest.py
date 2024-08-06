@@ -1,9 +1,10 @@
 from ml_models.model_interface import Model
+from ml_models.timeseries_model import TimeSeriesModel
 from sklearn.ensemble import RandomForestClassifier
 import pickle
 
 
-class Random_forest(Model):
+class Random_forest(TimeSeriesModel):
 
     def __init__(self):
         super().__init__()
@@ -80,10 +81,4 @@ class Random_forest(Model):
     def has_predict_proba(self):
         return True
 
-    @property
-    def storage_location(self):
-        return self.storage_location
 
-    @storage_location.setter
-    def storage_location(self, location):
-        self.storage_location = location

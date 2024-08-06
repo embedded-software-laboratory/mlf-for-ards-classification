@@ -1,8 +1,10 @@
 from ml_models.model_interface import Model
+from ml_models.timeseries_model import TimeSeriesModel
 from sklearn import svm
 import pickle
 
-class Support_vector_machine(Model):
+
+class Support_vector_machine(TimeSeriesModel):
 
     def __init__(self):
         super().__init__()
@@ -11,7 +13,7 @@ class Support_vector_machine(Model):
 
     def train_model(self, training_data):
         """Function that starts the learning process of the SVM and stores the resulting model after completion"""
-        
+
         # Init forest and read training data
         label = training_data["ards"]
         predictors = training_data.loc[:, training_data.columns != 'ards']
@@ -19,27 +21,19 @@ class Support_vector_machine(Model):
         # Learn and store resulting model
         self.model = self.model.fit(predictors, label)
 
-    def predict(self, data): 
+    def predict(self, data):
         return self.model.predict(data)
-    
+
     def predict_proba(self, data):
         return self.model.predict_proba(data)
-    
+
     def save(self, filepath):
         file = open(filepath + ".txt", "wb")
         pickle.dump(self.model, file)
-    
+
     def load(self, filepath):
         file = open(filepath + ".txt", "rb")
         self.model = pickle.load(file)
 
     def has_predict_proba(self):
         return True
-
-    @property
-    def storage_location(self):
-        return self.storage_location
-
-    @storage_location.setter
-    def storage_location(self, location):
-        self.storage_location = location

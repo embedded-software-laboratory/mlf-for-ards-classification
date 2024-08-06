@@ -1,11 +1,12 @@
 from ml_models.model_interface import Model
+from ml_models.timeseries_model import TimeSeriesModel
 from sklearn.linear_model import LogisticRegression
 import pickle
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 import pandas as pd
 
 
-class Logistic_regression(Model):
+class Logistic_regression(TimeSeriesModel):
 
     def __init__(self):
             super().__init__()
@@ -89,13 +90,7 @@ class Logistic_regression(Model):
             file = open(filepath + ".txt", "rb")
             self.model = pickle.load(file)
 
-    @property
-    def storage_location(self):
-        return self.storage_location
 
-    @storage_location.setter
-    def storage_location(self, location):
-        self.storage_location = location
 
 #Logistic_regression().save("../Save/Logistic_regression")
 

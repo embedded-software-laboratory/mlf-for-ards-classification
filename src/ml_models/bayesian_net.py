@@ -1,10 +1,11 @@
 from ml_models.model_interface import Model
+from ml_models.timeseries_model import TimeSeriesModel
 from pomegranate import DiscreteDistribution, ConditionalProbabilityTable, Node, BayesianNetwork
 import numpy as np
 import pomegranate
 import json
 
-class Bayesian_network(Model):
+class Bayesian_network(TimeSeriesModel):
 
     def __init__(self):
         super().__init__()
@@ -703,10 +704,3 @@ class Bayesian_network(Model):
 
         return model
 
-    @property
-    def storage_location(self):
-        return self.storage_location
-
-    @storage_location.setter
-    def storage_location(self, location):
-        self.storage_location = location
