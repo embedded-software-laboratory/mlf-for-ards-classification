@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pydantic import BaseModel, ValidationInfo, field_validator, ConfigDict, field_serializer
+from pydantic import BaseModel, ValidationInfo, field_validator, ConfigDict, field_serializer, model_serializer
 
 
 from ml_models.model_interface import Model
@@ -22,7 +22,11 @@ class GenericThresholdOptimization(BaseModel):
 class GenericMetric(BaseModel):
     metric_name: str
     metric_value: GenericValue
-    _metric_spec: IMetricSpec
+    metric_spec: IMetricSpec
+    
+    @model_serializer()
+    def serialize(self):
+        return {"metric_name": self.metric_name, "metric_value": self.metric_value.metric_value}
 
 
     def __lt__(self, other):
