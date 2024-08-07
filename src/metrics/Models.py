@@ -10,19 +10,19 @@ from typing import Any, Callable, Union
 
 class GenericSplit(BaseModel):
     split_name: str
-    contained_metrics: dict[str, GenericMetric]
+    contained_metrics: dict
     
 
 
 class GenericThresholdOptimization(BaseModel):
     optimization_name: str
-    contained_splits: dict[str, GenericSplit]
+    contained_splits: dict
 
 
 class GenericMetric(BaseModel):
     metric_name: str
     metric_value: GenericValue
-    metric_spec: IMetricSpec
+    _metric_spec: IMetricSpec
 
 
     def __lt__(self, other):
