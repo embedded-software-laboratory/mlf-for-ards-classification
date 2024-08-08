@@ -57,6 +57,7 @@ class Evaluation:
         return f1, acc, mcc, sensitivity, specificity
     
     def perform_cross_validation(self, data, outdir):
+        """"Function that performs cross validation on all timeseries models (the parameters are set in the constructor of this class)"""
         # dictionary instead of array
         results = {}
         for modelClass in self.timeseries_classes:
@@ -67,7 +68,7 @@ class Evaluation:
         return results
     
     def cross_validate_model(self, model, test_data, outdir) :
-        """Function that perfroms crossvalidation"""
+        """Function that perfroms crossvalidation on a given model"""
 
         labels = test_data["ards"]
         predictors = test_data.loc[:, test_data.columns != 'ards']

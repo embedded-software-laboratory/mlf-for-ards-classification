@@ -12,7 +12,7 @@ class Bayesian_network(Model):
         self.model = self.make_bn()
 
     def train_model(self, training_data):
-        """Function that starts the learning process of the SVM and stores the resulting model after completion"""
+        """Function that starts the learning process of the BN and stores the resulting model after completion"""
         
         training_data = training_data.drop(columns=['patient_id'])
         converted_data = self.convert_dataset(training_data)

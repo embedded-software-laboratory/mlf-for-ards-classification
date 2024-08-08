@@ -11,6 +11,7 @@ import sys
 class ImageModel():
 
     def __init__(self, image_model_parameters, model_name):
+        # for explanation of the parameters, see the manual for the config file (doc/Anleitung Config-Datei.md)
         self.num_epochs_pneumonia = image_model_parameters["num_epochs_pneumonia"]
         self.num_epochs_ards = image_model_parameters["num_epochs_ards"]
         self.batch_size_pneumonia = image_model_parameters["batch_size_pneumonia"]
