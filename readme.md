@@ -3,17 +3,21 @@
 This repository contains a software which can be used to
 * train new machine learning models for the automated detection of ARDS,
 * run and compare the previously trained models.
+
 It aims to simplify the developement process for new models by providing a framework which contains contains the necessary steps that must be followed in order to 
 train a new model.
+
 The software can be divided into two parts: The part for timeseries models and the part for image models. Timeseries models are models which are trained with
 regulary measured data like vitalparameters (e.g. heart rate, respiratory rate etc.) or laboratory values. Image models are trained to detect ARDS in X-Ray images
 of the patient lung. 
+
 A general machine learning process can be roughly divided into the following five steps:
 * Data Extraction
 * Data Preprocessing
 * Data Transformation
 * Model Training
 * Model Evaluation.
+
 The framework provides functionalities for the last 4 steps. For the first step, use the data-extractor (https://git-ce.rwth-aachen.de/smith-project/ARDS-MLP/data-basis/data-extraction)
 for extracting timeseries data. The image data can be found in the SMITH Coscine Project. 
 
