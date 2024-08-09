@@ -4,7 +4,7 @@ import sys
 import sklearn.metrics as metrics
 import matplotlib.pyplot as plt
 import numpy as np
-from metrics.Models import Result
+from metrics.Models import EvalResult
 
 
 def load_json(file_path: str):
@@ -72,7 +72,7 @@ def plot_model_comparison(data: dict, plot_row: int, axs) -> None:
                                     ["Accuracy", "Sensitivity", "Specificity", "F1", "MCC"])
 
 
-def plot_eval(data: Result, file_name: str) -> None:
+def plot_eval(data: EvalResult, file_name: str) -> None:
     # Lädt file soll aber bereits daten entgegen nehmen
 
     model_count = len(data)

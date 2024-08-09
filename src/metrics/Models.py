@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ValidationInfo, field_validator, ConfigDict, field_serializer, model_serializer
 
-
 from ml_models.model_interface import Model
 
 from typing import Any, Callable, Union
@@ -11,7 +10,6 @@ from typing import Any, Callable, Union
 class GenericSplit(BaseModel):
     split_name: str
     contained_metrics: dict
-    
 
 
 class GenericThresholdOptimization(BaseModel):
@@ -23,11 +21,10 @@ class GenericMetric(BaseModel):
     metric_name: str
     metric_value: GenericValue
     metric_spec: IMetricSpec
-    
+
     @model_serializer()
     def serialize(self):
         return {"metric_name": self.metric_name, "metric_value": self.metric_value.metric_value}
-
 
     def __lt__(self, other):
         return self.metric_value < other
@@ -60,17 +57,32 @@ class StringValue(GenericValue):
 
 
 class Result(BaseModel):
+    result_name: str
+    storage_location: str
+    contained_models: dict
     class Config:
         arbitrary_types_allowed = True
 
-    result_name: str
-    storage_location: str
+class ModelResult(BaseModel):
+    class Config:
+        arbitrary_types_allowed = True
+
+    used_model_location: str
+    used_model_name: str = None
+    contained_evals: dict
+
+
+class EvalResult(BaseModel):
+    class Config:
+        arbitrary_types_allowed = True
+
+    eval_name: str
+
 
     training_dataset: object = None  # TODO add data set information
     test_dataset: object = None  # TODO add data set information
 
-    used_model_type: Model
-    used_model_name: str = None
+
     contained_optimizers: dict[str, GenericThresholdOptimization]
 
     crossvalidation_performed: bool
@@ -85,7 +97,7 @@ class Result(BaseModel):
         if info.data['crossvalidation_performed']:
             if isinstance(v, int):
                 assert v is not None, f'{info.field_name} must be set if crossvalidation_performed is set to True'
-                assert v >= 0, f'{info.field_name} must be greater than zero if crossvalidation_performed is set to False'
+                assert v >= 0, f'{info.field_name} must be greater than zero if crossvalidation_performed is set to True'
         return v
 
     @field_validator('crossvalidation_shuffle', )
@@ -149,4 +161,3 @@ class ListMetricSpec(IMetricSpec):
 
     def calculate_metric_mean(self, average_parameters: list) -> ListValue:
         return ListValue(metric_value=["Mean calculation makes no sense"])
-

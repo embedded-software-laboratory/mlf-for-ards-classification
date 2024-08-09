@@ -1,5 +1,5 @@
 from evaluation.EvaluationInformation import EvaluationInformation
-from metrics.Models import GenericThresholdOptimization, Result, GenericSplit
+from metrics.Models import GenericThresholdOptimization, EvalResult, GenericSplit
 from metrics.Metrics import OptimalProbability
 
 from metrics.ThresholdOptimizer import *
@@ -9,10 +9,20 @@ import json
 from sklearn.metrics import roc_curve
 
 
+
+class EvalResultFactory:
+    @staticmethod
+    def factory_method() -> EvalResult:
+
+        return EvalResult(eval_name=, training_dataset=, test_dataset=, contained_optimizers=, crossvalidation_performed=
+                          , crossvalidation_random_state=, crossvalidation_shuffle=, crossvalidation_splits=,
+                          evaluation_performed=)
+
+
 class ResultFactory:
     @staticmethod
     def factory_method(evaluation: EvaluationInformation, optimizer_list: list[GenericThresholdOptimization]) \
-            -> Result:
+            -> EvalResult:
         result_name = evaluation.eval_name
         used_model_name = evaluation.model_name
         used_model_type = evaluation.model
@@ -30,12 +40,12 @@ class ResultFactory:
             dict_optimizer[optimizer.optimization_name] = optimizer
         storage_location = evaluation.eval_storage_location
 
-        return Result(result_name=result_name, storage_location=storage_location,
-                      training_dataset=evaluation.dataset_training, test_dataset=evaluation.dataset_test,
-                      used_model_type=used_model_type, used_model_name=used_model_name,
-                      contained_optimizers=dict_optimizer, crossvalidation_performed=cross_validation_performed,
-                      cross_validation_random_state=random_state, cross_validation_shuffle=shuffle,
-                      cross_validation_splints=n_splits, evaluation_performed=evaluation_performed)
+        return EvalResult(result_name=result_name, storage_location=storage_location,
+                          training_dataset=evaluation.dataset_training, test_dataset=evaluation.dataset_test,
+                          used_model_type=used_model_type, used_model_name=used_model_name,
+                          contained_optimizers=dict_optimizer, crossvalidation_performed=cross_validation_performed,
+                          cross_validation_random_state=random_state, cross_validation_shuffle=shuffle,
+                          cross_validation_splints=n_splits, evaluation_performed=evaluation_performed)
 
 
 class SplitFactory:

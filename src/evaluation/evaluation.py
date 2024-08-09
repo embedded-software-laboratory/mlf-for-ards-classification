@@ -2,7 +2,7 @@ from datetime import datetime
 
 from sklearn.metrics import accuracy_score, auc, confusion_matrix, f1_score, matthews_corrcoef, roc_curve, make_scorer
 from sklearn.model_selection import StratifiedKFold
-from metrics.Models import Result
+from metrics.Models import EvalResult
 from metrics.ModelFactories import *
 from evaluation.EvaluationInformation import EvaluationInformation
 
@@ -17,7 +17,7 @@ class Evaluation:
 
         self.eval_info = EvaluationInformation(config, model)
 
-    def evaluate(self, model, test_data) -> Result:
+    def evaluate(self, model, test_data) -> EvalResult:
         feature_data = test_data.loc[:, test_data.columns != 'ards']
         if model.has_predict_proba():
             self.eval_info.predicted_probas = model.predict_proba(feature_data)[:, 1]
@@ -39,7 +39,7 @@ class Evaluation:
         result = ResultFactory.factory_method(self.eval_info, optimizer_list)
         return result
 
-    def cross_validate(self, model, data) -> Result:
+    def cross_validate(self, model, data) -> EvalResult:
         labels = data["ards"]
         predictors = data.loc[:, data.columns != 'ards']
 

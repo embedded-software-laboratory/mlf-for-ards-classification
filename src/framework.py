@@ -3,6 +3,7 @@ from ml_models import *
 from evaluation import Evaluation
 
 from visualization import plot_eval
+from metrics.Models import ModelResult, EvalResult, Result
 from cli import make_parser
 
 import os
@@ -115,14 +116,14 @@ class Framework:
     def evaluate_models(self):
         result = {}
         for model in self.timeseries_models:
-            model_result = {}
+            eval_results = []
             evaluator = Evaluation(config=self.config, model=model, dataset_training=self.timeseries_training_data,
                                    dataset_test=self.timeseries_test_data)
 
             if self.process["calculate_evaluation_metrics"]:
                 # for each model, add corresponding dict to results dict
-
-                model_result["Test_set_evaluation"] = evaluator.evaluate(model, self.timeseries_test_data)
+                eval_result = EvalResult()
+                 evaluator.evaluate(model, self.timeseries_test_data)
 
             if self.process["perform_cross_validation"]:
                 cross_validation_results = evaluator.cross_validate(model, self.timeseries_training_data)
