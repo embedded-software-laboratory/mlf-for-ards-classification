@@ -60,8 +60,10 @@ class Result(BaseModel):
     result_name: str
     storage_location: str
     contained_model_results: dict
+
     class Config:
         arbitrary_types_allowed = True
+
 
 class ModelResult(BaseModel):
     class Config:
@@ -78,10 +80,8 @@ class EvalResult(BaseModel):
 
     eval_type: str
 
-
     training_dataset: object = None  # TODO add data set information
     test_dataset: object = None  # TODO add data set information
-
 
     contained_optimizers: dict[str, GenericThresholdOptimization]
 
@@ -107,12 +107,6 @@ class EvalResult(BaseModel):
             if isinstance(v, bool):
                 assert v is not None, f'{info.field_name} must be set if crossvalidation_performed is set to True'
         return v
-
-    # TODO read model when reading model from json
-    @field_serializer('used_model_type')
-    def serialize_model(self, used_model_type: Model):
-        print("Storage serialized")
-        return used_model_type.storage_location
 
 
 class IMetricSpec:
