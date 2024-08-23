@@ -1,4 +1,4 @@
-from evaluation.EvaluationInformation import EvaluationInformation
+from evaluation.EvaluationInformation import ModelEvaluationInformation, EvaluationInformation
 from metrics.Models import GenericThresholdOptimization, EvalResult, GenericSplit
 from metrics.Metrics import OptimalProbability
 
@@ -9,21 +9,55 @@ import json
 from sklearn.metrics import roc_curve
 
 
-
 class EvalResultFactory:
-    @staticmethod
-    def factory_method() -> EvalResult:
+    """ Contains the result of a single evaluation run"""
 
-        return EvalResult(eval_name=, training_dataset=, test_dataset=, contained_optimizers=, crossvalidation_performed=
-                          , crossvalidation_random_state=, crossvalidation_shuffle=, crossvalidation_splits=,
-                          evaluation_performed=)
+    @staticmethod
+    def factory_method(evaluation: EvaluationInformation, optimizer_list: list[GenericThresholdOptimization],
+                       evaltype: str) -> EvalResult:
+        eval_name = evaltype
+        training_dataset = evaluation.dataset_training
+        test_dataset = evaluation.dataset_test
+        contained_optimizers = optimizer_list
+        cross_validation_performed = evaluation.cross_validation_performed
+        cross_validation_random_state = evaluation.random_state
+        cross_validation_shuffle = evaluation.shuffle
+        cross_validation_splits = evaluation.n_splits
+        evaluation_performed = evaluation.evaluation_performed
+
+        return EvalResult(eval_name=eval_name, training_dataset=training_dataset, test_dataset=test_dataset,
+                          contained_optimizers=contained_optimizers,
+                          crossvalidation_performed=cross_validation_performed,
+                          crossvalidation_random_state=cross_validation_random_state,
+                          crossvalidation_shuffle=cross_validation_shuffle,
+                          crossvalidation_splits=cross_validation_splits, evaluation_performed=evaluation_performed)
+
+
+class ModelResultFactory:
+    """Contains the result of multiple evaluations runs for a specified model"""
+
+    @staticmethod
+    def factory_method(evaluation: ModelEvaluationInformation, contained_evals: dict) -> ModelResult:
+
+        return ModelResult(used_model_location=evaluation.model.storage_location, used_model_name=evaluation.model_name,
+                           contained_evals=contained_evals)
 
 
 class ResultFactory:
+    """Contains the result of multiple models which may have multiple evaluation runs"""
+
     @staticmethod
-    def factory_method(evaluation: EvaluationInformation, optimizer_list: list[GenericThresholdOptimization]) \
+    def factory_method(evaluation: EvaluationInformation, model_results: dict) -> Result:
+
+        return Result(result_name=evaluation.experiment_name, storage_location=evaluation.eval_storage_location,
+                      contained_model_results=model_results)
+
+
+class ResultFactoryOld:
+    @staticmethod
+    def factory_method(evaluation: ModelEvaluationInformation, optimizer_list: list[GenericThresholdOptimization]) \
             -> EvalResult:
-        result_name = evaluation.eval_name
+        result_name = evaluation.experiment_name
         used_model_name = evaluation.model_name
         used_model_type = evaluation.model
         cross_validation_performed = evaluation.cross_validation_performed
@@ -50,7 +84,7 @@ class ResultFactory:
 
 class SplitFactory:
     @staticmethod
-    def factory_method(evaluation: EvaluationInformation, split_name: str, optimizer_name: str) -> GenericSplit:
+    def factory_method(evaluation: ModelEvaluationInformation, split_name: str, optimizer_name: str) -> GenericSplit:
         contained_metrics_dict = {}
         optimizer = eval(optimizer_name + "()")
         metric_information = {"prediction_probs": evaluation.predicted_probas,

@@ -1,4 +1,3 @@
-
 #(informal) interface for all ards detection ml_models
 class Model:
     def __init__(self):
@@ -23,4 +22,11 @@ class Model:
 
     def load(self, filepath):
         raise NotImplementedError
-    
+
+    @property
+    def storage_location(self):
+        raise NotImplementedError
+
+    @storage_location.setter
+    def storage_location(self, location):
+        raise NotImplementedError

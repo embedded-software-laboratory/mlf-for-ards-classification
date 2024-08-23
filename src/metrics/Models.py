@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pydantic import BaseModel, ValidationInfo, field_validator, ConfigDict, field_serializer, model_serializer
+from pydantic import BaseModel, ValidationInfo, field_validator, ConfigDict, field_serializer, model_serializer, Literal
 
 from ml_models.model_interface import Model
 
@@ -59,7 +59,7 @@ class StringValue(GenericValue):
 class Result(BaseModel):
     result_name: str
     storage_location: str
-    contained_models: dict
+    contained_model_results: dict
     class Config:
         arbitrary_types_allowed = True
 
@@ -76,7 +76,7 @@ class EvalResult(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
-    eval_name: str
+    eval_type: str
 
 
     training_dataset: object = None  # TODO add data set information
@@ -100,7 +100,7 @@ class EvalResult(BaseModel):
                 assert v >= 0, f'{info.field_name} must be greater than zero if crossvalidation_performed is set to True'
         return v
 
-    @field_validator('crossvalidation_shuffle', )
+    @field_validator('crossvalidation_shuffle')
     @classmethod
     def check_crossvalidation_shuffle_settings_bool(cls, v: bool, info: ValidationInfo):
         if info.data['crossvalidation_performed']:
@@ -110,7 +110,7 @@ class EvalResult(BaseModel):
 
     # TODO read model when reading model from json
     @field_serializer('used_model_type')
-    def serialize_model(used_model_type: Model):
+    def serialize_model(self, used_model_type: Model):
         print("Storage serialized")
         return used_model_type.storage_location
 

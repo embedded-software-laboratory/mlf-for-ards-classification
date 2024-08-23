@@ -1,6 +1,6 @@
 from processing import *
 from ml_models import *
-from evaluation import Evaluation
+from evaluation import ModelEvaluation, Evaluation
 
 from visualization import plot_eval
 from metrics.Models import ModelResult, EvalResult, Result
@@ -115,26 +115,18 @@ class Framework:
 
     def evaluate_models(self):
         result = {}
-        for model in self.timeseries_models:
-            eval_results = []
-            evaluator = Evaluation(config=self.config, model=model, dataset_training=self.timeseries_training_data,
-                                   dataset_test=self.timeseries_test_data)
-
-            if self.process["calculate_evaluation_metrics"]:
-                # for each model, add corresponding dict to results dict
-                eval_result = EvalResult()
-                 evaluator.evaluate(model, self.timeseries_test_data)
-
-            if self.process["perform_cross_validation"]:
-                cross_validation_results = evaluator.cross_validate(model, self.timeseries_training_data)
-                model_result["Cross_validation"] = cross_validation_results
-            result[model.name] = model_result
-        # TODO write serialization function
-        if result:
+        evaluator = Evaluation(self.config, dataset_training=self.timeseries_training_data,
+                               dataset_test=self.timeseries_test_data)
+        overall_result = evaluator.evaluate_timeseries_models(self.timeseries_models,
+                                                              self.process["perform_cross_validation"],
+                                                              self.process["calculate_evaluation_metrics"])
+        if overall_result.contained_model_results:
             print(f"Save results to {self.outdir + 'results.json'}")
             with (open(self.outdir + 'results.json', 'w', encoding='utf-8') as f):
                 json.dump(result, f, ensure_ascii=False, indent=4)
-                #plot_eval(data=result, file_name=f.name)
+                # TODO make plots
+                # plot_eval(data=result, file_name=f.name)
+
 
     def save_models(self):
         if not os.path.isdir(self.outdir):

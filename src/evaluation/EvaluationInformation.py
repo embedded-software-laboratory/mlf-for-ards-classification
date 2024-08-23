@@ -1,15 +1,14 @@
 from ml_models.model_interface import Model
 from metrics.Metrics import *
 
-class EvaluationInformation:
-    def __init__(self, config, model: Model, dataset_training=None, dataset_test=None):
 
-        self.model = model
-        self.eval_storage_location = config['storage_path']  # TODO check what is correct
+class EvaluationInformation:
+
+    def __init__(self, config, dataset_training=None, dataset_test=None):
         self.dataset_training = dataset_training  # TODO replace by representation of dataset
         self.dataset_test = dataset_test  # TODO replace by representation of dataset
-        self.model_name = model.name
-        self.eval_name = config['evaluation']['evaluation_name']
+        self.experiment_name = config['evaluation']['evaluation_name']
+        self.eval_storage_location = config['storage_path']  # TODO check what is correct
         self.cross_validation_performed = config["process"]["perform_cross_validation"]
         self.evaluation_performed = config["process"]["calculate_evaluation_metrics"]
         if self.cross_validation_performed:
@@ -19,6 +18,13 @@ class EvaluationInformation:
             self.random_state = config["evaluation"]["cross_validation"]["random_state"]
         else:
             self.n_splits = 0
+
+
+class ModelEvaluationInformation:
+    def __init__(self, config, model: Model, dataset_training=None, dataset_test=None):
+
+        self.model = model
+        self.model_name = model.name
 
         self.model_has_proba = model.has_predict_proba()
         self.requested_metrics = config["evaluation"]["evaluation_metrics"]
