@@ -123,7 +123,8 @@ class Framework:
         if overall_result.contained_model_results:
             print(f"Save results to {self.outdir + 'results.json'}")
             with (open(self.outdir + 'results.json', 'w', encoding='utf-8') as f):
-                json.dump(result, f, ensure_ascii=False, indent=4)
+                f.write(overall_result.model_dump_json())
+                #json.dump(overall_result, f, ensure_ascii=False, indent=4)
                 # TODO make plots
                 # plot_eval(data=result, file_name=f.name)
 

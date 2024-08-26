@@ -18,15 +18,17 @@ class EvalResultFactory:
         eval_name = evaltype
         training_dataset = evaluation.dataset_training
         test_dataset = evaluation.dataset_test
-        contained_optimizers = optimizer_list
+        
         cross_validation_performed = evaluation.cross_validation_performed
         cross_validation_random_state = evaluation.random_state
         cross_validation_shuffle = evaluation.shuffle
         cross_validation_splits = evaluation.n_splits
         evaluation_performed = evaluation.evaluation_performed
-
+        dict_optimizer = {}
+        for optimizer in optimizer_list:
+            dict_optimizer[optimizer.optimization_name] = optimizer
         return EvalResult(eval_type=eval_name, training_dataset=training_dataset, test_dataset=test_dataset,
-                          contained_optimizers=contained_optimizers,
+                          contained_optimizers=dict_optimizer,
                           crossvalidation_performed=cross_validation_performed,
                           crossvalidation_random_state=cross_validation_random_state,
                           crossvalidation_shuffle=cross_validation_shuffle,
@@ -69,11 +71,9 @@ class ResultFactoryOld:
             shuffle = evaluation.shuffle
             random_state = evaluation.random_state
         evaluation_performed = evaluation.evaluation_performed
-        dict_optimizer = {}
-        for optimizer in optimizer_list:
-            dict_optimizer[optimizer.optimization_name] = optimizer
+        
         storage_location = evaluation.eval_storage_location
-
+        
         return EvalResult(result_name=result_name, storage_location=storage_location,
                           training_dataset=evaluation.dataset_training, test_dataset=evaluation.dataset_test,
                           used_model_type=used_model_type, used_model_name=used_model_name,
