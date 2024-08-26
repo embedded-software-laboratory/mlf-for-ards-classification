@@ -16,8 +16,10 @@ class EvalResultFactory:
     def factory_method(evaluation: EvaluationInformation, optimizer_list: list[GenericThresholdOptimization],
                        evaltype: str) -> EvalResult:
         eval_name = evaltype
-        training_dataset = evaluation.dataset_training
-        test_dataset = evaluation.dataset_test
+
+        # TODO Replace by storage location of datasets
+        training_dataset = ""
+        test_dataset = ""
         
         cross_validation_performed = evaluation.cross_validation_performed
         cross_validation_random_state = evaluation.random_state
