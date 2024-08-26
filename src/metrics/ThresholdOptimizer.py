@@ -15,6 +15,9 @@ class Standard(IThresholdOptimizer):
 
 class MaxTPRMinFPR(IThresholdOptimizer):
     def calculate_optimal_threshold(self, tpr: ndarray, fpr: ndarray, threshold: ndarray) -> float:
+        print(fpr)
+        print(tpr)
+        print(np.argmax(tpr-fpr))
         optimal_threshold = threshold[np.argmax(tpr - fpr)]
         return optimal_threshold
 
