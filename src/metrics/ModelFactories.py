@@ -25,7 +25,7 @@ class EvalResultFactory:
         cross_validation_splits = evaluation.n_splits
         evaluation_performed = evaluation.evaluation_performed
 
-        return EvalResult(eval_name=eval_name, training_dataset=training_dataset, test_dataset=test_dataset,
+        return EvalResult(eval_type=eval_name, training_dataset=training_dataset, test_dataset=test_dataset,
                           contained_optimizers=contained_optimizers,
                           crossvalidation_performed=cross_validation_performed,
                           crossvalidation_random_state=cross_validation_random_state,
