@@ -85,7 +85,7 @@ class DenseNet121(nn.Module):
         
         return x
 
-class CNN(ImageModel):
+class ConvolutionalNeuralNetworkModel(ImageModel):
 
     def __init__(self, image_model_parameters, model_name):
         super().__init__(image_model_parameters, model_name)

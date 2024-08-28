@@ -10,7 +10,7 @@ import csv
 import re
 import timm
 
-class VisionTransformer(ImageModel):
+class VisionTransformerModel(ImageModel):
 
     def __init__(self, image_model_parameters, model_name):
         super().__init__(image_model_parameters, model_name)
