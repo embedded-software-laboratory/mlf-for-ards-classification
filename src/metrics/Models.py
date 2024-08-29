@@ -61,30 +61,6 @@ class Result(BaseModel):
     storage_location: str
     contained_model_results: dict
 
-    class Config:
-        arbitrary_types_allowed = True
-
-
-class ModelResult(BaseModel):
-    class Config:
-        arbitrary_types_allowed = True
-
-    used_model_location: str
-    used_model_name: str = None
-    contained_evals: dict
-
-
-class EvalResult(BaseModel):
-    class Config:
-        arbitrary_types_allowed = True
-
-    eval_type: str
-
-    training_dataset: object = None  # TODO add data set information
-    test_dataset: object = None  # TODO add data set information
-
-    contained_optimizers: dict[str, GenericThresholdOptimization]
-
     crossvalidation_performed: bool
     crossvalidation_random_state: int = None
     crossvalidation_shuffle: bool = None
@@ -108,10 +84,44 @@ class EvalResult(BaseModel):
                 assert v is not None, f'{info.field_name} must be set if crossvalidation_performed is set to True'
         return v
 
+    class Config:
+        arbitrary_types_allowed = True
+
+
+class ModelResult(BaseModel):
+    class Config:
+        arbitrary_types_allowed = True
+
+    used_model_location: str
+    used_model_name: str = None
+    contained_evals: dict
+    training_results: dict
+
+class EvalResult(BaseModel):
+    class Config:
+        arbitrary_types_allowed = True
+
+    eval_type: str
+
+    training_dataset: object = None  # TODO add data set information
+    test_dataset: object = None  # TODO add data set information
+
+    contained_optimizers: dict[str, GenericThresholdOptimization]
+
+class TrainingResult(BaseModel):
+    class Config:
+        arbitrary_types_allowed = True
+
+    used_model_location: str
+    used_model_name: str = None
+    training_dataset_location: str = None
+    contained_optimizers: dict
+
+
 
 class IMetricSpec:
 
-    def calculate_metric(self, metric_parameters: dict) -> GenericValue:
+    def calculate_metric(self, metric_parameters: dict, stage: str) -> GenericValue:
         raise NotImplementedError
 
     def calculate_metric_mean(self, average_parmeters: dict) -> GenericValue:
@@ -128,7 +138,7 @@ class FloatMetricSpec(IMetricSpec):
         self.metric_spec = FloatMetricSpec
         self.metric_type = GenericMetric
 
-    def calculate_metric(self, metric_parameters: dict) -> FloatValue:
+    def calculate_metric(self, metric_parameters: dict, stage:str) -> FloatValue:
         raise NotImplementedError
 
     def calculate_metric_mean(self, average_parameters: list) -> FloatValue:
@@ -139,7 +149,7 @@ class FloatMetricSpec(IMetricSpec):
 
 
 class IntMetricSpec(IMetricSpec):
-    def calculate_metric(self, metric_parameters: dict) -> IntValue:
+    def calculate_metric(self, metric_parameters: dict, stage:str) -> IntValue:
         raise NotImplementedError
 
     def calculate_metric_mean(self, average_parameters: list) -> FloatValue:
@@ -150,8 +160,10 @@ class IntMetricSpec(IMetricSpec):
 
 
 class ListMetricSpec(IMetricSpec):
-    def calculate_metric(self, metric_parameters: dict) -> ListValue:
+    def calculate_metric(self, metric_parameters: dict, stage:str) -> ListValue:
         raise NotImplementedError
 
     def calculate_metric_mean(self, average_parameters: list) -> ListValue:
         return ListValue(metric_value=["Mean calculation makes no sense"])
+
+

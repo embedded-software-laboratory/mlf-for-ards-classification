@@ -3,14 +3,17 @@ import keras
 from keras.layers import LSTM, Dropout, Dense
 import numpy as np
 
-
-class Recurrent_neural_network(Model):
+# TODO make compatible with Timeseriesmodel
+class RecurrentNeuralNetworkModel(Model):
 
     def __init__(self):
         super().__init__()
         self.name = "Recurrent neural network"
+        self.algorithm = "Recurrent neural network"
+
 
     def train_model(self, training_data):
+
         """Function that starts the learning process of the RCN and stores the resulting model after completion"""
 
         #predictors, label = self.generate_data(training_data.loc[:, training_data.columns != 'ARDS'], training_data["ARDS"], len(training_data))
@@ -28,6 +31,7 @@ class Recurrent_neural_network(Model):
 
         # Learn and store resulting model
         self.model.fit(predictors.values, label, batch_size=64, epochs=10, verbose=0)
+        self.trained = True
 
     def predict(self, data): 
         prediction_normalized = self.predict_proba_normalized(data)
@@ -54,8 +58,10 @@ class Recurrent_neural_network(Model):
             temp.append(p[0])
             result.append(temp)
         return(np.array(result))
+
+
     
-    def save(self, filepath):
+    def save_model(self, filepath):
         self.model.save(filepath + ".h5")
     
     def load(self, filepath):

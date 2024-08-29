@@ -15,26 +15,20 @@ class EvalResultFactory:
     @staticmethod
     def factory_method(evaluation: EvaluationInformation, optimizer_list: list[GenericThresholdOptimization],
                        evaltype: str) -> EvalResult:
+        if evaltype not in ["Evaluation", "CrossValidation"]:
+            raise ValueError("Evaluation type must be either Evaluation or CrossValidation.")
+
         eval_name = evaltype
 
         # TODO Replace by storage location of datasets
         training_dataset = ""
         test_dataset = ""
-        
-        cross_validation_performed = evaluation.cross_validation_performed
-        cross_validation_random_state = evaluation.random_state
-        cross_validation_shuffle = evaluation.shuffle
-        cross_validation_splits = evaluation.n_splits
-        evaluation_performed = evaluation.evaluation_performed
         dict_optimizer = {}
         for optimizer in optimizer_list:
             dict_optimizer[optimizer.optimization_name] = optimizer
         return EvalResult(eval_type=eval_name, training_dataset=training_dataset, test_dataset=test_dataset,
-                          contained_optimizers=dict_optimizer,
-                          crossvalidation_performed=cross_validation_performed,
-                          crossvalidation_random_state=cross_validation_random_state,
-                          crossvalidation_shuffle=cross_validation_shuffle,
-                          crossvalidation_splits=cross_validation_splits, evaluation_performed=evaluation_performed)
+                          contained_optimizers=dict_optimizer
+                          )
 
 
 class ModelResultFactory:
@@ -52,69 +46,51 @@ class ResultFactory:
 
     @staticmethod
     def factory_method(evaluation: EvaluationInformation, model_results: dict) -> Result:
-
-        return Result(result_name=evaluation.experiment_name, storage_location=evaluation.eval_storage_location,
-                      contained_model_results=model_results)
-
-
-class ResultFactoryOld:
-    @staticmethod
-    def factory_method(evaluation: ModelEvaluationInformation, optimizer_list: list[GenericThresholdOptimization]) \
-            -> EvalResult:
-        result_name = evaluation.experiment_name
-        used_model_name = evaluation.model_name
-        used_model_type = evaluation.model
+        cross_validation_random_state = evaluation.random_state
+        cross_validation_shuffle = evaluation.shuffle
+        cross_validation_splits = evaluation.n_splits
         cross_validation_performed = evaluation.cross_validation_performed
-        n_splits = None
-        shuffle = None
-        random_state = None
-        if cross_validation_performed:
-            n_splits = evaluation.n_splits
-            shuffle = evaluation.shuffle
-            random_state = evaluation.random_state
         evaluation_performed = evaluation.evaluation_performed
-        
-        storage_location = evaluation.eval_storage_location
-        
-        return EvalResult(result_name=result_name, storage_location=storage_location,
-                          training_dataset=evaluation.dataset_training, test_dataset=evaluation.dataset_test,
-                          used_model_type=used_model_type, used_model_name=used_model_name,
-                          contained_optimizers=dict_optimizer, crossvalidation_performed=cross_validation_performed,
-                          cross_validation_random_state=random_state, cross_validation_shuffle=shuffle,
-                          cross_validation_splints=n_splits, evaluation_performed=evaluation_performed)
+        return Result(result_name=evaluation.experiment_name, storage_location=evaluation.eval_storage_location,
+                      contained_model_results=model_results, crossvalidation_performed=cross_validation_performed,
+                          crossvalidation_random_state=cross_validation_random_state,
+                          crossvalidation_shuffle=cross_validation_shuffle,
+                          crossvalidation_splits=cross_validation_splits, evaluation_performed=evaluation_performed)
 
+
+#class ResultFactoryOld:
+#    @staticmethod
+#    def factory_method(evaluation: ModelEvaluationInformation, optimizer_list: list[GenericThresholdOptimization]) \
+#            -> EvalResult:
+#        result_name = evaluation.experiment_name
+#        used_model_name = evaluation.model_name
+#        used_model_type = evaluation.model
+#        cross_validation_performed = evaluation.cross_validation_performed
+#        n_splits = None
+#        shuffle = None
+#        random_state = None
+#        if cross_validation_performed:
+#            n_splits = evaluation.n_splits
+#            shuffle = evaluation.shuffle
+#            random_state = evaluation.random_state
+#        evaluation_performed = evaluation.evaluation_performed
+#
+#        storage_location = evaluation.eval_storage_location
+#
+#        return EvalResult(result_name=result_name, storage_location=storage_location,
+#                          training_dataset=evaluation.dataset_training, test_dataset=evaluation.dataset_test,
+#                          used_model_type=used_model_type, used_model_name=used_model_name,
+#                          contained_optimizers=dict_optimizer, crossvalidation_performed=cross_validation_performed,
+#                          cross_validation_random_state=random_state, cross_validation_shuffle=shuffle,
+#                          cross_validation_splints=n_splits, evaluation_performed=evaluation_performed)
+#
 
 class SplitFactory:
+
+
+
     @staticmethod
-    def factory_method(evaluation: ModelEvaluationInformation, split_name: str, optimizer_name: str) -> GenericSplit:
-        contained_metrics_dict = {}
-        optimizer = eval(optimizer_name + "()")
-        metric_information = {"prediction_probs": evaluation.predicted_probas,
-                              "predicted_label": evaluation.predicted_labels,
-                              "true_labels": evaluation.true_labels,
-                              "calc_func": optimizer.calculate_optimal_threshold}
-
-        if evaluation.model_has_proba:
-            fpr, tpr, thresholds = roc_curve(evaluation.true_labels, evaluation.predicted_probas)
-            metric_information["fpr"] = fpr
-            metric_information["tpr"] = tpr
-            metric_information["thresholds"] = thresholds
-            optimal_threshold = OptimalProbability().calculate_metric(metric_information)
-            prediction_labels = (evaluation.predicted_probas > optimal_threshold).astype(int)
-        else:
-            prediction_labels = evaluation.predicted_labels
-        metric_information["predicted_label"] = prediction_labels
-        metric_information["true_labels"] = evaluation.true_labels
-
-        for metric in evaluation.contained_metrics:
-            metric_obj = eval(metric + "()")
-            contained_metrics_dict[metric] = metric_obj.calculate_metric(metric_information)
-        return GenericSplit(split_name=split_name, contained_metrics=contained_metrics_dict)
-
-
-class MeanSplitFactory:
-    @staticmethod
-    def factory_method(splits: list[GenericSplit]) -> GenericSplit:
+    def mean_split_factory_method(splits: list[GenericSplit]) -> GenericSplit:
         metric_dict = {}
 
         for split in splits:
@@ -127,6 +103,40 @@ class MeanSplitFactory:
             average_metric = metric_list[0].metric_spec.calculate_metric_mean(metric_list)
             metric_dict[metric_name] = average_metric
         return GenericSplit(split_name="mean", contained_metrics=metric_dict)
+
+
+    @staticmethod
+    def factory_method(evaluation: ModelEvaluationInformation, split_name: str, optimizer_name: str, stage: str) \
+            -> GenericSplit:
+
+        contained_metrics_dict = {}
+        optimizer = eval(optimizer_name + "()")
+        metric_information = {"prediction_probs": evaluation.predicted_probas_test,
+                              "predicted_label": evaluation.predicted_labels_test,
+                              "true_labels": evaluation.true_labels_test,
+                              "calc_func": optimizer.calculate_optimal_threshold}
+
+        if evaluation.model_has_proba:
+            fpr, tpr, thresholds = roc_curve(evaluation.true_labels_test, evaluation.predicted_probas_test)
+            metric_information["fpr"] = fpr
+            metric_information["tpr"] = tpr
+            metric_information["thresholds"] = thresholds
+            optimal_threshold = OptimalProbability().calculate_metric(metric_information, stage)
+            prediction_labels = (evaluation.predicted_probas_test > optimal_threshold).astype(int)
+        else:
+            prediction_labels = evaluation.predicted_labels_test
+        metric_information["predicted_label"] = prediction_labels
+        metric_information["true_labels"] = evaluation.true_labels_test
+
+        for metric in evaluation.contained_metrics:
+            metric_obj = eval(metric + "()")
+            contained_metrics_dict[metric] = metric_obj.calculate_metric(metric_information, stage)
+        return GenericSplit(split_name=split_name, contained_metrics=contained_metrics_dict)
+
+
+
+
+
 
 
 class OptimizerFactory:
