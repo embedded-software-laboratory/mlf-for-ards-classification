@@ -4,11 +4,13 @@ from sklearn.ensemble import RandomForestClassifier
 import pickle
 
 
-class Random_forest(TimeSeriesModel):
+class RandomForestModel(TimeSeriesModel):
 
     def __init__(self):
         super().__init__()
         self.name = "Random Forest"
+        self.algorithm = "Random Forest"
+
         self.n_estimators = 700
         self.criterion = "gini"
         self.max_depth = 200
@@ -37,6 +39,7 @@ class Random_forest(TimeSeriesModel):
 
         # Learn and store resulting model
         self.model = self.model.fit(predictors, label)
+        self.trained = True
 
     def predict(self, data):
         return self.model.predict(data)
@@ -70,11 +73,14 @@ class Random_forest(TimeSeriesModel):
         )
         return random_forest
 
-    def save(self, filepath):
+    def get_params(self):
+        return self.model.get_params(deep=True)
+
+    def save_model(self, filepath):
         file = open(filepath + ".txt", "wb")
         pickle.dump(self.model, file)
 
-    def load(self, filepath):
+    def load_model(self, filepath):
         file = open(filepath + ".txt", "rb")
         self.model = pickle.load(file)
 

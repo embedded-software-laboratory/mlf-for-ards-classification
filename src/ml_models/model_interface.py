@@ -3,7 +3,11 @@ class Model:
     def __init__(self):
         self.model = None
         self.name = None
+        self.type = None
+        self.algorithm = None
+        self.trained = False
         self._storage_location = None
+        self.training_evaluation = None
 
     def train_model(self, training_data):
         raise NotImplementedError
@@ -17,10 +21,10 @@ class Model:
     def has_predict_proba(self):
         raise NotImplementedError
 
-    def save(self, filepath):
+    def save_model(self, filepath):
         raise NotImplementedError
 
-    def load(self, filepath):
+    def load_model(self, filepath):
         raise NotImplementedError
 
     @property

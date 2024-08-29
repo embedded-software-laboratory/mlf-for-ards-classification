@@ -1,3 +1,5 @@
+import fnmatch
+
 from processing import *
 from ml_models import *
 from evaluation import ModelEvaluation, Evaluation
@@ -12,6 +14,9 @@ from datetime import datetime
 import json
 from pathlib import Path
 
+# TODO make sure we have trained models for evaluation
+
+
 
 class Framework:
     def __init__(self):
@@ -24,6 +29,26 @@ class Framework:
 
         self.config = config
         self.loader = FileLoader()
+        self.supported_timeseries_models = self.config['supported_algorithms']['timeseries_models']
+        self.supported_images_models = self.config['supported_algorithms']['images_models']
+        self.timeseries_models_to_train = []
+        self.timeseries_models_to_evaluate = []
+        self.timeseries_algorithms_to_evaluate = []
+        self.timeseries_models_to_cross_validate = []
+
+        for model in config['timeseries_models_to_train']:
+            self.timeseries_models_to_train.append(str(model))
+
+        for model in config['timeseries_models_to_evaluate']:
+            self.timeseries_models_to_evaluate.append(str(model[1]))
+            self.timeseries_algorithms_to_evaluate.append(str(model[0]))
+
+        for model in config['timeseries_models_to_cross_validate']:
+            self.timeseries_models_to_cross_validate.append(str(model))
+
+
+        self.trained_models  = []
+
         self.timeseries_models = []
         self.timeseries_classes = []
         for model in config["timeseries_models_to_execute"]:
@@ -31,7 +56,7 @@ class Framework:
             self.timeseries_classes.append(eval(model))
         #self.evaluator = Evaluation_Old(self.timeseries_classes, config["evaluation"])
         self.image_dl_methods = ["VIT"]
-        self.image_models = [VisionTransformer(config["image_model_parameters"], "vit-small-16")]
+        self.image_models = [VisionTransformerModel(config["image_model_parameters"], "vit-small-16")]
         self.timeseries_training_data = None
         self.timeseries_test_data = None
         self.image_pneumonia_training_data = None
@@ -44,7 +69,7 @@ class Framework:
         self.segregator = Data_segregator(config["data_segregation"])
         self.dataset_generator = ImageDatasetGenerator()
         self.process = config["process"]
-        self.loading_paths = config["loading_paths"]
+        self.model_base_paths = config["algorithm_base_path"]
         self.timeseries_file_path = config["data"]["timeseries_file_path"]
         self.image_file_path = config["data"]["image_file_path"]
         self.method = config["image_model_parameters"]["method"]
@@ -88,8 +113,17 @@ class Framework:
                                                                              path=self.image_file_path, augment=False)
 
     def learn_timeseries_models(self):
+        evaluator = Evaluation(self.config, self.timeseries_training_data, self.timeseries_test_data)
         for model in self.timeseries_models:
             model.train_model(self.timeseries_training_data)
+            if self.process["save_models"]:
+                training_data_location = ""
+                model.save(self.outdir + model.name, training_data_location)
+            # TODO Evaluate Training for optimal probability
+            #model_evaluator = ModelEvaluation(self.config, model, evaluator)
+            #model_evaluator.evaluate(self.timeseries_training_data, "Training")
+
+
             print("Successfully trained " + model.name)
 
     def learn_image_models(self):
@@ -113,6 +147,9 @@ class Framework:
             print("Classification of " + model.name + ": ")
             print(prediction)
 
+    #def evaluate_timeseries_models(self):
+
+
     def evaluate_models(self):
         result = {}
         evaluator = Evaluation(self.config, dataset_training=self.timeseries_training_data,
@@ -128,20 +165,43 @@ class Framework:
                 # TODO make plots
                 # plot_eval(data=result, file_name=f.name)
 
-
     def save_models(self):
         if not os.path.isdir(self.outdir):
             os.makedirs(self.outdir)
         for model in self.timeseries_models:
-            model.save(self.outdir + model.name)
+            model.save_model(self.outdir + model.name)
             #file.write(str(model_serialized))
         print("Successfully stored all models!")
 
+    def load_timeseries_models(self):
+        models_to_load = set(self.timeseries_models_to_evaluate).difference(set(self.trained_models))
+        for model_name in models_to_load:
+            index = self.trained_models.index(model_name)
+            algorithm = self.timeseries_algorithms_to_evaluate[index]
+            base_path = self.model_base_paths[algorithm]
+            model_obj = eval(algorithm + "()")
+            loaded_model = model_obj.load(base_path, model_name)
+            self.trained_models.append()
+
+
+
+
+
+    def load_image_models(self):
+
+        pass
+
+
+
+
     def load_models(self):
-        for model in self.timeseries_models:
-            if model.name in self.loading_paths:
-                if self.loading_paths[model.name] != "default":
-                    model.load(self.loading_paths[model.name])
+        self.load_image_models()
+        self.load_image_models()
+        models_to_load = set(self.timeseries_models_to_evaluate).difference(set(self.trained_models))
+        for model in models_to_load:
+            if model in self.model_base_paths:
+                if self.model_base_paths[model] != "default":
+                    model.load(self.model_base_paths[model.name])
                 else:
                     model.load(self.outdir + model.name)
             else:

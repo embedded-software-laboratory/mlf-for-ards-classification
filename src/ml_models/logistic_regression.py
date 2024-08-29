@@ -6,41 +6,47 @@ from statsmodels.stats.outliers_influence import variance_inflation_factor
 import pandas as pd
 
 
-class Logistic_regression(TimeSeriesModel):
+class LogisticRegressionModel(TimeSeriesModel):
 
     def __init__(self):
-            super().__init__()
-            self.name = "Logistic_regression"
-            self.penalty='l2'
-            self.solver='saga'
-            self.tol=0.0001
-            self.C=1.0
-            self.fit_intercept=True
-            self.intercept_scaling=1
-            self.class_weight=None
-            self.random_state=None
-            self.max_iter=100000
-            self.multi_class='auto'
-            self.verbose=0
-            self.warm_start=False
-            self.n_jobs=None
-            self.l1_ratio=None
-            self.model=self._init_lr()
+        super().__init__()
+        self.name = "Logistic_regression"
+        self.algorithm = "Logistic Regression"
+
+
+        self.penalty = 'l2'
+        self.solver = 'saga'
+        self.tol = 0.0001
+        self.C = 1.0
+        self.fit_intercept = True
+        self.intercept_scaling = 1
+        self.class_weight = None
+        self.random_state = None
+        self.max_iter = 100000
+        self.multi_class = 'auto'
+        self.verbose = 0
+        self.warm_start = False
+        self.n_jobs = None
+        self.l1_ratio = None
+        self.model = self._init_lr()
 
     def train_model(self, training_data):
-            label = training_data["ards"]
-            predictors = training_data.loc[:, training_data.columns != 'ards']
+        label = training_data["ards"]
+        predictors = training_data.loc[:, training_data.columns != 'ards']
 
-
-            # Modell trainieren
-            self.model=self.model.fit(predictors, label)
-            self.calculate_vif(predictors)
+        # Modell trainieren
+        self.model = self.model.fit(predictors, label)
+        self.calculate_vif(predictors)
+        self.trained = True
 
     def predict(self, data):
         return self.model.predict(data)
 
     def predict_proba(self, data):
         return self.model.predict_proba(data)
+
+    def get_params(self):
+        return self.model.get_params(deep=True)
 
     def has_predict_proba(self):
         return True
@@ -64,37 +70,34 @@ class Logistic_regression(TimeSeriesModel):
 
         # Init LR
         logistic_regression = LogisticRegression(
-                        penalty = self.penalty,
-                        tol = self.tol,
-                        C = self.C,
-                        fit_intercept = self.fit_intercept,
-                        intercept_scaling = self.intercept_scaling,
-                        class_weight = self.class_weight,
-                        random_state = 3308,
-                        solver = self.solver,
-                        max_iter = self.max_iter,
-                        multi_class = self.multi_class,
-                        verbose = self.verbose,
-                        warm_start = self.warm_start,
-                        n_jobs = self.n_jobs,
-                        l1_ratio = self.l1_ratio,
-                    )
+            penalty=self.penalty,
+            tol=self.tol,
+            C=self.C,
+            fit_intercept=self.fit_intercept,
+            intercept_scaling=self.intercept_scaling,
+            class_weight=self.class_weight,
+            random_state=3308,
+            solver=self.solver,
+            max_iter=self.max_iter,
+            multi_class=self.multi_class,
+            verbose=self.verbose,
+            warm_start=self.warm_start,
+            n_jobs=self.n_jobs,
+            l1_ratio=self.l1_ratio,
+        )
         return logistic_regression
 
+    def save_model(self, filepath):
+        file = open(filepath + ".txt", "wb")
+        pickle.dump(self.model, file)
 
-    def save(self, filepath):
-            file = open(filepath + ".txt", "wb")
-            pickle.dump(self.model, file)
-
-    def load(self, filepath):
-            file = open(filepath + ".txt", "rb")
-            self.model = pickle.load(file)
-
-
+    def load_model(self, filepath):
+        file = open(filepath + ".txt", "rb")
+        self.model = pickle.load(file)
 
 #Logistic_regression().save("../Save/Logistic_regression")
 
-    # Laden
+# Laden
 #Logistic_regression().load("../Save/Logistic_regression")
 
 #Grid Search: In grid search, you define a grid of hyperparameter values that you want to search over. The algorithm then evaluates the model performance for each combination of hyperparameters and returns the combination that performs the best.

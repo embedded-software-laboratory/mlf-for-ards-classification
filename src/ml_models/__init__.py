@@ -1,11 +1,13 @@
-from ml_models.adaboost import AdaBoost
-from ml_models.bayesian_net import Bayesian_network
-from ml_models.cnn import CNN
+from ml_models.adaboost import AdaBoostModel
+from ml_models.bayesian_net import BayesianNetworkModel
+from ml_models.cnn import ConvolutionalNeuralNetworkModel
 from ml_models.lightGBM import LightGBMModel
-from ml_models.logistic_regression import Logistic_regression
-from ml_models.random_forest import Random_forest
-from ml_models.recurrent_neural_network import Recurrent_neural_network
-from ml_models.support_vector_machine import Support_vector_machine
-from ml_models.vision_transformer import VisionTransformer
-from ml_models.xgboost_model import XGBoost
+from ml_models.logistic_regression import LogisticRegressionModel
+from ml_models.random_forest import RandomForestModel
+from ml_models.recurrentneuralnetworkmodel import RecurrentNeuralNetworkModel
+from ml_models.support_vector_machine import SupportVectorMachineModel
+from ml_models.vision_transformer import VisionTransformerModel
+from ml_models.xgboost_model import XGBoostModel
 from ml_models.model_interface import Model
+from ml_models.ModelMetaData import ModelMetaDataFactory, ModelMetadata
+from timeseries_model import TimeSeriesModel, TimeSeriesProbaModel

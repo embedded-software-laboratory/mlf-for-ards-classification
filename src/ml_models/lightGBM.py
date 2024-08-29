@@ -7,6 +7,7 @@ class LightGBMModel(TimeSeriesModel):
     def __init__(self):
         super().__init__()
         self.name = "LightGBMModel"
+        self.algorithm = "LightGBM"
         self.boosting_type = 'gbdt'
         self.objective = 'binary'
         # nächsten vier atribute verstehe ich noch nicht
@@ -51,6 +52,7 @@ class LightGBMModel(TimeSeriesModel):
         predictors = training_data.loc[:, training_data.columns != 'ards']
 
         self.model = self.model.fit(predictors, label)
+        self.trained = True
 
     def predict(self, data):
         # Vorhersage für einen einzelnen Patienten machen
@@ -98,11 +100,14 @@ class LightGBMModel(TimeSeriesModel):
         )
         return lightGBM
 
-    def save(self, filepath):
+    def get_params(self):
+        return self.model.get_params(True)
+
+    def save_model(self, filepath):
         file = open(filepath + ".txt", "wb")
         pickle.dump(self.model, file)
 
-    def load(self, filepath):
+    def load_model(self, filepath):
         file = open(filepath + ".txt", "rb")
         self.model = pickle.load(file)
 

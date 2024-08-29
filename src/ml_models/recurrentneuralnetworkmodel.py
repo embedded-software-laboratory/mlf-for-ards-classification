@@ -64,7 +64,7 @@ class RecurrentNeuralNetworkModel(Model):
     def save_model(self, filepath):
         self.model.save(filepath + ".h5")
     
-    def load(self, filepath):
+    def load_model(self, filepath):
         self.model = keras.models.load_model(filepath + ".h5")
     
     def generate_data(self, X, y, data_length, sequence_length = 406, step = 1):

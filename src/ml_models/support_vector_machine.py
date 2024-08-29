@@ -4,11 +4,13 @@ from sklearn import svm
 import pickle
 
 
-class Support_vector_machine(TimeSeriesModel):
+class SupportVectorMachineModel(TimeSeriesModel):
 
     def __init__(self):
         super().__init__()
         self.name = "Support Vector Machine"
+        self.algorithm = "Support Vector Machine"
+
         self.model = svm.SVC(kernel="linear", probability=True)
 
     def train_model(self, training_data):
@@ -20,6 +22,7 @@ class Support_vector_machine(TimeSeriesModel):
 
         # Learn and store resulting model
         self.model = self.model.fit(predictors, label)
+        self.trained = True
 
     def predict(self, data):
         return self.model.predict(data)
@@ -27,11 +30,14 @@ class Support_vector_machine(TimeSeriesModel):
     def predict_proba(self, data):
         return self.model.predict_proba(data)
 
-    def save(self, filepath):
+    def get_params(self):
+        return self.model.get_params(deep=True)
+
+    def save_model(self, filepath):
         file = open(filepath + ".txt", "wb")
         pickle.dump(self.model, file)
 
-    def load(self, filepath):
+    def load_model(self, filepath):
         file = open(filepath + ".txt", "rb")
         self.model = pickle.load(file)
 

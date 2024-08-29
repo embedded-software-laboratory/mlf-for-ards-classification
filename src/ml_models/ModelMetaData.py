@@ -11,6 +11,7 @@ class ModelMetadata(BaseModel):
 
     model_hyperparameters: dict
     model_training_data_location: str
+    model_training_evaluation_location: str
     model_storage_location: str
 
 
@@ -22,8 +23,9 @@ class ModelMetaDataFactory:
 
     @staticmethod
     def _timeseries_model_factory(model: TimeSeriesModel, training_data_location: str) -> ModelMetadata:
+        # TODO Add location of Evaluation done during training
         model_hyperparameters = model.get_params()
 
         return ModelMetadata(model_name=model.name, model_type="TimeSeriesModel",
                              model_hyperparameters=model_hyperparameters, model_storage_location=model.storage_location,
-                             model_training_data=training_data_location)
+                             model_training_data=training_data_location, model_training_evaluation_location="")

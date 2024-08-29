@@ -41,6 +41,12 @@ class ModelEvaluationInformation:
         else:
             self.threshold_optimizers = ["Standard"]
 
-        self.predicted_labels = None
-        self.predicted_probas = None
-        self.true_labels = None
+        self.predicted_labels_test = None
+        self.predicted_probas_test = None
+        self.true_labels_test = None
+
+        self.predicted_labels_training = None
+        self.predicted_probas_training = None
+        self.true_labels_training = None
+
+
