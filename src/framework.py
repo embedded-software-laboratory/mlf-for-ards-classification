@@ -2,6 +2,7 @@ from processing import *
 from models import *
 from metrics import *
 from evaluation import *
+import pandas as pd
 
 from visualization import plot_eval
 from cli import make_parser
@@ -107,11 +108,15 @@ class Framework:
         print("------------")
         print(test_data)
         print("------------")
-        test_data = test_data.drop(columns=['ards'])
+        input = test_data.drop(columns=['ards'])
+        test_data = test_data.rename(columns={"ards": "ards_diagnosed"})
         for model in self.timeseries_models:
-            prediction = model.predict(test_data)
+            prediction = model.predict(input)
             print("Classification of " + model.name + ": ")
             print(prediction)
+            df = pd.DataFrame({ "ards_predicted": prediction })
+            df = pd.concat([test_data, df])
+            df.to_csv(self.outdir + f"prediction_{model.name}.csv", index=False)
 
     def evaluate_models(self):
         result = {}
