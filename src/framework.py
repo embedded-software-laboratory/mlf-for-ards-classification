@@ -115,7 +115,7 @@ class Framework:
             print("Classification of " + model.name + ": ")
             print(prediction)
             df = pd.DataFrame({ "ards_predicted": prediction })
-            df = pd.concat([test_data, df])
+            df = pd.concat([test_data, df], axis=1)
             df.to_csv(self.outdir + f"prediction_{model.name}.csv", index=False)
 
     def evaluate_models(self):
