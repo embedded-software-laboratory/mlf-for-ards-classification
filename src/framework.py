@@ -113,15 +113,12 @@ class Framework:
                                                                              path=self.image_file_path, augment=False)
 
     def learn_timeseries_models(self):
-        evaluator = Evaluation(self.config, self.timeseries_training_data, self.timeseries_test_data)
         for model in self.timeseries_models:
-            model.train_model(self.timeseries_training_data)
+            model.train_timeseries(self.timeseries_training_data)
             if self.process["save_models"]:
                 training_data_location = ""
                 model.save(self.outdir + model.name, training_data_location)
-            # TODO Evaluate Training for optimal probability
-            #model_evaluator = ModelEvaluation(self.config, model, evaluator)
-            #model_evaluator.evaluate(self.timeseries_training_data, "Training")
+
 
 
             print("Successfully trained " + model.name)
