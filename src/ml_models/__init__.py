@@ -10,4 +10,4 @@ from ml_models.vision_transformer import VisionTransformerModel
 from ml_models.xgboost_model import XGBoostModel
 from ml_models.model_interface import Model
 from ml_models.ModelMetaData import ModelMetaDataFactory, ModelMetadata
-from timeseries_model import TimeSeriesModel, TimeSeriesProbaModel
+from ml_models.timeseries_model import TimeSeriesModel, TimeSeriesProbaModel
