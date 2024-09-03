@@ -13,7 +13,7 @@ class EvalResultFactory:
     """ Contains the result of a single evaluation run"""
 
     @staticmethod
-    def factory_method(evaluation: EvaluationInformation, optimizer_list: list[GenericThresholdOptimization],
+    def factory_method(optimizer_list: list[GenericThresholdOptimization],
                        evaltype: str) -> EvalResult:
         if evaltype not in ["Evaluation", "CrossValidation"]:
             raise ValueError("Evaluation type must be either Evaluation or CrossValidation.")

@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 from typing import Union
 
 from pydantic import BaseModel
-from ml_models import Model, TimeSeriesModel
+from ml_models import Model
 
 
 class ModelMetadata(BaseModel):
@@ -17,15 +19,19 @@ class ModelMetadata(BaseModel):
 
 class ModelMetaDataFactory:
     @staticmethod
-    def factory_method(model: Union[Model, TimeSeriesModel], training_data_location: str) -> ModelMetadata:
+    def factory_method(model: Union[Model, 'TimeSeriesModel'], training_data_location: str,
+                       training_evaluation_location: str) -> ModelMetadata:
         if model.type == "TimeSeriesModel":
-            return ModelMetaDataFactory._timeseries_model_factory(model, training_data_location)
+            return ModelMetaDataFactory._timeseries_model_factory(model, training_data_location,
+                                                                  training_evaluation_location)
 
     @staticmethod
-    def _timeseries_model_factory(model: TimeSeriesModel, training_data_location: str) -> ModelMetadata:
-        # TODO Add location of Evaluation done during training
+    def _timeseries_model_factory(model: 'TimeSeriesModel', training_data_location: str,
+                                  training_evaluation_location: str) -> ModelMetadata:
+
         model_hyperparameters = model.get_params()
 
         return ModelMetadata(model_name=model.name, model_type="TimeSeriesModel",
                              model_hyperparameters=model_hyperparameters, model_storage_location=model.storage_location,
-                             model_training_data=training_data_location, model_training_evaluation_location="")
+                             model_training_data=training_data_location,
+                             model_training_evaluation_location=training_evaluation_location)
