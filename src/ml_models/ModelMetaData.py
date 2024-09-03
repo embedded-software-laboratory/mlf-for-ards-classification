@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Union
 
 from pydantic import BaseModel
-from ml_models import Model
 
 
 class ModelMetadata(BaseModel):
@@ -19,7 +18,7 @@ class ModelMetadata(BaseModel):
 
 class ModelMetaDataFactory:
     @staticmethod
-    def factory_method(model: Union[Model, 'TimeSeriesModel'], training_data_location: str,
+    def factory_method(model: Union['Model', 'TimeSeriesModel'], training_data_location: str,
                        training_evaluation_location: str) -> ModelMetadata:
         if model.type == "TimeSeriesModel":
             return ModelMetaDataFactory._timeseries_model_factory(model, training_data_location,

@@ -1,4 +1,4 @@
-from ml_models.model_interface import Model
+
 from ml_models.timeseries_model import TimeSeriesModel
 from sklearn.ensemble import AdaBoostClassifier
 import pickle

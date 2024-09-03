@@ -1,9 +1,9 @@
-from sklearn.metrics import roc_curve
+
 import pydantic
 
 from ml_models.model_interface import Model
-from evaluation.EvaluationInformation import ModelEvaluationInformation
-from evaluation.Evaluation import ModelEvaluation, Evaluation
+
+from evaluation.Evaluation import ModelEvaluation
 from ml_models.ModelMetaData import ModelMetaDataFactory
 
 
