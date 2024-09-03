@@ -1,7 +1,7 @@
 import fnmatch
 
 from processing import *
-from ml_models import *
+from ml_models.vision_transformer import VisionTransformerModel
 from evaluation import ModelEvaluation, Evaluation
 
 from visualization import plot_eval

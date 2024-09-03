@@ -1,4 +1,3 @@
-from evaluation.Evaluation import Evaluation_Old
 from evaluation.Evaluation import ModelEvaluation
 from evaluation.Evaluation import Evaluation
 
