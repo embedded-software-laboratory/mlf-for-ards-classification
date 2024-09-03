@@ -6,14 +6,14 @@ from pydantic import BaseModel
 
 
 class ModelMetadata(BaseModel):
-    model_name: str
-    model_type: str
-    model_algorithm: str
+    ml_model_name: str
+    ml_model_type: str
+    ml_model_algorithm: str
 
-    model_hyperparameters: dict
-    model_training_data_location: str
-    model_training_evaluation_location: str
-    model_storage_location: str
+    ml_model_hyperparameters: dict
+    ml_model_training_data_location: str
+    ml_model_training_evaluation_location: str
+    ml_model_storage_location: str
 
 
 class ModelMetaDataFactory:
@@ -28,9 +28,10 @@ class ModelMetaDataFactory:
     def _timeseries_model_factory(model: 'TimeSeriesModel', training_data_location: str,
                                   training_evaluation_location: str) -> ModelMetadata:
 
-        model_hyperparameters = model.get_params()
+        ml_model_hyperparameters = model.get_params()
 
-        return ModelMetadata(model_name=model.name, model_type="TimeSeriesModel",
-                             model_hyperparameters=model_hyperparameters, model_storage_location=model.storage_location,
-                             model_training_data=training_data_location,
-                             model_training_evaluation_location=training_evaluation_location)
+        return ModelMetadata(ml_model_name=model.name, ml_model_type="TimeSeriesModel",
+                             ml_model_hyperparameters=ml_model_hyperparameters,
+                             ml_model_storage_location=model.storage_location,
+                             ml_model_training_data=training_data_location,
+                             ml_model_training_evaluation_location=training_evaluation_location)
