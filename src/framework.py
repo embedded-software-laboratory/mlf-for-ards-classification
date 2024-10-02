@@ -12,6 +12,10 @@ import yaml
 from datetime import datetime
 import json
 
+# Used by the frontend (Baron's bachelor thesis) to see
+# in which phase the framework is
+SENTINEL = "CQlQSEFTRTog"
+
 
 class Framework:
     def __init__(self):
@@ -29,9 +33,11 @@ class Framework:
         for model in config["timeseries_models_to_execute"]:
             self.timeseries_models.append(eval(model + "()"))
             self.timeseries_classes.append(eval(model))
-        self.evaluator = Evaluation(self.timeseries_classes, config["evaluation"])
+        self.evaluator = Evaluation(
+            self.timeseries_classes, config["evaluation"])
         self.image_dl_methods = ["VIT"]
-        self.image_models = [VisionTransformer(config["image_model_parameters"], "vit-small-16")]
+        self.image_models = [VisionTransformer(
+            config["image_model_parameters"], "vit-small-16")]
         self.timeseries_training_data = None
         self.timeseries_test_data = None
         self.image_pneumonia_training_data = None
@@ -39,7 +45,8 @@ class Framework:
         self.image_ards_test_data = None
         self.pneumonia_dataset = config["data"]["pneumonia_dataset"]
         self.ards_dataset = config["data"]["ards_dataset"]
-        self.dataProcessor = DataProcessor(config["processing"], config["data"]["database"], config["process"])
+        self.dataProcessor = DataProcessor(
+            config["processing"], config["data"]["database"], config["process"])
         self.feature_selector = Feature_selection(config["feature_selection"])
         self.segregator = Data_segregator(config["data_segregation"])
         self.dataset_generator = DatasetGenerator()
@@ -52,29 +59,37 @@ class Framework:
         if config["out_dir"]:
             self.outdir = config["out_dir"]
         else:
-            self.outdir = "./Save/" + str(datetime.now().strftime("%m-%d-%Y_%H-%M-%S")) + "/"
+            self.outdir = "./Save/" + \
+                str(datetime.now().strftime("%m-%d-%Y_%H-%M-%S")) + "/"
         if not self.outdir.endswith("/"):
             self.outdir += "/"
 
     def load_timeseries_data(self):
+        print(SENTINEL + "loading_data")
         dataframe = self.loader.load_file(self.timeseries_file_path)
         print(dataframe)
+        print(SENTINEL + "preprocessing")
         dataframe = self.dataProcessor.process_data(dataframe)
         if self.process["perform_feature_selection"] == True:
-            dataframe = self.feature_selector.perform_feature_selection(dataframe)
+            dataframe = self.feature_selector.perform_feature_selection(
+                dataframe)
         if not os.path.isdir(self.outdir):
             os.makedirs(self.outdir, exist_ok=True)
-        dataframe.to_csv(self.outdir + os.path.basename(self.timeseries_file_path) + "_preprocessed.csv", index=True)
+        dataframe.to_csv(
+            self.outdir + os.path.basename(self.timeseries_file_path) + "_preprocessed.csv", index=True)
         print("Finished preprocessing and saved result to file!")
         if self.process["perform_data_segregation"] == True:
-            training_data, test_data = self.segregator.segregate_data(dataframe)
+            training_data, test_data = self.segregator.segregate_data(
+                dataframe)
             self.timeseries_training_data = training_data
             self.timeseries_test_data = test_data
         else:
             self.timeseries_test_data = self.timeseries_training_data = dataframe
 
-        self.timeseries_test_data.to_csv(self.outdir + "test_data.csv", header=True, index=False)
-        self.timeseries_training_data.to_csv(self.outdir + "training_data.csv", header=True, index=False)
+        self.timeseries_test_data.to_csv(
+            self.outdir + "test_data.csv", header=True, index=False)
+        self.timeseries_training_data.to_csv(
+            self.outdir + "training_data.csv", header=True, index=False)
 
     def load_image_data(self):
         for dl_method in self.image_dl_methods:
@@ -97,11 +112,13 @@ class Framework:
         for model in self.image_models:
             info_list = [self.pneumonia_dataset, self.ards_dataset, model.model_name, [self.method, self.method],
                          self.mode]
-            model.train_image_model(self.image_pneumonia_training_data, self.image_ards_training_data, info_list)
+            model.train_image_model(
+                self.image_pneumonia_training_data, self.image_ards_training_data, info_list)
 
     def test_image_models(self):
         for model in self.image_models:
-            info_list = [self.pneumonia_dataset, self.ards_dataset, model.model_name, self.method, self.mode]
+            info_list = [self.pneumonia_dataset, self.ards_dataset,
+                         model.model_name, self.method, self.mode]
             model.test_image_model(self.image_ards_test_data, info_list)
 
     def predict(self, test_data):
@@ -114,19 +131,22 @@ class Framework:
             prediction = model.predict(input)
             print("Classification of " + model.name + ": ")
             print(prediction)
-            df = pd.DataFrame({ "ards_predicted": prediction })
+            df = pd.DataFrame({"ards_predicted": prediction})
             df = pd.concat([test_data, df], axis=1)
-            df.to_csv(self.outdir + f"prediction_{model.name}.csv", index=False)
+            df.to_csv(self.outdir +
+                      f"prediction_{model.name}.csv", index=False)
 
     def evaluate_models(self):
         result = {}
         if self.process["calculate_evaluation_metrics"] == True:
             for model in self.timeseries_models:
                 # for each model, add corresponding dict to results dict
-                result[model.name] = self.evaluator.evaluate(model, self.timeseries_test_data)
+                result[model.name] = self.evaluator.evaluate(
+                    model, self.timeseries_test_data)
 
         if self.process["perform_cross_validation"] == True:
-            cross_validation_results = self.evaluator.perform_cross_validation(self.timeseries_test_data, self.outdir)
+            cross_validation_results = self.evaluator.perform_cross_validation(
+                self.timeseries_test_data, self.outdir)
             for model_name in list(cross_validation_results.keys()):
                 # for each model, add corresponding cross validation results to already existing
                 # data in json dict
@@ -142,7 +162,7 @@ class Framework:
             os.makedirs(self.outdir)
         for model in self.timeseries_models:
             model.save(self.outdir + model.name)
-            #file.write(str(model_serialized))
+            # file.write(str(model_serialized))
         print("Successfully stored all models!")
 
     def load_models(self):
@@ -170,12 +190,16 @@ class Framework:
             self.load_timeseries_data()
 
         if self.process["perform_timeseries_training"] == True:
+            print(SENTINEL + "training")
             self.learn_timeseries_models()
 
         if self.process["perform_timeseries_classification"] == True:
             self.predict(self.timeseries_test_data)
 
+        print(SENTINEL + "evaluating")
         self.evaluate_models()
+
+        print(SENTINEL + "storing_results")
 
         if self.process["save_models"] == True:
             self.save_models()
