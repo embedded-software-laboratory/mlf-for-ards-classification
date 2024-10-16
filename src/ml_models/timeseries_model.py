@@ -16,11 +16,13 @@ class TimeSeriesModel(Model):
     def get_params(self):
         raise NotImplementedError
 
-    def train_timeseries(self, training_data, config):
+    def train_timeseries(self, training_data, config, split_name: str = " split"):
         model_evaluator = ModelEvaluation(config, self, None)
-
+        stage = "Training"
         self.model.train_model(training_data)
-        model_evaluator.evaluate(training_data, "Training")
+        labels = training_data["ards"]
+        predictors = training_data.loc[:, training_data.columns != 'ards']
+        model_evaluator.evaluate_timeseries_model(predictors, labels, stage, split_name)
         self.training_evaluation = model_evaluator.evaluation_results["Training"]
 
     def save(self, filepath, training_dataset_location: str):

@@ -1,3 +1,5 @@
+from sympy.codegen.ast import continue_
+
 from evaluation.EvaluationInformation import ModelEvaluationInformation, EvaluationInformation
 from metrics.Models import GenericThresholdOptimization, EvalResult, GenericSplit
 from metrics.Metrics import OptimalProbability
@@ -15,8 +17,8 @@ class EvalResultFactory:
     @staticmethod
     def factory_method(optimizer_list: list[GenericThresholdOptimization],
                        evaltype: str) -> EvalResult:
-        if evaltype not in ["Evaluation", "CrossValidation"]:
-            raise ValueError("Evaluation type must be either Evaluation or CrossValidation.")
+        #if evaltype not in ["Evaluation", "CrossValidation"]:
+        #    raise ValueError("Evaluation type must be either Evaluation or CrossValidation.")
 
         eval_name = evaltype
 
@@ -45,17 +47,17 @@ class ResultFactory:
     """Contains the result of multiple models which may have multiple evaluation runs"""
 
     @staticmethod
-    def factory_method(evaluation: EvaluationInformation, model_results: dict) -> Result:
+    def factory_method(evaluation: EvaluationInformation, model_results: dict) -> ExperimentResult:
         cross_validation_random_state = evaluation.random_state
         cross_validation_shuffle = evaluation.shuffle
         cross_validation_splits = evaluation.n_splits
         cross_validation_performed = evaluation.cross_validation_performed
         evaluation_performed = evaluation.evaluation_performed
-        return Result(result_name=evaluation.experiment_name, storage_location=evaluation.eval_storage_location,
-                      contained_model_results=model_results, crossvalidation_performed=cross_validation_performed,
-                          crossvalidation_random_state=cross_validation_random_state,
-                          crossvalidation_shuffle=cross_validation_shuffle,
-                          crossvalidation_splits=cross_validation_splits, evaluation_performed=evaluation_performed)
+        return ExperimentResult(result_name=evaluation.experiment_name, storage_location=evaluation.eval_storage_location,
+                                contained_model_results=model_results, crossvalidation_performed=cross_validation_performed,
+                                crossvalidation_random_state=cross_validation_random_state,
+                                crossvalidation_shuffle=cross_validation_shuffle,
+                                crossvalidation_splits=cross_validation_splits, evaluation_performed=evaluation_performed)
 
 
 #class ResultFactoryOld:
@@ -115,16 +117,23 @@ class SplitFactory:
                               "predicted_label": evaluation.predicted_labels_test,
                               "true_labels": evaluation.true_labels_test,
                               "calc_func": optimizer.calculate_optimal_threshold}
-
         if evaluation.model_has_proba:
             fpr, tpr, thresholds = roc_curve(evaluation.true_labels_test, evaluation.predicted_probas_test)
             metric_information["fpr"] = fpr
             metric_information["tpr"] = tpr
             metric_information["thresholds"] = thresholds
-            optimal_threshold = OptimalProbability().calculate_metric(metric_information, stage)
-            prediction_labels = (evaluation.predicted_probas_test > optimal_threshold).astype(int)
+            if stage != "Training":
+                training_eval = evaluation.model.training_evaluation["Training"].contained_optimizers
+                training_result = training_eval[optimizer].contained_splits["Training split"]
+                optimal_threshold_training = training_result.contained_metrics["OptimalProbability"].metric_value
+                prediction_labels = (evaluation.predicted_probas_test > optimal_threshold_training).astype(int)
+            else:
+                optimal_threshold = OptimalProbability().calculate_metric(metric_information, stage)
+                prediction_labels = (evaluation.predicted_probas_test > optimal_threshold).astype(int)
         else:
             prediction_labels = evaluation.predicted_labels_test
+
+
         metric_information["predicted_label"] = prediction_labels
         metric_information["true_labels"] = evaluation.true_labels_test
 

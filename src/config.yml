@@ -52,13 +52,13 @@ algorithm_base_path:
   BayesianNetModel: "default"
   RecurrentNeuralNetworkModel: "Save/Cross validation results/Recurrent neural network_1"
 
-storage_path: "Save/Result"
+storage_path: "Save/ExperimentResult"
 
 
 
 
 data:
-  timeseries_file_path: "./Save/Result/uka_data_050623_preprocessed.csv" #"/hpcwork/rwth1474/Data/time_series/uka_data_050623.npy"
+  timeseries_file_path: "./Save/ExperimentResult/uka_data_050623_preprocessed.csv" #"/hpcwork/rwth1474/Data/time_series/uka_data_050623.npy"
   database: "UKA"
   image_file_path: "Data/Image_data"
   pneumonia_dataset: "balanced"

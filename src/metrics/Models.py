@@ -53,7 +53,7 @@ class StringValue(GenericValue):
     metric_value: str
 
 
-class Result(BaseModel):
+class ExperimentResult(BaseModel):
     result_name: str
     storage_location: str
     contained_model_results: dict

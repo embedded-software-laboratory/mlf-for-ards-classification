@@ -5,7 +5,7 @@ from ml_models.vision_transformer import VisionTransformerModel
 from evaluation import ModelEvaluation, Evaluation
 
 from visualization import plot_eval
-from metrics.Models import ModelResult, EvalResult, Result
+from metrics.Models import ModelResult, EvalResult, ExperimentResult
 from cli import make_parser
 
 import os
@@ -47,7 +47,7 @@ class Framework:
             self.timeseries_models_to_cross_validate.append(str(model))
 
 
-        self.trained_models  = []
+        self.trained_timeseries_models  = []
 
         self.timeseries_models = []
         self.timeseries_classes = []
@@ -114,7 +114,7 @@ class Framework:
 
     def learn_timeseries_models(self):
         for model in self.timeseries_models:
-            model.train_timeseries(self.timeseries_training_data)
+            model.train_timeseries(self.timeseries_training_data, self.config)
             if self.process["save_models"]:
                 training_data_location = ""
                 model.save(self.outdir + model.name, training_data_location)
@@ -149,11 +149,11 @@ class Framework:
 
     def evaluate_models(self):
         result = {}
+
         evaluator = Evaluation(self.config, dataset_training=self.timeseries_training_data,
                                dataset_test=self.timeseries_test_data)
-        overall_result = evaluator.evaluate_timeseries_models(self.timeseries_models,
-                                                              self.process["perform_cross_validation"],
-                                                              self.process["calculate_evaluation_metrics"])
+        overall_result = evaluator.evaluate_timeseries_models(self.timeseries_models)
+
         if overall_result.contained_model_results:
             print(f"Save results to {self.outdir + 'results.json'}")
             with (open(self.outdir + 'results.json', 'w', encoding='utf-8') as f):
@@ -161,6 +161,11 @@ class Framework:
                 #json.dump(overall_result, f, ensure_ascii=False, indent=4)
                 # TODO make plots
                 # plot_eval(data=result, file_name=f.name)
+
+    def cross_validate_models(self):
+        evaluator = Evaluation(self.config, dataset_training=self.timeseries_training_data,
+                               dataset_test=self.timeseries_test_data)
+        overall_result = evaluator.evaluate_timeseries_models(self.timeseries_models,)
 
     def save_models(self):
         if not os.path.isdir(self.outdir):
@@ -171,14 +176,14 @@ class Framework:
         print("Successfully stored all models!")
 
     def load_timeseries_models(self):
-        models_to_load = set(self.timeseries_models_to_evaluate).difference(set(self.trained_models))
+        models_to_load = set(self.timeseries_models_to_evaluate).difference(set(self.timeseries_models))
         for model_name in models_to_load:
-            index = self.trained_models.index(model_name)
+            index = self.timeseries_models.index(model_name)
             algorithm = self.timeseries_algorithms_to_evaluate[index]
             base_path = self.model_base_paths[algorithm]
             model_obj = eval(algorithm + "()")
             loaded_model = model_obj.load(base_path, model_name)
-            self.trained_models.append()
+            self.timeseries_models.append(loaded_model)
 
 
 
@@ -193,9 +198,9 @@ class Framework:
 
     def load_models(self):
         self.load_image_models()
-        self.load_image_models()
-        models_to_load = set(self.timeseries_models_to_evaluate).difference(set(self.trained_models))
-        for model in models_to_load:
+        self.load_timeseries_models()
+
+        for model in self.timeseries_models:
             if model in self.model_base_paths:
                 if self.model_base_paths[model] != "default":
                     model.load(self.model_base_paths[model.name])
@@ -224,8 +229,11 @@ class Framework:
         if self.process["perform_timeseries_classification"]:
             self.predict(self.timeseries_test_data)
 
-        if self.process["calculate_evaluation_metrics"] or self.process["perform_cross_validation"]:
+        if self.process["calculate_evaluation_metrics"]:
             self.evaluate_models()
+
+        if self.process["perform_cross_validation"]:
+            self.cross_validate_models()
 
         if self.process["save_models"]:
             self.save_models()
