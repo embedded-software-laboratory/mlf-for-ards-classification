@@ -3,6 +3,7 @@ import fnmatch
 from processing import *
 from ml_models.vision_transformer import VisionTransformerModel
 from evaluation import ModelEvaluation, Evaluation
+from ml_models import *
 
 from visualization import plot_eval
 from metrics.Models import ModelResult, EvalResult, ExperimentResult
@@ -30,11 +31,11 @@ class Framework:
         self.config = config
         self.loader = FileLoader()
         self.supported_timeseries_models = self.config['supported_algorithms']['timeseries_models']
-        self.supported_images_models = self.config['supported_algorithms']['images_models']
+        self.supported_images_models = self.config['supported_algorithms']['image_models']
         self.timeseries_models_to_train = []
         self.timeseries_models_to_evaluate = []
         self.timeseries_algorithms_to_evaluate = []
-        self.timeseries_models_to_cross_validate = []
+        
 
         for model in config['timeseries_models_to_train']:
             self.timeseries_models_to_train.append(str(model))
@@ -43,8 +44,7 @@ class Framework:
             self.timeseries_models_to_evaluate.append(str(model[1]))
             self.timeseries_algorithms_to_evaluate.append(str(model[0]))
 
-        for model in config['timeseries_models_to_cross_validate']:
-            self.timeseries_models_to_cross_validate.append(str(model))
+        
 
 
         self.trained_timeseries_models  = []
