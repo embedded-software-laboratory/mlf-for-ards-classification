@@ -38,9 +38,8 @@ class ModelResultFactory:
 
     @staticmethod
     def factory_method(evaluation: ModelEvaluationInformation, contained_evals: dict) -> ModelResult:
-
         return ModelResult(used_model_location=evaluation.model.storage_location, used_model_name=evaluation.model_name,
-                           contained_evals=contained_evals)
+                           contained_evals=contained_evals, training_result=evaluation.model.training_evaluation)
 
 
 class ResultFactory:
