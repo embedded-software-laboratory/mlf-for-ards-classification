@@ -18,11 +18,11 @@ class TimeSeriesModel(Model):
 
     @property
     def storage_location(self):
-        raise self.storage_location
+        return self._storage_location
 
     @storage_location.setter
     def storage_location(self, location):
-        self.storage_location = location
+        self._storage_location = location
 
     def train_timeseries(self, training_data, config, split_name: str = " split"):
         model_evaluator = ModelEvaluation(config, self, None)
