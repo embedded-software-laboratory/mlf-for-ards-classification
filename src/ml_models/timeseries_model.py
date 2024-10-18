@@ -19,7 +19,7 @@ class TimeSeriesModel(Model):
     def train_timeseries(self, training_data, config, split_name: str = " split"):
         model_evaluator = ModelEvaluation(config, self, None)
         stage = "Training"
-        self.model.train_model(training_data)
+        self.train_model(training_data)
         labels = training_data["ards"]
         predictors = training_data.loc[:, training_data.columns != 'ards']
         model_evaluator.evaluate_timeseries_model(predictors, labels, stage, split_name)

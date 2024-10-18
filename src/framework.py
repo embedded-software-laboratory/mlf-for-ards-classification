@@ -114,6 +114,7 @@ class Framework:
 
     def learn_timeseries_models(self):
         for model in self.timeseries_models:
+            
             model.train_timeseries(self.timeseries_training_data, self.config)
             if self.process["save_models"]:
                 training_data_location = ""

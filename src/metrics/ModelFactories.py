@@ -123,8 +123,9 @@ class SplitFactory:
             metric_information["tpr"] = tpr
             metric_information["thresholds"] = thresholds
             if stage != "Training":
-                training_eval = evaluation.model.training_evaluation["Training"].contained_optimizers
-                training_result = training_eval[optimizer].contained_splits["Training split"]
+                
+                training_eval = evaluation.model.training_evaluation.contained_optimizers
+                training_result = training_eval[optimizer_name].contained_splits["Training split"]
                 optimal_threshold_training = training_result.contained_metrics["OptimalProbability"].metric_value
                 prediction_labels = (evaluation.predicted_probas_test > optimal_threshold_training).astype(int)
             else:
