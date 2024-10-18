@@ -16,6 +16,14 @@ class TimeSeriesModel(Model):
     def get_params(self):
         raise NotImplementedError
 
+    @property
+    def storage_location(self):
+        raise self.storage_location
+
+    @storage_location.setter
+    def storage_location(self, location):
+        self.storage_location = location
+
     def train_timeseries(self, training_data, config, split_name: str = " split"):
         model_evaluator = ModelEvaluation(config, self, None)
         stage = "Training"
