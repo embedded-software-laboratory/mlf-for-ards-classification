@@ -31,7 +31,7 @@ class TimeSeriesModel(Model):
         labels = training_data["ards"]
         predictors = training_data.loc[:, training_data.columns != 'ards']
         model_evaluator.evaluate_timeseries_model(predictors, labels, stage, split_name)
-        self.training_evaluation = model_evaluator.evaluation_results["Training"]
+        self.training_evaluation = model_evaluator.evaluation_results[stage]
 
     def save(self, filepath, training_dataset_location: str):
         if not self.trained:

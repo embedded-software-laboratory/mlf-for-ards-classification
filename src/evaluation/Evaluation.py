@@ -99,7 +99,7 @@ class ModelEvaluation:
         optimizer_eval_dict = {}
         for optimizer in threshold_optimizers:
             optimizer_eval_dict[optimizer] = []
-
+        split_training_evaluation_dict = {}
         for (train_set, test_set), i in zip(cross_validation.split(predictors, labels),
                                             range(self.evaluation.eval_info.n_splits)):
 
@@ -113,7 +113,7 @@ class ModelEvaluation:
 
             # Learn model for the split
             self.model.train_timeseries(training_data, self.config, "CrossValidation",  f"Training split: {i}")
-            training_eval = self.model.training_evaluation["Training"].contained_optimizers
+            training_eval = self.model.training_evaluation["CrossValidation"]
 
             if self.config["process"]["save_models"]:
                 save_path = self.config["storage_path"] if self.config["storage_path"] else "./Save/" + str(

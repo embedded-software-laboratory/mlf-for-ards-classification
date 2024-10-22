@@ -44,6 +44,7 @@ class ModelResultFactory:
         if stage == "Evaluation":
             contained_evals["Training"] = training_evaluation
         elif stage == "CrossValidation":
+            print(contained_evals.keys())
             contained_evals["TrainingCrossValidation"] = None
             # TODO Implement
 
