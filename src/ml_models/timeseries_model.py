@@ -24,9 +24,9 @@ class TimeSeriesModel(Model):
     def storage_location(self, location):
         self._storage_location = location
 
-    def train_timeseries(self, training_data, config, split_name: str = " split"):
+    def train_timeseries(self, training_data, config, stage: str, split_name: str = " split"):
         model_evaluator = ModelEvaluation(config, self, None)
-        stage = "Training"
+
         self.train_model(training_data)
         labels = training_data["ards"]
         predictors = training_data.loc[:, training_data.columns != 'ards']

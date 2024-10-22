@@ -37,11 +37,18 @@ class ModelResultFactory:
     """Contains the result of multiple evaluations runs for a specified model"""
 
     @staticmethod
-    def factory_method(evaluation: ModelEvaluationInformation, contained_evals: dict) -> ModelResult:
+    def factory_method(evaluation: ModelEvaluationInformation, contained_evals: dict, training_evaluation: EvalResult,
+                       stage: str) -> ModelResult:
         if evaluation.model.storage_location is None:
             evaluation.model.storage_location = "Unknown"
+        if stage == "Evaluation":
+            contained_evals["Training"] = training_evaluation
+        elif stage == "CrossValidation":
+            contained_evals["TrainingCrossValidation"] = None
+            # TODO Implement
+
         return ModelResult(used_model_location=evaluation.model.storage_location, used_model_name=evaluation.model_name,
-                           contained_evals=contained_evals, training_results=evaluation.model.training_evaluation.contained_optimizers)
+                           contained_evals=contained_evals)
 
 
 class ResultFactory:

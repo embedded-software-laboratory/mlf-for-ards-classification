@@ -92,7 +92,7 @@ class ModelResult(BaseModel):
     used_model_location: str
     used_model_name: str = None
     contained_evals: dict
-    training_results: dict
+
 
 class EvalResult(BaseModel):
     class Config:

@@ -115,7 +115,7 @@ class Framework:
     def learn_timeseries_models(self):
         for model in self.timeseries_models:
             
-            model.train_timeseries(self.timeseries_training_data, self.config)
+            model.train_timeseries(self.timeseries_training_data, self.config, "Training")
             if self.process["save_models"]:
                 training_data_location = ""
                 model.save(self.outdir + model.name, training_data_location)
@@ -158,7 +158,7 @@ class Framework:
         if overall_result.contained_model_results:
             print(f"Save results to {self.outdir + 'results.json'}")
             with (open(self.outdir + 'results.json', 'w', encoding='utf-8') as f):
-                f.write(overall_result.model_dump_json())
+                f.write(overall_result.model_dump_json(indent=4))
                 #json.dump(overall_result, f, ensure_ascii=False, indent=4)
                 # TODO make plots
                 # plot_eval(data=result, file_name=f.name)
@@ -166,7 +166,7 @@ class Framework:
     def cross_validate_models(self):
         evaluator = Evaluation(self.config, dataset_training=self.timeseries_training_data,
                                dataset_test=self.timeseries_test_data)
-        overall_result = evaluator.evaluate_timeseries_models(self.timeseries_models,)
+        overall_result = evaluator.cross_validate_timeseries_models(self.timeseries_models)
 
     def save_models(self):
         if not os.path.isdir(self.outdir):

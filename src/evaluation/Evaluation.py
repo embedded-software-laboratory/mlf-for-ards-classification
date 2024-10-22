@@ -30,7 +30,9 @@ class Evaluation:
                 labels = self.eval_info.dataset_test['ards']
                 model_evaluation.evaluate_timeseries_model(predictors, labels, "Evaluation")
                 model_result = ModelResultFactory.factory_method(model_evaluation.model_eval_info,
-                                                             model_evaluation.evaluation_results)
+                                                                model_evaluation.evaluation_results,
+                                                                model_evaluation.model.training_evaluation,
+                                                                "Evaluation")
                 self.model_results[timeseries_model.name] = model_result
 
         overall_result = ResultFactory.factory_method(self.eval_info, self.model_results)
@@ -74,6 +76,7 @@ class ModelEvaluation:
             optimizer_list.append(optimizer_result)
 
         result = EvalResultFactory.factory_method(optimizer_list, stage)
+
         self.evaluation_results[stage] = result
 
     def cross_validate_timeseries_model(self, data) -> None:
@@ -109,7 +112,7 @@ class ModelEvaluation:
             test_data = predictors_test.assign(ards=labels_test)
 
             # Learn model for the split
-            self.model.train_timeseries(training_data, self.config, f"Training split: {i}")
+            self.model.train_timeseries(training_data, self.config, "CrossValidation",  f"Training split: {i}")
             training_eval = self.model.training_evaluation["Training"].contained_optimizers
 
             if self.config["process"]["save_models"]:
