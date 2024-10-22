@@ -41,7 +41,7 @@ class ModelResultFactory:
         if evaluation.model.storage_location is None:
             evaluation.model.storage_location = "Unknown"
         return ModelResult(used_model_location=evaluation.model.storage_location, used_model_name=evaluation.model_name,
-                           contained_evals=contained_evals, training_result=evaluation.model.training_evaluation)
+                           contained_evals=contained_evals, training_results=evaluation.model.training_evaluation.contained_optimizers)
 
 
 class ResultFactory:
