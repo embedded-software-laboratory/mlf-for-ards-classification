@@ -156,8 +156,8 @@ class Framework:
         overall_result = evaluator.evaluate_timeseries_models(self.timeseries_models)
 
         if overall_result.contained_model_results:
-            print(f"Save results to {self.outdir + 'results.json'}")
-            with (open(self.outdir + 'results.json', 'w', encoding='utf-8') as f):
+            print(f"Save results to {self.outdir + 'results_evaluation.json'}")
+            with (open(self.outdir + 'results_evaluation.json', 'w', encoding='utf-8') as f):
                 f.write(overall_result.model_dump_json(indent=4))
                 #json.dump(overall_result, f, ensure_ascii=False, indent=4)
                 # TODO make plots
@@ -167,6 +167,10 @@ class Framework:
         evaluator = Evaluation(self.config, dataset_training=self.timeseries_training_data,
                                dataset_test=self.timeseries_test_data)
         overall_result = evaluator.cross_validate_timeseries_models(self.timeseries_models)
+        if overall_result.contained_model_results:
+            print(f"Save results to {self.outdir + 'results_crossvalidation.json'}")
+            with (open(self.outdir + 'results_crossvalidation.json', 'w', encoding='utf-8') as f):
+                f.write(overall_result.model_dump_json(indent=4))
 
     def save_models(self):
         if not os.path.isdir(self.outdir):
