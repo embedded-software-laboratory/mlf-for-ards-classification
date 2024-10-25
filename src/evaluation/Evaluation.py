@@ -113,7 +113,7 @@ class ModelEvaluation:
 
             # Learn model for the split
             self.model.train_timeseries(training_data, self.config, "CrossValidation",  f"Training split: {i}")
-            training_eval = self.model.training_evaluation["CrossValidation"]
+            training_eval = self.model.training_evaluation
 
             if self.config["process"]["save_models"]:
                 save_path = self.config["storage_path"] if self.config["storage_path"] else "./Save/" + str(
@@ -131,9 +131,10 @@ class ModelEvaluation:
             self.model_eval_info.true_labels_training = labels_train
 
             for optimizer in threshold_optimizers:
-                training_result = training_eval[optimizer].contained_splits["Training split"]
-                training_result.split_name = f"Training split {i}"
-                eval_result = SplitFactory.factory_method(self.model_eval_info, f"Evaluation split {i}",
+                print(training_eval.contained_optimizers[optimizer].contained_splits.keys())
+                training_result = training_eval.contained_optimizers[optimizer].contained_splits[f"CrossValidationTraining split: {i}"]
+                training_result.split_name = f"CrossValidationTraining split: {i}"
+                eval_result = SplitFactory.factory_method(self.model_eval_info, f"CrossValidationEvaluation split {i}",
                                                           optimizer, "Evaluation")
                 optimizer_eval_dict[optimizer].append(training_result)
                 optimizer_eval_dict[optimizer].append(eval_result)
