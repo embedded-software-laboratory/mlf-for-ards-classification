@@ -40,10 +40,16 @@ class Evaluation:
         return overall_result
 
     def cross_validate_timeseries_models(self, timeseries_models: list[Model]) -> ExperimentResult:
-        # TODO finish
+
         for timeseries_model in timeseries_models:
             model_evaluation = ModelEvaluation(self.config, timeseries_model, self)
             model_evaluation.cross_validate_timeseries_model(self.eval_info.dataset_training)
+            model_result = ModelResultFactory.factory_method(model_evaluation.model_eval_info, model_evaluation.evaluation_results,
+                                                             model_evaluation.model.training_evaluation, stage="CrossValidation")
+            self.model_results[timeseries_model.name] = model_result
+
+        overall_result = ResultFactory.factory_method(self.eval_info, self.model_results)
+        return overall_result
 
 
 class ModelEvaluation:
