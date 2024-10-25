@@ -1,3 +1,4 @@
+import copy
 from datetime import datetime
 from typing import Union
 
@@ -112,7 +113,7 @@ class ModelEvaluation:
             test_data = predictors_test.assign(ards=labels_test)
 
             # Learn model for the split
-            self.model.train_timeseries(training_data, self.config, "CrossValidation",  f"Training split: {i}")
+            self.model.train_timeseries(training_data, self.config, "Training")
             training_eval = self.model.training_evaluation
 
             if self.config["process"]["save_models"]:
@@ -131,11 +132,11 @@ class ModelEvaluation:
             self.model_eval_info.true_labels_training = labels_train
 
             for optimizer in threshold_optimizers:
-                print(training_eval.contained_optimizers[optimizer].contained_splits.keys())
-                training_result = training_eval.contained_optimizers[optimizer].contained_splits[f"CrossValidationTraining split: {i}"]
-                training_result.split_name = f"CrossValidationTraining split: {i}"
+                training_result = copy.deepcopy(training_eval.contained_optimizers[optimizer].contained_splits["Training split"])
+                
                 eval_result = SplitFactory.factory_method(self.model_eval_info, f"CrossValidationEvaluation split {i}",
                                                           optimizer, "Evaluation")
+                training_result.split_name = f"CrossValidationTraining split: {i}"
                 optimizer_eval_dict[optimizer].append(training_result)
                 optimizer_eval_dict[optimizer].append(eval_result)
         optimizer_list = []
