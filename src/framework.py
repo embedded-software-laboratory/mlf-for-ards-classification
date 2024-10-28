@@ -35,6 +35,8 @@ class Framework:
         self.timeseries_models_to_train = []
         self.timeseries_models_to_evaluate = []
         self.timeseries_algorithms_to_evaluate = []
+        self.timeseries_evaluations_result = None
+        self.timeseries_cross_validation_result = None
         
 
         for model in config['timeseries_models_to_train']:
@@ -154,6 +156,7 @@ class Framework:
         evaluator = Evaluation(self.config, dataset_training=self.timeseries_training_data,
                                dataset_test=self.timeseries_test_data)
         overall_result = evaluator.evaluate_timeseries_models(self.timeseries_models)
+        self.timeseries_evaluations_result = overall_result
 
         if overall_result.contained_model_results:
             print(f"Save results to {self.outdir + 'results_evaluation.json'}")
@@ -167,6 +170,7 @@ class Framework:
         evaluator = Evaluation(self.config, dataset_training=self.timeseries_training_data,
                                dataset_test=self.timeseries_test_data)
         overall_result = evaluator.cross_validate_timeseries_models(self.timeseries_models)
+        self.timeseries_cross_validation_result = overall_result
         if overall_result.contained_model_results:
             print(f"Save results to {self.outdir + 'results_crossvalidation.json'}")
             with (open(self.outdir + 'results_crossvalidation.json', 'w', encoding='utf-8') as f):
@@ -189,6 +193,71 @@ class Framework:
             model_obj = eval(algorithm + "()")
             loaded_model = model_obj.load(base_path, model_name)
             self.timeseries_models.append(loaded_model)
+
+    def handle_timeseries_results(self):
+        result_location = self.outdir + 'results.json'
+        if self.timeseries_cross_validation_result and self.timeseries_evaluations_result:
+            n_splits = self.config["evaluation"]["cross_validation"]["n_splits"]
+            shuffle = self.config["evaluation"]["cross_validation"]["shuffle"]
+            random_state = self.config["evaluation"]["cross_validation"]["random_state"]
+            eval_name = self.config['evaluation']['evaluation_name']
+
+            cv_result = self.timeseries_cross_validation_result
+            eval_result = self.timeseries_evaluations_result
+            contained_models = set()
+            model_eval_dict = {}
+            model_name_dict = {}
+            model_storage_dict = {}
+
+            for model in cv_result.contained_model_results.keys():
+                contained_models.add(model)
+            for model in eval_result.contained_model_results.keys():
+                contained_models.add(model)
+            for model in list(contained_models):
+                model_eval_dict[model] = []
+
+                if model in eval_result.contained_model_results:
+                    model_eval_dict[model].append(eval_result.contained_model_results[model].contained_evals)
+                    model_name_dict[model] = eval_result.contained_model_results[model].used_model_name
+                    model_storage_dict[model] = eval_result.contained_model_results[model].used_storage_location
+                if model in cv_result.contained_model_results:
+                    model_eval_dict[model].append(cv_result.contained_model_results[model].contained_evals)
+                    if model not in eval_result.contained_model_results.keys():
+                        model_name_dict[model] = cv_result.contained_model_results[model].used_model_name
+                        model_storage_dict[model] = cv_result.contained_model_results[model].used_storage_location
+            model_result_list = []
+            for model in model_eval_dict.keys():
+                contained_evals = model_eval_dict[model]
+                model_name = model_name_dict[model]
+                model_storage = model_storage_dict[model]
+
+                model_result = ModelResult( used_model_location= model_storage, used_model_name=model_name,
+                                            contained_evals=contained_evals)
+                model_result_list.append(model_result)
+            final_result = ExperimentResult(result_name=eval_name, storage_location =result_location,
+                                            contained_model_results= model_result_list, crossvalidation_performed= True,
+                                            crossvalidation_random_state=random_state, crossvalidation_shuffle=shuffle,
+                                            crossvalidation_splits= n_splits, evaluation_performed=True)
+
+
+
+
+
+
+
+
+        elif self.timeseries_cross_validation_result:
+            final_result = self.timeseries_cross_validation_result
+
+
+        elif self.timeseries_evaluations_result:
+            final_result = self.timeseries_evaluations_result
+        else:
+            print("This should never happen")
+
+        print(f"Save results to {self.outdir + 'results.json'}")
+        with (open(result_location, 'w', encoding='utf-8') as f):
+            f.write(final_result.model_dump_json(indent=4))
 
 
 
@@ -239,6 +308,10 @@ class Framework:
 
         if self.process["perform_cross_validation"]:
             self.cross_validate_models()
+
+        if self.timeseries_evaluations_result or self.timeseries_cross_validation_result:
+            self.handle_timeseries_results()
+
 
         if self.process["save_models"]:
             self.save_models()

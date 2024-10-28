@@ -82,7 +82,7 @@ class ModelEvaluation:
             optimizer_result = OptimizerFactory.factory_method([eval_result], optimizer)
             optimizer_list.append(optimizer_result)
 
-        result = EvalResultFactory.factory_method(optimizer_list, stage)
+        result = EvalResultFactory.factory_method(optimizer_list, stage, evaluation_performed=True)
 
         self.evaluation_results[stage] = result
 
@@ -92,11 +92,13 @@ class ModelEvaluation:
             return
         labels = data["ards"]
         predictors = data.loc[:, data.columns != 'ards']
-
+        n_splits = self.evaluation.eval_info.n_splits
+        shuffle_cv = self.evaluation.eval_info.shuffle
+        random_state = self.evaluation.eval_info.random_state
         # Create Splits for Crossvalidation
-        cross_validation = StratifiedKFold(n_splits=self.evaluation.eval_info.n_splits,
-                                           shuffle=self.evaluation.eval_info.shuffle,
-                                           random_state=self.evaluation.eval_info.random_state)
+        cross_validation = StratifiedKFold(n_splits=n_splits,
+                                           shuffle=shuffle_cv,
+                                           random_state=random_state)
 
         if self.config["process"]["perform_threshold_optimization"]:
             threshold_optimizers = self.config['evaluation']['threshold_optimization_algorithms']
@@ -104,9 +106,12 @@ class ModelEvaluation:
             threshold_optimizers = ["Standard"]
 
         optimizer_eval_dict = {}
+        split_training_evaluation_dict = {}
         for optimizer in threshold_optimizers:
             optimizer_eval_dict[optimizer] = []
-        split_training_evaluation_dict = {}
+            split_training_evaluation_dict[optimizer] = []
+
+
         for (train_set, test_set), i in zip(cross_validation.split(predictors, labels),
                                             range(self.evaluation.eval_info.n_splits)):
 
@@ -143,15 +148,32 @@ class ModelEvaluation:
                 eval_result = SplitFactory.factory_method(self.model_eval_info, f"CrossValidationEvaluation split {i}",
                                                           optimizer, "Evaluation")
                 training_result.split_name = f"CrossValidationTraining split: {i}"
-                optimizer_eval_dict[optimizer].append(training_result)
+                split_training_evaluation_dict[optimizer].append(training_result)
                 optimizer_eval_dict[optimizer].append(eval_result)
-        optimizer_list = []
+        optimizer_eval_list = []
+        optimizer_training_list = []
         for optimizer in threshold_optimizers:
             mean_split = SplitFactory.mean_split_factory_method(optimizer_eval_dict[optimizer])
             optimizer_eval_dict[optimizer].append(mean_split)
             complete_eval_list = optimizer_eval_dict[optimizer]
             optimizer_result = OptimizerFactory.factory_method(complete_eval_list, optimizer)
-            optimizer_list.append(optimizer_result)
-        result = EvalResultFactory.factory_method(optimizer_list, "CrossValidation")
-        self.evaluation_results["CrossValidation"] = result
+            optimizer_eval_list.append(optimizer_result)
+
+            mean_training = SplitFactory.mean_split_factory_method(split_training_evaluation_dict[optimizer])
+            split_training_evaluation_dict[optimizer].append(mean_training)
+            complete_training_list = split_training_evaluation_dict[optimizer]
+            optimizer_training_result = OptimizerFactory.factory_method(complete_training_list, optimizer)#
+            optimizer_training_list.append(optimizer_training_result)
+
+
+
+        eval_result_complete = EvalResultFactory.factory_method(optimizer_eval_list, "CrossValidation",
+                                                                True, random_state,
+                                                                shuffle_cv)
+        training_result_complete = EvalResultFactory.factory_method(optimizer_training_list, "CrossValidation",
+                                                                True, random_state,
+                                                                shuffle_cv)
+
+        self.evaluation_results["EvaluationCrossValidation"] = eval_result_complete
+        self.evaluation_results["TrainingCrossValidation"] = training_result_complete
 
