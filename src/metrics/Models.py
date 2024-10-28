@@ -1,7 +1,9 @@
 from __future__ import annotations
 
-from pydantic import BaseModel, ValidationInfo, field_validator,  model_serializer
+from pydantic import BaseModel, ValidationInfo, field_validator, model_serializer, root_validator, model_validator
 from typing import Any, Callable, Union
+
+from vit_pytorch.levit import always
 
 
 class GenericSplit(BaseModel):
@@ -81,6 +83,8 @@ class ExperimentResult(BaseModel):
                 assert v is not None, f'{info.field_name} must be set if crossvalidation_performed is set to True'
         return v
 
+
+
     class Config:
         arbitrary_types_allowed = True
 
@@ -105,14 +109,39 @@ class EvalResult(BaseModel):
 
     contained_optimizers: dict[str, GenericThresholdOptimization]
 
-class TrainingResult(BaseModel):
-    class Config:
-        arbitrary_types_allowed = True
+    crossvalidation_performed: bool
+    crossvalidation_random_state: int = None
+    crossvalidation_shuffle: bool = None
+    crossvalidation_splits: int = None
+    evaluation_performed: bool
 
-    used_model_location: str
-    used_model_name: str = None
-    training_dataset_location: str = None
-    contained_optimizers: dict
+    @field_validator('crossvalidation_random_state', 'crossvalidation_splits')
+    @classmethod
+    def check_crossvalidation_settings_int(cls, v: int, info: ValidationInfo):
+        if info.data['crossvalidation_performed']:
+            if isinstance(v, int):
+                assert v is not None, f'{info.field_name} must be set if crossvalidation_performed is set to True'
+                assert v >= 0, f'{info.field_name} must be greater than zero if crossvalidation_performed is set to True'
+        return v
+
+    @field_validator('crossvalidation_shuffle')
+    @classmethod
+    def check_crossvalidation_shuffle_settings_bool(cls, v: bool, info: ValidationInfo):
+        if info.data['crossvalidation_performed']:
+            if isinstance(v, bool):
+                assert v is not None, f'{info.field_name} must be set if crossvalidation_performed is set to True'
+        return v
+
+    @model_validator(mode="before")
+    @classmethod
+    def check_only_one_eval_cross_val(cls, info: ValidationInfo):
+        assert (not (info.data['crossvalidation_performed'] and info.data['evaluation_performed'])
+                and (info.data['crossvalidation_performed'] or info.data['evaluation_performed']))
+
+
+
+
+
 
 
 

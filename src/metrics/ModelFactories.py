@@ -16,7 +16,8 @@ class EvalResultFactory:
 
     @staticmethod
     def factory_method(optimizer_list: list[GenericThresholdOptimization],
-                       evaltype: str) -> EvalResult:
+                       evaltype: str, crossvalidation_performed: bool = False, crossvalidation_random_state: int =None,
+                          crossvalidation_shuffle:bool= None, crossvalidation_splits: int =None, evaluation_performed:bool=False) -> EvalResult:
         #if evaltype not in ["Evaluation", "CrossValidation"]:
         #    raise ValueError("Evaluation type must be either Evaluation or CrossValidation.")
 
@@ -29,7 +30,9 @@ class EvalResultFactory:
         for optimizer in optimizer_list:
             dict_optimizer[optimizer.optimization_name] = optimizer
         return EvalResult(eval_type=eval_name, training_dataset=training_dataset, test_dataset=test_dataset,
-                          contained_optimizers=dict_optimizer
+                          contained_optimizers=dict_optimizer, crossvalidation_performed=crossvalidation_performed,
+                          crossvalidation_random_state=crossvalidation_random_state,crossvalidation_shuffle=crossvalidation_shuffle,
+                          crossvalidation_splits=crossvalidation_splits, evaluation_performed=evaluation_performed
                           )
 
 
@@ -43,10 +46,7 @@ class ModelResultFactory:
             evaluation.model.storage_location = "Unknown"
         if stage == "Evaluation":
             contained_evals["Training"] = training_evaluation
-        elif stage == "CrossValidation":
-            print(contained_evals.keys())
-            contained_evals["TrainingCrossValidation"] = None
-            # TODO Implement
+
 
         return ModelResult(used_model_location=evaluation.model.storage_location, used_model_name=evaluation.model_name,
                            contained_evals=contained_evals)
