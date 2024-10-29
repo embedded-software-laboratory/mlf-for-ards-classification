@@ -64,16 +64,8 @@ class ResultFactory:
 
     @staticmethod
     def factory_method(evaluation: EvaluationInformation, model_results: dict) -> ExperimentResult:
-        cross_validation_random_state = evaluation.random_state
-        cross_validation_shuffle = evaluation.shuffle
-        cross_validation_splits = evaluation.n_splits
-        cross_validation_performed = evaluation.cross_validation_performed
-        evaluation_performed = evaluation.evaluation_performed
         return ExperimentResult(result_name=evaluation.experiment_name, storage_location=evaluation.eval_storage_location,
-                                contained_model_results=model_results, crossvalidation_performed=cross_validation_performed,
-                                crossvalidation_random_state=cross_validation_random_state,
-                                crossvalidation_shuffle=cross_validation_shuffle,
-                                crossvalidation_splits=cross_validation_splits, evaluation_performed=evaluation_performed)
+                                contained_model_results=model_results)
 
 
 #class ResultFactoryOld:

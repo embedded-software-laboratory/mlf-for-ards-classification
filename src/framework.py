@@ -240,9 +240,7 @@ class Framework:
                                             contained_evals=contained_evals)
                 model_result_dict[model] = model_result
             final_result = ExperimentResult(result_name=eval_name, storage_location =result_location,
-                                            contained_model_results= model_result_dict, crossvalidation_performed= True,
-                                            crossvalidation_random_state=random_state, crossvalidation_shuffle=shuffle,
-                                            crossvalidation_splits= n_splits, evaluation_performed=True)
+                                            contained_model_results= model_result_dict)
 
 
 
