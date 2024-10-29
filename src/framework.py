@@ -219,12 +219,12 @@ class Framework:
                 if model in eval_result.contained_model_results:
                     model_eval_dict[model].append(eval_result.contained_model_results[model].contained_evals)
                     model_name_dict[model] = eval_result.contained_model_results[model].used_model_name
-                    model_storage_dict[model] = eval_result.contained_model_results[model].used_storage_location
+                    model_storage_dict[model] = eval_result.contained_model_results[model].used_model_location
                 if model in cv_result.contained_model_results:
                     model_eval_dict[model].append(cv_result.contained_model_results[model].contained_evals)
                     if model not in eval_result.contained_model_results.keys():
                         model_name_dict[model] = cv_result.contained_model_results[model].used_model_name
-                        model_storage_dict[model] = cv_result.contained_model_results[model].used_storage_location
+                        model_storage_dict[model] = cv_result.contained_model_results[model].used_model_location
             model_result_list = []
             for model in model_eval_dict.keys():
                 contained_evals = model_eval_dict[model]

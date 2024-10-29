@@ -169,10 +169,10 @@ class ModelEvaluation:
 
         eval_result_complete = EvalResultFactory.factory_method(optimizer_eval_list, "CrossValidation",
                                                                 True, random_state,
-                                                                shuffle_cv)
+                                                                shuffle_cv, n_splits)
         training_result_complete = EvalResultFactory.factory_method(optimizer_training_list, "CrossValidation",
                                                                 True, random_state,
-                                                                shuffle_cv)
+                                                                shuffle_cv, n_splits)
 
         self.evaluation_results["EvaluationCrossValidation"] = eval_result_complete
         self.evaluation_results["TrainingCrossValidation"] = training_result_complete
