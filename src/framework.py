@@ -228,18 +228,19 @@ class Framework:
                     if model not in eval_result.contained_model_results.keys():
                         model_name_dict[model] = cv_result.contained_model_results[model].used_model_name
                         model_storage_dict[model] = cv_result.contained_model_results[model].used_model_location
-            model_result_list = []
+            model_result_dict = {}
             for model in model_eval_dict.keys():
                 contained_evals = model_eval_dict[model]
+
 
                 model_name = model_name_dict[model]
                 model_storage = model_storage_dict[model]
 
                 model_result = ModelResult( used_model_location= model_storage, used_model_name=model_name,
                                             contained_evals=contained_evals)
-                model_result_list.append(model_result)
+                model_result_dict[model] = model_result
             final_result = ExperimentResult(result_name=eval_name, storage_location =result_location,
-                                            contained_model_results= model_result_list, crossvalidation_performed= True,
+                                            contained_model_results= model_result_dict, crossvalidation_performed= True,
                                             crossvalidation_random_state=random_state, crossvalidation_shuffle=shuffle,
                                             crossvalidation_splits= n_splits, evaluation_performed=True)
 
