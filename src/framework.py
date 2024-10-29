@@ -228,6 +228,7 @@ class Framework:
             model_result_list = []
             for model in model_eval_dict.keys():
                 contained_evals = model_eval_dict[model]
+                print(contained_evals)
                 model_name = model_name_dict[model]
                 model_storage = model_storage_dict[model]
 
@@ -254,6 +255,7 @@ class Framework:
             final_result = self.timeseries_evaluations_result
         else:
             print("This should never happen")
+            return
 
         print(f"Save results to {self.outdir + 'results.json'}")
         with (open(result_location, 'w', encoding='utf-8') as f):
