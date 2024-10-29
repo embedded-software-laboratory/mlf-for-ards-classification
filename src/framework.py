@@ -217,14 +217,14 @@ class Framework:
                 model_eval_dict[model] = {}
 
                 if model in eval_result.contained_model_results:
-                    for key in eval_result.contained_model_results[model].keys():
-                        model_eval_dict[model][key] = eval_result.contained_model_results[model][key]
+                    for key in eval_result.contained_model_results[model].contained_evaluations.keys():
+                        model_eval_dict[model][key] = eval_result.contained_model_results[model].contained_evaluations[key]
 
                     model_name_dict[model] = eval_result.contained_model_results[model].used_model_name
                     model_storage_dict[model] = eval_result.contained_model_results[model].used_model_location
                 if model in cv_result.contained_model_results:
-                    for key in cv_result.contained_model_results[model].keys():
-                        model_eval_dict[model][key] = cv_result.contained_model_results[model][key]
+                    for key in cv_result.contained_model_results[model].contained_evaluations.keys():
+                        model_eval_dict[model][key] = cv_result.contained_model_results[model].contained_evaluations[key]
                     if model not in eval_result.contained_model_results.keys():
                         model_name_dict[model] = cv_result.contained_model_results[model].used_model_name
                         model_storage_dict[model] = cv_result.contained_model_results[model].used_model_location
