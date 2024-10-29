@@ -214,21 +214,24 @@ class Framework:
             for model in eval_result.contained_model_results.keys():
                 contained_models.add(model)
             for model in list(contained_models):
-                model_eval_dict[model] = []
+                model_eval_dict[model] = {}
 
                 if model in eval_result.contained_model_results:
-                    model_eval_dict[model].append(eval_result.contained_model_results[model].contained_evals)
+                    for key in eval_result.contained_model_results[model].keys():
+                        model_eval_dict[model][key] = eval_result.contained_model_results[model][key]
+
                     model_name_dict[model] = eval_result.contained_model_results[model].used_model_name
                     model_storage_dict[model] = eval_result.contained_model_results[model].used_model_location
                 if model in cv_result.contained_model_results:
-                    model_eval_dict[model].append(cv_result.contained_model_results[model].contained_evals)
+                    for key in cv_result.contained_model_results[model].keys():
+                        model_eval_dict[model][key] = cv_result.contained_model_results[model][key]
                     if model not in eval_result.contained_model_results.keys():
                         model_name_dict[model] = cv_result.contained_model_results[model].used_model_name
                         model_storage_dict[model] = cv_result.contained_model_results[model].used_model_location
             model_result_list = []
             for model in model_eval_dict.keys():
                 contained_evals = model_eval_dict[model]
-                print(contained_evals)
+
                 model_name = model_name_dict[model]
                 model_storage = model_storage_dict[model]
 

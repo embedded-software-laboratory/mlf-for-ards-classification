@@ -52,7 +52,7 @@ class ModelResultFactory:
             evaluation.model.storage_location = "Unknown"
         if stage == "Evaluation":
             contained_evals["Training"] = training_evaluation
-        print(contained_evals)
+
 
 
         return ModelResult(used_model_location=evaluation.model.storage_location, used_model_name=evaluation.model_name,
