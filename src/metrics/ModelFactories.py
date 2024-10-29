@@ -29,11 +29,17 @@ class EvalResultFactory:
         dict_optimizer = {}
         for optimizer in optimizer_list:
             dict_optimizer[optimizer.optimization_name] = optimizer
-        return EvalResult(eval_type=eval_name, training_dataset=training_dataset, test_dataset=test_dataset,
-                          contained_optimizers=dict_optimizer, crossvalidation_performed=crossvalidation_performed,
-                          crossvalidation_random_state=crossvalidation_random_state,crossvalidation_shuffle=crossvalidation_shuffle,
-                          crossvalidation_splits=crossvalidation_splits, evaluation_performed=evaluation_performed
-                          )
+        if crossvalidation_performed:
+            return EvalResult(eval_type=eval_name, training_dataset=training_dataset, test_dataset=test_dataset,
+                              contained_optimizers=dict_optimizer, crossvalidation_performed=crossvalidation_performed,
+                              crossvalidation_random_state=crossvalidation_random_state,crossvalidation_shuffle=crossvalidation_shuffle,
+                              crossvalidation_splits=crossvalidation_splits, evaluation_performed=evaluation_performed
+                              )
+        else:
+            return EvalResult(eval_type=eval_name, training_dataset=training_dataset, test_dataset=test_dataset,
+                              contained_optimizers=dict_optimizer, crossvalidation_performed=crossvalidation_performed,
+                              evaluation_performed=evaluation_performed
+                              )
 
 
 class ModelResultFactory:

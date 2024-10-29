@@ -3,7 +3,6 @@ from __future__ import annotations
 from pydantic import BaseModel, ValidationInfo, field_validator, model_serializer, root_validator, model_validator
 from typing import Any, Callable, Union
 
-from vit_pytorch.levit import always
 
 
 class GenericSplit(BaseModel):
@@ -132,11 +131,13 @@ class EvalResult(BaseModel):
                 assert v is not None, f'{info.field_name} must be set if crossvalidation_performed is set to True'
         return v
 
-    @model_validator(mode="before")
-    @classmethod
-    def check_only_one_eval_cross_val(cls, info: ValidationInfo):
-        assert (not (info.data['crossvalidation_performed'] and info.data['evaluation_performed'])
-                and (info.data['crossvalidation_performed'] or info.data['evaluation_performed']))
+    @model_validator(mode="after")
+    def check_only_one_eval_cross_val(self):
+        if not  (self.crossvalidation_performed or self.evaluation_performed):
+            raise ValueError("Either CV or Eval has to be performed")
+        if (self.crossvalidation_performed and self.evaluation_performed):
+            raise ValueError("CV and Eval can not be performed in the same Evaluation")
+        return self
 
 
 
