@@ -65,7 +65,8 @@ class Framework:
         if not os.path.isdir(self.outdir):
             os.makedirs(self.outdir, exist_ok=True)
         dataframe.to_csv(self.outdir + os.path.basename(self.timeseries_file_path) + "_preprocessed.csv", index=True)
-        print("Finished preprocessing and saved result to file!")
+        location = self.outdir + os.path.basename(self.timeseries_file_path) + "_preprocessed.csv"
+        print(f"Finished preprocessing and saved result to file! ({location})")
         if self.process["perform_data_segregation"] == True:
             training_data, test_data = self.segregator.segregate_data(dataframe)
             self.timeseries_training_data = training_data
@@ -120,11 +121,13 @@ class Framework:
 
     def evaluate_models(self):
         result = {}
+        for model in self.timeseries_models:
+            result[model.name] = {}
         if self.process["calculate_evaluation_metrics"] == True:
             for model in self.timeseries_models:
                 # for each model, add corresponding dict to results dict
-                result[model.name + "Training"] = self.evaluator.evaluate(model, self.timeseries_training_data)
-                result[model.name] = self.evaluator.evaluate(model, self.timeseries_test_data)
+                result[model.name]["Training"] = self.evaluator.evaluate(model, self.timeseries_training_data)
+                result[model.name]["Test"] = self.evaluator.evaluate(model, self.timeseries_test_data)
 
         if self.process["perform_cross_validation"] == True:
             cross_validation_results = self.evaluator.perform_cross_validation(self.timeseries_test_data, self.outdir)
@@ -132,7 +135,7 @@ class Framework:
                 # for each model, add corresponding cross validation results to already existing
                 # data in json dict
                 result[model_name]["cross_validation"] = cross_validation_results[model_name]
-        if result:
+        if self.process["perform_cross_validation"] or self.process["calculate_evaluation_metrics"]:
             print(f"Save results to {self.outdir + 'results.json'}")
             with (open(self.outdir + 'results.json', 'w', encoding='utf-8') as f):
                 json.dump(result, f, ensure_ascii=False, indent=4)
