@@ -18,6 +18,8 @@ process:
   train_image_models: False
   test_image_models: False
 
+out_dir: "Save/ExperimentResult"
+
 timeseries_models_to_execute:
   - Random_forest
   - XGBoost
