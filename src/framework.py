@@ -123,6 +123,7 @@ class Framework:
         if self.process["calculate_evaluation_metrics"] == True:
             for model in self.timeseries_models:
                 # for each model, add corresponding dict to results dict
+                result[model.name + "Training"] = self.evaluator.evaluate(model, self.timeseries_training_data)
                 result[model.name] = self.evaluator.evaluate(model, self.timeseries_test_data)
 
         if self.process["perform_cross_validation"] == True:
