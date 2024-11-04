@@ -34,6 +34,7 @@ class Framework:
         self.image_models = [VisionTransformer(config["image_model_parameters"], "vit-small-16")]
         self.timeseries_training_data = None
         self.timeseries_test_data = None
+        self.timeseries_data_complete = None
         self.image_pneumonia_training_data = None
         self.image_ards_training_data = None
         self.image_ards_test_data = None
@@ -64,7 +65,7 @@ class Framework:
             dataframe = self.feature_selector.perform_feature_selection(dataframe)
         if not os.path.isdir(self.outdir):
             os.makedirs(self.outdir, exist_ok=True)
-        dataframe.to_csv(self.outdir + os.path.basename(self.timeseries_file_path) + "_preprocessed.csv", index=True)
+        dataframe.to_csv(self.outdir + os.path.basename(self.timeseries_file_path) + "_preprocessed.csv", index=False)
         location = self.outdir + os.path.basename(self.timeseries_file_path) + "_preprocessed.csv"
         print(f"Finished preprocessing and saved result to file! ({location})")
         if self.process["perform_data_segregation"] == True:
@@ -73,7 +74,7 @@ class Framework:
             self.timeseries_test_data = test_data
         else:
             self.timeseries_test_data = self.timeseries_training_data = dataframe
-
+        self.timeseries_data_complete = dataframe
         self.timeseries_test_data.to_csv(self.outdir + "test_data.csv", header=True, index=False)
         self.timeseries_training_data.to_csv(self.outdir + "training_data.csv", header=True, index=False)
 
@@ -110,12 +111,12 @@ class Framework:
         print(test_data)
         print("------------")
         input = test_data.drop(columns=['ards'])
-        test_data = test_data.rename(columns={"ards": "ards_diagnosed"})
+        test_data = test_data.rename(columns={"ards": "ards_diagnosed"}).reset_index(drop=True)
         for model in self.timeseries_models:
             prediction = model.predict(input)
             print("Classification of " + model.name + ": ")
             print(prediction)
-            df = pd.DataFrame({ "ards_predicted": prediction })
+            df = pd.DataFrame({ "ards_predicted": prediction }).reset_index(drop=True)
             df = pd.concat([test_data, df], axis=1)
             df.to_csv(self.outdir + f"prediction_{model.name}.csv", index=False)
 
@@ -126,11 +127,14 @@ class Framework:
         if self.process["calculate_evaluation_metrics"] == True:
             for model in self.timeseries_models:
                 # for each model, add corresponding dict to results dict
+                print(len(self.timeseries_training_data.index))
                 result[model.name]["Training"] = self.evaluator.evaluate(model, self.timeseries_training_data)
+                print(len(self.timeseries_test_data.index))
                 result[model.name]["Test"] = self.evaluator.evaluate(model, self.timeseries_test_data)
 
         if self.process["perform_cross_validation"] == True:
-            cross_validation_results = self.evaluator.perform_cross_validation(self.timeseries_test_data, self.outdir)
+            print(len(self.timeseries_data_complete.index))
+            cross_validation_results = self.evaluator.perform_cross_validation(self.timeseries_data_complete, self.outdir)
             for model_name in list(cross_validation_results.keys()):
                 # for each model, add corresponding cross validation results to already existing
                 # data in json dict
