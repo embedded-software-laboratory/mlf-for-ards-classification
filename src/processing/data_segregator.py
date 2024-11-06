@@ -66,6 +66,11 @@ class Data_segregator():
 
         training_data = pd.concat([ards_training_data, non_ards_training_data])
         test_data = pd.concat([ards_test_data, non_ards_test_data])
+        
+        training_data = training_data.drop("patient_id", axis=1)
+        test_data = test_data.drop("patient_id",axis=1)
+        training_data = training_data.drop("time", axis=1)
+        test_data = test_data.drop("time",axis=1)
 
         return training_data, test_data
 
