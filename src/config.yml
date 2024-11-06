@@ -74,11 +74,13 @@ feature_selection:
 data_segregation:
   training_test_ratio: 0.8
   percentage_of_ards_patients: None
+  splitting_seed: 42
 
 evaluation:
   cross_validation:
     n_splits: 4
     shuffle: False
+    cv_seed: 42
 
 image_model_parameters:
   method: last_block
