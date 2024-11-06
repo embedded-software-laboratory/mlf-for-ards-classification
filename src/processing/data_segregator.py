@@ -8,6 +8,9 @@ class Data_segregator():
     def __init__(self, config):
         self.training_test_ratio = config["training_test_ratio"]
         self.ards_percentage = config["percentage_of_ards_patients"]
+        if not self.ards_percentage:
+            print("Percentage of ARDS patients is needed for the Data segregation to run...")
+            raise ValueError
         self.seed = config["splitting_seed"]
     
     def segregate_data(self, dataframe):
