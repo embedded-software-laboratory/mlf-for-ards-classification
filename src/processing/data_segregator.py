@@ -37,7 +37,7 @@ class Data_segregator():
 
         elif num_non_ards_patients > num_target_non_ards_patients:
             print("Too few ARDS patients, rebalancing...")
-            total_patients = math.floor(num_ards_patients * 1/(self.ards_percentage))
+            total_patients = math.floor(num_ards_patients * 1 / self.ards_percentage)
             num_target_non_ards_patients = math.floor(total_patients*(1-self.ards_percentage))
             samples = random.sample(range(num_non_ards_patients), num_target_non_ards_patients)
             non_ards_data_sampled = non_ards_data.iloc[samples]
@@ -58,5 +58,5 @@ class Data_segregator():
         self.training_test_ratio = new_ratio
 
     def set_ards_percentage(self, new_percentage):
-        self.set_ards_percentage = new_percentage
+        self.ards_percentage = new_percentage
     
