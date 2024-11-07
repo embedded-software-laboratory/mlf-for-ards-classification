@@ -78,7 +78,7 @@ class OptimalProbability(FloatMetricSpec):
         tpr = metric_parameters['tpr']
         threshold = metric_parameters['thresholds']
         calc_func = metric_parameters['calc_func']
-        optimal_prob = calc_func(fpr, tpr, threshold)
+        optimal_prob = calc_func(tpr, fpr, threshold)
         return metrics.Models.GenericMetric(metric_name="Optimal Decision Threshold" + " " + stage,
                              metric_value=FloatValue(metric_value=optimal_prob),
                              metric_spec=OptimalProbability())
