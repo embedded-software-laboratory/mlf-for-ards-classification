@@ -1,74 +1,55 @@
-import pandas as pd
 
+import pandas as pd
+from sklearn.model_selection import  train_test_split
+import random
+import math
 class Data_segregator():
 
     def __init__(self, config):
         self.training_test_ratio = config["training_test_ratio"]
         self.ards_percentage = config["percentage_of_ards_patients"]
+        if not self.ards_percentage:
+            print("Percentage of ARDS patients is needed for the Data segregation to run...")
+            raise ValueError
+        self.seed = config["splitting_seed"]
     
     def segregate_data(self, dataframe):
+        random.seed(self.seed)
         patientids = dataframe["patient_id"].to_list()
-        number_of_patients = len(set(patientids))
+        num_patients = dataframe.shape[0]
         #first, create two datasets, one with the patients with and one with the patients without ards
         ards_mask = dataframe["ards"] == 1
         ards_data = dataframe[ards_mask]
         non_ards_data = dataframe[~ards_mask]
 
-        #calculate the current ards_ratio
-        ards_patient_ids = set(ards_data["patient_id"].to_list())
-        non_ards_patient_ids = set(non_ards_data["patient_id"].to_list())
-        current_ards_ratio = len(set(ards_patient_ids))/number_of_patients
+        num_ards_patients = ards_data.shape[0]
+        num_non_ards_patients = non_ards_data.shape[0]
+        num_target_ards_patients = math.floor(self.ards_percentage * num_patients)
+        num_target_non_ards_patients = math.floor((1-self.ards_percentage) * num_patients)
+        if num_ards_patients > num_target_ards_patients:
+            total_patients = math.floor(num_non_ards_patients * 1/(1-self.ards_percentage))
+            num_target_ards_patients = math.floor(total_patients*self.ards_percentage)
+            print("Too much ARDS patients, rebalancing...")
+            samples = random.sample(range(num_ards_patients), num_target_ards_patients)
+            ards_data_sampled = ards_data.iloc[samples]
+            data = pd.concat([ards_data_sampled, non_ards_data]).reset_index(drop=True)
 
-        #drop columns until the actual ards ratio maps to the desired one (if an ards ratio were set before)
-        if self.ards_percentage != "None":
-            if self.ards_percentage > current_ards_ratio:
-                while self.ards_percentage > current_ards_ratio and len(non_ards_patient_ids) > 0:
-                    removed_patient_id = non_ards_patient_ids.pop()
-                    non_ards_data = non_ards_data.drop(non_ards_data[non_ards_data["patient_id"] == removed_patient_id].index)
-                    number_of_patients-=1
-                    current_ards_ratio = len(non_ards_patient_ids)/number_of_patients
-            elif self.ards_percentage < current_ards_ratio:
-                while self.ards_percentage < current_ards_ratio and len(ards_patient_ids) > 0:
-                    removed_patient_id = ards_patient_ids.pop()
-                    ards_data = ards_data.drop(ards_data[ards_data["patient_id"] == removed_patient_id].index)
-                    number_of_patients-=1
-                    current_ards_ratio = len(ards_patient_ids)/number_of_patients
-        
-        #split both datasets into test and training data
-        ards_training_data = None
-        ards_test_data = None
-        non_ards_training_data = None
-        non_ards_test_data = None
 
-        ards_dataset_threshold = int(len(ards_patient_ids)*self.training_test_ratio)
-        ards_training_subframes = []
-        ards_test_subframes = []
-        for i in range(len(ards_patient_ids)):
-            if i < ards_dataset_threshold:
-                ards_training_subframes.append((ards_data[ards_data["patient_id"] == list(ards_patient_ids)[i]]))
-            else:
-                ards_test_subframes.append((ards_data[ards_data["patient_id"] == list(ards_patient_ids)[i]]))
+        elif num_non_ards_patients > num_target_non_ards_patients:
+            print("Too few ARDS patients, rebalancing...")
+            total_patients = math.floor(num_ards_patients * 1/(self.ards_percentage))
+            num_target_non_ards_patients = math.floor(total_patients*(1-self.ards_percentage))
+            samples = random.sample(range(num_non_ards_patients), num_target_non_ards_patients)
+            non_ards_data_sampled = non_ards_data.iloc[samples]
+            
+            data = pd.concat([non_ards_data_sampled, ards_data]).reset_index(drop=True)
+        else:
+            print("Everything is fine, no rebalancing...")
+            data = pd.concat([ards_data, non_ards_data], axis=0).reset_index(drop=True)
         
-        if len(ards_training_subframes) > 0: ards_training_data = pd.concat(ards_training_subframes)
-        if len(ards_test_subframes) > 0: ards_test_data = pd.concat(ards_test_subframes)
-        
-        non_ards_dataset_threshold = int(len(non_ards_patient_ids)*self.training_test_ratio)
-        non_ards_training_subframes = []
-        non_ards_test_subframes = []
-        for i in range(len(non_ards_patient_ids)):
-            if i < non_ards_dataset_threshold:
-                non_ards_training_subframes.append((non_ards_data[non_ards_data["patient_id"] == list(non_ards_patient_ids)[i]]))
-            else:
-                non_ards_test_subframes.append((non_ards_data[non_ards_data["patient_id"] == list(non_ards_patient_ids)[i]]))
-        
-        if len(non_ards_training_subframes) > 0: non_ards_training_data = pd.concat(non_ards_training_subframes)
-        if len(non_ards_test_subframes) > 0: non_ards_test_data = pd.concat(non_ards_test_subframes)
+        data.drop(["time", "patient_id"], axis=1, inplace=True)
+        training_data, test_data = train_test_split(data, test_size=self.training_test_ratio, random_state=self.seed, shuffle=True, stratify=data["ards"])
 
-        training_data = pd.concat([ards_training_data, non_ards_training_data])
-        test_data = pd.concat([ards_test_data, non_ards_test_data])
-        
-        training_data = training_data.drop("patient_id", axis=1)
-        test_data = test_data.drop("patient_id",axis=1)
 
         return training_data, test_data
 
