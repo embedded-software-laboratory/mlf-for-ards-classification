@@ -90,7 +90,7 @@ class Framework:
             dataframe = self.feature_selector.perform_feature_selection(dataframe)
         if not os.path.isdir(self.outdir):
             os.makedirs(self.outdir, exist_ok=True)
-        dataframe.to_csv(self.outdir + os.path.basename(self.timeseries_file_path) + "_preprocessed.csv", index=True)
+        dataframe.to_csv(self.outdir + os.path.basename(self.timeseries_file_path) + "_preprocessed.csv", index=False)
         print("Finished preprocessing and saved result to file!")
         if self.process["perform_data_segregation"]:
             training_data, test_data = self.segregator.segregate_data(dataframe)
