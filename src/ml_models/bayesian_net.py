@@ -1,15 +1,18 @@
-from models.model_interface import Model
+from ml_models.model_interface import Model
+from ml_models.timeseries_model import TimeSeriesModel
 from pomegranate import DiscreteDistribution, ConditionalProbabilityTable, Node, BayesianNetwork
 import numpy as np
 import pomegranate
 import json
 
-class Bayesian_network(Model):
+class BayesianNetworkModel(TimeSeriesModel):
 
     def __init__(self):
         super().__init__()
         self.name = "Bayesian Network"
+        self.algorithm = "Bayesian Network"
         self.model = self.make_bn()
+        self.pseudocount = 1
 
     def train_model(self, training_data):
         """Function that starts the learning process of the BN and stores the resulting model after completion"""
@@ -17,8 +20,9 @@ class Bayesian_network(Model):
         training_data = training_data.drop(columns=['patient_id'])
         converted_data = self.convert_dataset(training_data)
         # Init forest and read training data
-        self.model.fit(converted_data, pseudocount=1)
+        self.model.fit(converted_data, pseudocount=self.pseudocount)
         self.model.bake()
+        self.trained = True
 
     def predict(self, dataframe):
         converted_datasets = self.convert_dataset(dataframe)
@@ -27,7 +31,7 @@ class Bayesian_network(Model):
         for p in prediction:
             result.append(p[0])
         return result
-    
+
     def predict_proba(self, data):
         converted_datasets = self.convert_dataset(data)
         prediction = self.model.predict_proba(converted_datasets)
@@ -38,22 +42,28 @@ class Bayesian_network(Model):
             temp.append(p[0].probability(1))
             result.append(temp)
         return np.array(result)
-    
-    def save(self, filepath):
+
+    def has_predict_proba(self):
+        return True
+
+    def get_params(self):
+        return {"pseudocount": self.pseudocount}
+
+    def save_model(self, filepath):
         file = open(filepath + ".json", "w")
         json.dump(self.model.to_json(), file)
-    
-    def load(self, filepath):
+
+    def load_model(self, filepath):
         file = open(filepath + ".json", "r")
         self.model = pomegranate.from_json(json.load(file))
-    
+
     def convert_dataset(self, data):
         converted_datasets = []
         for i in data.index:
             converted_datasets.append(self.convert_single_dataset(data.loc[i]))
         return converted_datasets
-    
-    def convert_single_dataset(self, data): 
+
+    def convert_single_dataset(self, data):
         array = [None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None]
         for key in data.keys():
             if key == "compliance":
@@ -66,7 +76,7 @@ class Bayesian_network(Model):
                     array[2] = 0
                 else:
                     array[2] = 1
-            if key == "be": 
+            if key == "be":
                 if data["be"] > 2:
                     array[3] = 0
                 elif data["be"] <= 2 and data["be"] >= -2:
@@ -286,9 +296,9 @@ class Bayesian_network(Model):
                     array[40] = 0
                 else:
                     array[40] = 1
-    
+
         return array
-    
+
 
     def make_bn(self):
         Thoraxtrauma = DiscreteDistribution({1: 0.02, 0: 0.98})

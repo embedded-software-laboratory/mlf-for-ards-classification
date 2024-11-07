@@ -10,29 +10,52 @@ process:
   perform_data_segregation: True 
   perform_timeseries_training: True
   perform_timeseries_classification: True
+  perform_threshold_optimization: True
   calculate_evaluation_metrics: True
-  perform_cross_validation: True
+  perform_cross_validation: False
   save_models: False
 
   load_image_data: False
   train_image_models: False
   test_image_models: False
 
-out_dir: "Save/ExperimentResult"
+# Since this determines which kind of Model should be trained it is right to use Algorithm types here
+timeseries_models_to_train:
+  - RandomForestModel
+  - XGBoostModel
+  - AdaBoostModel
+
+
+# Instead of using Algorithm names real model names in combination with algorithms should be used here, e.g [<algorithm>, <modelname>]
+timeseries_models_to_evaluate:
+  - RandomForestModel
+  - XGBoostModel
+  - AdaBoostModel
+
+# Since models are newly trained during crossvalidation using Algorithms is right here
+timeseries_models_to_crossvalidate:
+  - RandomForestModel
+  - XGBoostModel
+  - AdaBoostModel
 
 timeseries_models_to_execute:
-  - Random_forest
-  - XGBoost
-  - AdaBoost
+  - RandomForestModel
+  - XGBoostModel
+  - AdaBoostModel
 
 image_models_to_execute:
-  - VisionTransformer
+  - VisionTransformerModel
 
-loading_paths:
-  Random Forest: "default"
-  Support Vector Machine: "Save/Cross validation results/Support Vector Machine_0"
-  Bayesian Net: "Save/Cross validation results/Bayesian Net_3"
-  Recurrent Neural Network: "Save/Cross validation results/Recurrent neural network_1"
+algorithm_base_path:
+  RandomForestModel: "default"
+  SupportVectorMachineModel: "default"
+  BayesianNetModel: "default"
+  RecurrentNeuralNetworkModel: "Save/Cross validation results/Recurrent neural network_1"
+
+storage_path: "Save/ExperimentResult"
+
+
+
 
 data:
   timeseries_file_path: "/hpcwork/rwth1474/Data/time_series/uka_data_050623.npy"
@@ -79,8 +102,11 @@ data_segregation:
 evaluation:
   cross_validation:
     n_splits: 4
-    shuffle: False
-    cv_seed: 42
+    shuffle: True
+    random_state: 42
+  threshold_optimization_algorithms: ["Standard", "MaxTPR", "MaxTPRMinFPR", "GeometricRoot"]
+  evaluation_metrics: ["AUC", "Accuracy", "F1Score", "FPR", "MCC", "OptimalProbability", "Sensitivity", "Specificity", "TPR"]
+  evaluation_name: "Evaluation X"
 
 image_model_parameters:
   method: last_block
@@ -94,3 +120,18 @@ image_model_parameters:
   learning_rate: 0.05 
   k_folds: 2
   path: "Data/Image_data"
+
+supported_algorithms:
+  timeseries_models:
+    - AdaBoostModel
+    - BayesianNetworkModel
+    - LightGBMModel
+    - LogisticRegressionModel
+    - RandomForestModel
+    - RecurrentNeuralNetworkModel
+    - SupportVectorMachineModel
+    - XGBoostModel
+
+  image_models:
+    - VisionTransformerModel
+    - ConvolutionalNeuralNetworkModel

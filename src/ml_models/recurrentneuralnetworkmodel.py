@@ -1,16 +1,19 @@
-from models.model_interface import Model
+from ml_models.model_interface import Model
 import keras
 from keras.layers import LSTM, Dropout, Dense
 import numpy as np
 
-
-class Recurrent_neural_network(Model):
+# TODO make compatible with Timeseriesmodel
+class RecurrentNeuralNetworkModel(Model):
 
     def __init__(self):
         super().__init__()
         self.name = "Recurrent neural network"
+        self.algorithm = "Recurrent neural network"
+
 
     def train_model(self, training_data):
+
         """Function that starts the learning process of the RCN and stores the resulting model after completion"""
 
         #predictors, label = self.generate_data(training_data.loc[:, training_data.columns != 'ARDS'], training_data["ARDS"], len(training_data))
@@ -28,6 +31,7 @@ class Recurrent_neural_network(Model):
 
         # Learn and store resulting model
         self.model.fit(predictors.values, label, batch_size=64, epochs=10, verbose=0)
+        self.trained = True
 
     def predict(self, data): 
         prediction_normalized = self.predict_proba_normalized(data)
@@ -54,11 +58,13 @@ class Recurrent_neural_network(Model):
             temp.append(p[0])
             result.append(temp)
         return(np.array(result))
+
+
     
-    def save(self, filepath):
+    def save_model(self, filepath):
         self.model.save(filepath + ".h5")
     
-    def load(self, filepath):
+    def load_model(self, filepath):
         self.model = keras.models.load_model(filepath + ".h5")
     
     def generate_data(self, X, y, data_length, sequence_length = 406, step = 1):
@@ -69,3 +75,6 @@ class Recurrent_neural_network(Model):
             X_local.append(X[start:end])
             y_local.append(y[end-1])
         return np.array(X_local), np.array(y_local)
+
+    def has_predict_proba(self):
+        return False

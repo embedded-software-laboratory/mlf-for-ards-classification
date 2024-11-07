@@ -1,6 +1,6 @@
-from models.image_model_interface import ImageModel
+from ml_models.image_model_interface import ImageModel
 import torch
-from processing.datasets import Datasets
+from processing.datasets import ImageDatasets
 from torch import nn
 from sklearn.model_selection import KFold
 from torch.optim.lr_scheduler import ExponentialLR
@@ -10,7 +10,7 @@ import csv
 import re
 import timm
 
-class VisionTransformer(ImageModel):
+class VisionTransformerModel(ImageModel):
 
     def __init__(self, image_model_parameters, model_name):
         super().__init__(image_model_parameters, model_name)
@@ -34,7 +34,7 @@ class VisionTransformer(ImageModel):
 
         # generate model if it exists
         if model_name_og in timm_models_list: 
-            model = timm.create_model(model_name_og, pretrained=True, img_size=Datasets.get_image_size(None, "VIT")[1], in_chans=1)
+            model = timm.create_model(model_name_og, pretrained=True, img_size=ImageDatasets.get_image_size(None, "VIT")[1], in_chans=1)
         else:
             raise Exception("Pretrained ViT model not supported")
 
@@ -297,3 +297,14 @@ class VisionTransformer(ImageModel):
         model = self.unfreeze_model(model, method)    
         model.to(device)
         return model
+
+    def has_predict_proba(self):
+        return True
+
+    @property
+    def storage_location(self):
+        return self._storage_location
+
+    @storage_location.setter
+    def storage_location(self, location):
+        self._storage_location = location

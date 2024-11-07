@@ -1,12 +1,16 @@
-from models.model_interface import Model
+from ml_models.model_interface import Model
+from ml_models.timeseries_model import TimeSeriesModel
 from sklearn.ensemble import RandomForestClassifier
 import pickle
 
-class Random_forest(Model):
+
+class RandomForestModel(TimeSeriesModel):
 
     def __init__(self):
         super().__init__()
         self.name = "Random Forest"
+        self.algorithm = "Random Forest"
+
         self.n_estimators = 700
         self.criterion = "gini"
         self.max_depth = 200
@@ -28,17 +32,18 @@ class Random_forest(Model):
 
     def train_model(self, training_data):
         """Function that starts the learning process of the RF and stores the resulting model after completion"""
-        
+
         # Init forest and read training data
         label = training_data["ards"]
         predictors = training_data.loc[:, training_data.columns != 'ards']
 
         # Learn and store resulting model
         self.model = self.model.fit(predictors, label)
+        self.trained = True
 
-    def predict(self, data): 
+    def predict(self, data):
         return self.model.predict(data)
-    
+
     def predict_proba(self, data):
         return self.model.predict_proba(data)
 
@@ -47,31 +52,39 @@ class Random_forest(Model):
 
         # Init RF
         random_forest = RandomForestClassifier(
-                            n_estimators = self.n_estimators,
-                            criterion = self.criterion,
-                            max_depth = self.max_depth,
-                            min_samples_split = self.min_samples_split,
-                            min_samples_leaf = self.min_samples_leaf,
-                            min_weight_fraction_leaf = self.min_weight_fraction_leaf,
-                            max_features = self.max_features,
-                            max_leaf_nodes = self.max_leaf_nodes,
-                            min_impurity_decrease = self.min_impurity_decrease,
-                            bootstrap = self.bootstrap,
-                            oob_score = self.oob_score,
-                            n_jobs = self.n_jobs,
-                            random_state = 3308,
-                            verbose = self.verbose,
-                            warm_start = self.warm_start,
-                            class_weight = self.class_weight,
-                            ccp_alpha = self.ccp_alpha,
-                            max_samples = self.max_samples,
-                        )
+            n_estimators=self.n_estimators,
+            criterion=self.criterion,
+            max_depth=self.max_depth,
+            min_samples_split=self.min_samples_split,
+            min_samples_leaf=self.min_samples_leaf,
+            min_weight_fraction_leaf=self.min_weight_fraction_leaf,
+            max_features=self.max_features,
+            max_leaf_nodes=self.max_leaf_nodes,
+            min_impurity_decrease=self.min_impurity_decrease,
+            bootstrap=self.bootstrap,
+            oob_score=self.oob_score,
+            n_jobs=self.n_jobs,
+            random_state=3308,
+            verbose=self.verbose,
+            warm_start=self.warm_start,
+            class_weight=self.class_weight,
+            ccp_alpha=self.ccp_alpha,
+            max_samples=self.max_samples,
+        )
         return random_forest
-    
-    def save(self, filepath):
+
+    def get_params(self):
+        return self.model.get_params(deep=True)
+
+    def save_model(self, filepath):
         file = open(filepath + ".txt", "wb")
         pickle.dump(self.model, file)
-    
-    def load(self, filepath):
+
+    def load_model(self, filepath):
         file = open(filepath + ".txt", "rb")
         self.model = pickle.load(file)
+
+    def has_predict_proba(self):
+        return True
+
+

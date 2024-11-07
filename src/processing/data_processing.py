@@ -4,6 +4,7 @@ from processing.param_calculation import ParamCalculator
 from processing.onset_determiner import OnsetDeterminer
 from processing.filter import Filter
 
+
 class DataProcessor:
     def __init__(self, config, database_name, process):
         self.filter = Filter(config["filtering"])
@@ -16,23 +17,23 @@ class DataProcessor:
 
     def process_data(self, dataframe):
         print("Start data preprocessing...")
-        if self.process["perform_imputation"] == True:
+        if self.process["perform_imputation"]:
             print("Impute missing data...")
             dataframe = self.data_imputator.impute_missing_data(dataframe)
             print("Done!")
-        if self.process["perform_unit_conversion"] == True:
+        if self.process["perform_unit_conversion"]:
             print("Convert units...")
             dataframe = self.unit_converter.convert_units(dataframe, self.database_name)
             print("Done!")
-        if self.process["calculate_missing_params"] == True:
+        if self.process["calculate_missing_params"]:
             print("Calculate missing parameters...")
             dataframe = self.param_calculator.calculate_missing_params(dataframe)
             print("Done!")
-        if self.process["perform_ards_onset_detection"] == True:
+        if self.process["perform_ards_onset_detection"]:
             print("Detect ARDS onset..")
             dataframe = self.onset_determiner.determine_ards_onset(dataframe)
             print("Done!")
-        if self.process["perform_filtering"] == True:
+        if self.process["perform_filtering"]:
             print("Filter data...")
             dataframe = self.filter.filter_data(dataframe)
             print("Done!")

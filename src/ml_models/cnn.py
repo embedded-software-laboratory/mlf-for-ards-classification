@@ -1,5 +1,5 @@
 import torch
-from models.image_model_interface import ImageModel
+from ml_models.image_model_interface import ImageModel
 from torch import nn
 import torchvision
 from libauc.losses import AUCMLoss, CrossEntropyLoss
@@ -85,7 +85,7 @@ class DenseNet121(nn.Module):
         
         return x
 
-class CNN(ImageModel):
+class ConvolutionalNeuralNetworkModel(ImageModel):
 
     def __init__(self, image_model_parameters, model_name):
         super().__init__(image_model_parameters, model_name)
@@ -428,4 +428,8 @@ class CNN(ImageModel):
 
     def get_created_model(self, device, model_name, dataset_pneumonia, method, mode):
         return self.get_model(device, model_name, dataset_pneumonia, method)
+
+    def has_predict_proba(self):
+        return False
+
             

@@ -35,6 +35,8 @@ class ImageModel():
         self.auroc = AUROC(task="binary")
 
         self.model = None
+        self.storage_path = None
+        self._storage_location = ""
 
 
 
@@ -141,7 +143,7 @@ class ImageModel():
         device = self.get_device()
         dataset_name = dataset_pneumonia+'_'+dataset_ards
         
-        # find testing models
+        # find testing ml_models
         test_model_list = [name for name in os.listdir(self.path_results_ards) if name == '{name}_{dataset}_{method}.pt'.format(name=model_name, dataset=dataset_name, method=method)]
         test_dataloader = DataLoader(ards_test, batch_size=self.batch_size_ards, shuffle=True)
 
@@ -203,7 +205,7 @@ class ImageModel():
         Function for getting the pretrained ViT model for transfer learning with pneumonia
         
         :param device: (str) The device which is being used, wither cuda or cpu
-        :param model_name: (str) The models name used to generate model
+        :param model_name: (str) The ml_models name used to generate model
         :return: model is the model generated
         """
         
@@ -236,3 +238,14 @@ class ImageModel():
     
     def get_created_model(self, device, model_name, dataset_pneumonia, method, mode):
         raise NotImplementedError
+
+    def has_predict_proba(self):
+        raise NotImplementedError
+        
+    @property
+    def storage_location(self):
+        return self._storage_location
+
+    @storage_location.setter
+    def storage_location(self, location):
+        self._storage_location = location

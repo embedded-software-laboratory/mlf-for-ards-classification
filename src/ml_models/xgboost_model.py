@@ -1,12 +1,16 @@
-from models.model_interface import Model
+from ml_models.model_interface import Model
+from ml_models.timeseries_model import TimeSeriesModel
 from xgboost import XGBClassifier
 from sklearn.preprocessing import LabelEncoder
 
-class XGBoost(Model):
+class XGBoostModel(TimeSeriesModel):
 
     def __init__(self):
+        super().__init__()
         self.name = "XGBoost"
-        self.model = XGBClassifier(eval_metric='mlogloss')
+        self.algorithm = "XGBoost"
+        self.eval_metric = 'mlogloss'
+        self.model = XGBClassifier(eval_metric=self.eval_metric)
         self.le = LabelEncoder()
         self.le.fit_transform([0, 1])
 
@@ -16,6 +20,7 @@ class XGBoost(Model):
 
         y_train = self.le.fit_transform(label)
         self.model = self.model.fit(predictors, y_train)
+        self.trained = True
 
     def predict(self, patient_data): 
         pred = self.model.predict(patient_data)
@@ -24,9 +29,17 @@ class XGBoost(Model):
     
     def predict_proba(self, data):
         return self.model.predict_proba(data)
-    
-    def save(self, filepath):
+
+    def get_params(self):
+        return {'eval_metric': self.eval_metric}
+
+    def save_model(self, filepath):
         self.model.save_model(filepath + ".ubj")
 
-    def load(self, filepath):
+    def load_model(self, filepath):
         self.model.load_model(filepath + ".ubj")
+
+    def has_predict_proba(self):
+        return True
+
+

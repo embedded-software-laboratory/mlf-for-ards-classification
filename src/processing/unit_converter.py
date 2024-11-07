@@ -7,10 +7,10 @@ class UnitConverter:
                                     "UKA": {}}
 
     def convert_units(self, dataframe, database_name):
-        fornulas = self.conversion_formulas[database_name]
+        formulas = self.conversion_formulas[database_name]
         for series_name, series in dataframe.items():
-            if series_name in fornulas:
+            if series_name in formulas:
                 for index in series.index:
-                    formular = fornulas[series_name].replace("source_value", str(series[index]))
-                    series[index] = eval(formular)
+                    formula = formulas[series_name].replace("source_value", str(series[index]))
+                    series[index] = eval(formula)
         return dataframe

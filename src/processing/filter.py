@@ -5,16 +5,13 @@ class Filter():
         self.set_filter(config["filter"])
 
     def filter_data(self, dataframe):
-        if "A" in self.filter and "B" in self.filter:
-            print("Ignoring filter 'A', since it is implied by filter 'B'")
-            self.filter.remove("A")
 
-        for filter in self.filter:
-            if filter == "A":
+        for filter_to_apply in self.filter:
+            if filter_to_apply == "A":
                 dataframe = self.filter_a(dataframe)
-            if filter == "B":
+            if filter_to_apply == "B":
                 dataframe = self.filter_b(dataframe)
-            if filter == "C":
+            if filter_to_apply == "C":
                 dataframe = self.filter_c(dataframe)
         return dataframe
 

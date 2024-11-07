@@ -1,1 +1,4 @@
-from evaluation.evaluation import Evaluation
+from evaluation.Evaluation import ModelEvaluation
+from evaluation.Evaluation import Evaluation
+
+from evaluation.EvaluationInformation import ModelEvaluationInformation, EvaluationInformation
