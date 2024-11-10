@@ -87,10 +87,10 @@ Mit den Unterpunkten "pneumonia_dataset" bzw. "ards_dataset" wird angegeben, wel
 
 In diesem Bereich werden einige Einstellungen vorgenommen, die genau festlegen, wie genau das Data-Preprocessing abläuft.
 
-1. **filtering**: Hier wird festgelegt, welche Filter zum Filtern von Patienten, die möglicherweise ein falsches ARDS-Label haben, aktiviert werden sollen. Möglich sind die Filter A, B und C (jeweils als eigener Stichpunkt unter dem Punkt "filter").
-	- **A**: Filter A entfernt alle Patienten aus den Daten, die angeblich kein ARDS haben, bei denen aber ein Horovitz-Quotient unter 200 mmHg aufgezeichnet wurde.
-	- **B**: Filter B entfernt alle Patienten aus den Daten, die angeblich kein ARDS haben und zusätzlich weder Hypervolämie, noch ein Lungenödem noch Herzversagen, die aber trotzdem einen Horovitz-Quotienten unter 200 mmHg aufweisen. Filter A und B sollten sinnvollerweise nicht gleichzeitig verwendet werden, da Filter B ähnlich zu A ist, nur etwas weniger restriktiv.
-	- **C**: Filter C entfernt alle Patienten aus den Daten, die angeblich ARDS haben, aber bei denen nie ein Horovitz-Quotient unter 300 mmHg gemessen wurde (widerspricht der ARDS-Definition). 
+1. **filtering**: Hier wird festgelegt, welche Filter zum Filtern von Patienten, die möglicherweise ein falsches ARDS-Label haben, aktiviert werden sollen. Möglich sind die Filter Strict, Lite und BD (jeweils als eigener Stichpunkt unter dem Punkt "filter").
+	- **A**: Filter Strict entfernt alle Patienten aus den Daten, die angeblich kein ARDS haben, bei denen aber ein Horovitz-Quotient unter 200 mmHg aufgezeichnet wurde.
+	- **B**: Filter Lite entfernt alle Patienten aus den Daten, die angeblich kein ARDS haben und zusätzlich weder Hypervolämie, noch ein Lungenödem noch Herzversagen, die aber trotzdem einen Horovitz-Quotienten unter 200 mmHg aufweisen. Filter Strict und Lite sollten sinnvollerweise nicht gleichzeitig verwendet werden, da Filter Lite ähnlich zu Strict ist, nur etwas weniger restriktiv.
+	- **C**: Filter BD (Berlin Definition) entfernt alle Patienten aus den Daten, die angeblich ARDS haben, aber bei denen nie ein Horovitz-Quotient unter 300 mmHg gemessen wurde (widerspricht der ARDS-Definition). 
 
 2. **imputation**: Hier wird festgelegt, bei welchen Parametern fehlende Daten imputiert werden sollen und welcher Imputationsalgorithmus für jeden Paramter verwendet werden soll. Zur Verfügung stehen die folgenden Algorithmen:
 	- **forward**: Fehlende Werte werden mit dem letzten bekannten Wert aufgefüllt. Falls ganz zu Beginn fehlende Werte auftauchen, es also keinen vorherigen bekannten Wert gibt, wird der erste vorhandene Wert für diese Lücken verwendet.
