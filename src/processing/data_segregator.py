@@ -11,10 +11,10 @@ class Data_segregator():
         if not self.ards_percentage:
             print("Percentage of ARDS patients is needed for the Data segregation to run...")
             raise ValueError
-        self.seed = config["splitting_seed"]
+        self.random_state = config["splitting_seed"]
     
     def segregate_data(self, dataframe):
-        random.seed(self.seed)
+        random.seed(self.random_state)
         patientids = dataframe["patient_id"].to_list()
         num_patients = dataframe.shape[0]
         #first, create two datasets, one with the patients with and one with the patients without ards
@@ -48,7 +48,7 @@ class Data_segregator():
             data = pd.concat([ards_data, non_ards_data], axis=0).reset_index(drop=True)
         
         data.drop(["time", "patient_id"], axis=1, inplace=True)
-        training_data, test_data = train_test_split(data, test_size=self.training_test_ratio, random_state=self.seed, shuffle=True, stratify=data["ards"])
+        training_data, test_data = train_test_split(data, test_size=self.training_test_ratio, random_state=self.random_state, shuffle=True, stratify=data["ards"])
 
 
         return training_data, test_data

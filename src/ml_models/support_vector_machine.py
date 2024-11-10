@@ -10,8 +10,9 @@ class SupportVectorMachineModel(TimeSeriesModel):
         super().__init__()
         self.name = "Support Vector Machine"
         self.algorithm = "Support Vector Machine"
+        self.random_state = 0
 
-        self.model = svm.SVC(kernel="linear", probability=True)
+        self.model = svm.SVC(kernel="linear", probability=True, random_state=self.random_state)
 
     def train_model(self, training_data):
         """Function that starts the learning process of the SVM and stores the resulting model after completion"""

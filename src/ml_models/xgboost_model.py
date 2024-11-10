@@ -10,7 +10,8 @@ class XGBoostModel(TimeSeriesModel):
         self.name = "XGBoost"
         self.algorithm = "XGBoost"
         self.eval_metric = 'mlogloss'
-        self.model = XGBClassifier(eval_metric=self.eval_metric)
+        self.random_state = 42
+        self.model = XGBClassifier(eval_metric=self.eval_metric, random_state=self.random_state)
         self.le = LabelEncoder()
         self.le.fit_transform([0, 1])
 
