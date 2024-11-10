@@ -64,7 +64,9 @@ data:
   pneumonia_dataset: "balanced"
   ards_dataset: "weighted"
 
-processing:
+preprocessing:
+  patients_per_process: 500
+  max_processes: 6
   filtering:
     filter:
     - A
