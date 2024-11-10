@@ -43,7 +43,8 @@ class OnsetDeterminer:  #class to determine the ARDS onset in a given dataset
         self.return_series_start = series_start
         self.return_series_end = series_end
 
-    def determine_ards_onset(self, dataframe):
+    def determine_ards_onset(self, dataframe, job_number: int, total_job_count: int):
+        print("Start onset detection for job " + str(job_number) + f" of {total_job_count} jobs...")
         return_dataframe = pd.DataFrame()
         for patientid in set(dataframe["patient_id"].to_list()):
             if self.detection_rule == "first_horovitz":
@@ -115,6 +116,9 @@ class OnsetDeterminer:  #class to determine the ARDS onset in a given dataset
                             or self.remove_ards_patients_without_onset is False):
                         horovitz_index = (dataframe[dataframe["patient_id"] == patientid])["horovitz"].idxmin()
                         return_dataframe = self.add_return_data(return_dataframe, dataframe, horovitz_index)
+        if len(return_dataframe.index) == 0:
+            return_dataframe = pd.DataFrame(columns=dataframe.columns)
+        print("Finished onset detection for job " + str(job_number) + f" of {total_job_count} jobs...")
 
         return return_dataframe
 

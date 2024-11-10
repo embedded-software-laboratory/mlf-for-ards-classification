@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 class ParamCalculator:
 
@@ -8,7 +9,8 @@ class ParamCalculator:
                                 "i-e", "lymphocytes (percentage)", "age", "admission period"]
         self.set_params_to_calculate(params_to_calculate)
 
-    def calculate_missing_params(self, dataframe):
+    def calculate_missing_params(self, dataframe, job_number: int, total_job_count: int) -> pd.DataFrame:
+        print("Start unit conversion for job " + str(job_number) + f" of {total_job_count} jobs...")
         for param in self.params_to_calculate:
             if param == "delta-p":
                 dataframe = self.calculate_delta_p(dataframe)
@@ -24,6 +26,7 @@ class ParamCalculator:
                 dataframe = self.calculate_ie_ratio(dataframe)
             if param == "lymphocytes (prozentual)":
                 dataframe = self.calculate_lymphocyte_percentage(dataframe)
+        print("Finished unit conversion for job " + str(job_number) + f" of {total_job_count} jobs...")
         return dataframe
 
     @staticmethod
