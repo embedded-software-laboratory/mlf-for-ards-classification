@@ -1,4 +1,5 @@
 import fnmatch
+import pandas as pd
 
 from processing import *
 from ml_models.vision_transformer import VisionTransformerModel
@@ -67,7 +68,7 @@ class Framework:
         self.image_ards_test_data = None
         self.pneumonia_dataset = config["data"]["pneumonia_dataset"]
         self.ards_dataset = config["data"]["ards_dataset"]
-        self.dataProcessor = DataProcessor(config["processing"], config["data"]["database"], config["process"])
+        self.dataProcessor = DataProcessor(config["preprocessing"], config["data"]["database"], config["process"])
         self.feature_selector = Feature_selection(config["feature_selection"])
         self.segregator = Data_segregator(config["data_segregation"])
         self.dataset_generator = ImageDatasetGenerator()
@@ -85,9 +86,9 @@ class Framework:
 
     def load_timeseries_data(self):
         dataframe = self.loader.load_file(self.timeseries_file_path)
-        print(dataframe)
+
         dataframe = self.dataProcessor.process_data(dataframe)
-        if self.process["perform_feature_selection"] == True:
+        if self.process["perform_feature_selection"]:
             dataframe = self.feature_selector.perform_feature_selection(dataframe)
         if not os.path.isdir(self.outdir):
             os.makedirs(self.outdir, exist_ok=True)
@@ -99,6 +100,7 @@ class Framework:
             self.timeseries_test_data = test_data
         else:
             self.timeseries_test_data = self.timeseries_training_data = dataframe
+
         self.timeseries_data_complete = dataframe
         self.timeseries_test_data.to_csv(self.outdir + "test_data.csv", header=True, index=False)
         self.timeseries_training_data.to_csv(self.outdir + "training_data.csv", header=True, index=False)
@@ -139,18 +141,16 @@ class Framework:
             model.test_image_model(self.image_ards_test_data, info_list)
 
     def predict(self, test_data):
-        print("------------")
-        print(test_data)
-        print("------------")
+
         input = test_data.drop(columns=['ards'])
         test_data = test_data.rename(columns={"ards": "ards_diagnosed"}).reset_index(drop=True)
         for model in self.timeseries_models:
             prediction = model.predict(input)
-            print("Classification of " + model.name + ": ")
-            print(prediction)
+            print(f"Finished prediction of {model.name}")
             df = pd.DataFrame({"ards_predicted": prediction}).reset_index(drop=True)
             df = pd.concat([test_data, df], axis=1)
             df.to_csv(self.outdir + f"prediction_{model.name}.csv", index=False)
+
     def evaluate_models(self):
         result = {}
 

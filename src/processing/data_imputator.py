@@ -12,7 +12,9 @@ class DataImputator:
         self.binary_variables = ["ards", "heart-failure", "hypervolemia", "mech-vent", "pneumonia", "xray", "sepsis",
                                  "chest-injury"]
 
-    def impute_missing_data(self, dataframe):
+    def impute_missing_data(self, dataframe: pd.DataFrame, job_number: int, total_job_count: int) -> pd.DataFrame:
+        print("Start imputation for job " + str(job_number) + f" of {total_job_count} jobs...")
+        columns = dataframe.columns
         for param in self.params_to_impute:
             param = param.split(", ")
             if len(param) > 1:
@@ -50,7 +52,9 @@ class DataImputator:
             dataframe.dropna(how="any", axis=0, ignore_index=True, inplace=True)
         else:
             dataframe.fillna(value=-100000, axis=1, inplace=True)
-        print(dataframe)
+        if len(dataframe.index) ==0:
+            dataframe = pd.DataFrame(columns=columns)
+        print("Finished imputation for job " + str(job_number) + f" of {total_job_count} jobs...")
         return dataframe
     
     def set_imputation_method(self, method):
