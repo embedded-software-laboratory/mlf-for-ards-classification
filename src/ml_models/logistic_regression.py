@@ -21,12 +21,12 @@ class LogisticRegressionModel(TimeSeriesModel):
         self.fit_intercept = True
         self.intercept_scaling = 1
         self.class_weight = None
-        self.random_state = None
+        self.random_state = 42
         self.max_iter = 100000
         self.multi_class = 'auto'
         self.verbose = 0
         self.warm_start = False
-        self.n_jobs = None
+        self.n_jobs = -1
         self.l1_ratio = None
         self.model = self._init_lr()
 

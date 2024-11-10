@@ -23,6 +23,7 @@ class RandomForestModel(TimeSeriesModel):
         self.bootstrap = True
         self.oob_score = False
         self.n_jobs = -1
+        self.random_state = 0
         self.verbose = 0
         self.warm_start = False
         self.class_weight = None
@@ -64,7 +65,7 @@ class RandomForestModel(TimeSeriesModel):
             bootstrap=self.bootstrap,
             oob_score=self.oob_score,
             n_jobs=self.n_jobs,
-            random_state=3308,
+            random_state=self.random_state,
             verbose=self.verbose,
             warm_start=self.warm_start,
             class_weight=self.class_weight,

@@ -38,8 +38,8 @@ class LightGBMModel(TimeSeriesModel):
         # L1 regularization term on weights.
         self.reg_lambda = 0.0
         # L2 regularization term on weights.
-        self.random_state = None
-        self.n_jobs = None
+        self.random_state = 0
+        self.n_jobs = -1
         self.importance_type='split'
         #What about early stopping round als attribut wenn das Model eskaliert?
         self.model = self._init_gbm()
