@@ -1,6 +1,8 @@
 import math
 from multiprocessing import Pool
 
+from processing.datasets_metadata import *
+
 import pandas as pd
 
 from processing.unit_converter import UnitConverter
@@ -24,50 +26,35 @@ class DataProcessor:
 
     def process_data(self, dataframe: pd.DataFrame):
 
-        patient_ids = list(dataframe["patient_id"].unique())
-        num_patients = len(patient_ids)
-        n_jobs = math.ceil(num_patients / self.patients_per_process)
+        process_pool_data_list, n_jobs = self._prepare_multiprocessing(dataframe)
 
-        patient_pos_dict = {}
-        patient_max_time_df = dataframe.groupby("patient_id")["time"].idxmax().reset_index(drop=True)
-
-        patient_min_time_df = dataframe.groupby("patient_id")["time"].idxmin().reset_index(drop=True)
-        for i  in range(len(patient_ids)):
-            patient_pos_dict[patient_ids[i]] = (int(patient_min_time_df[i]),
-                                            int(patient_max_time_df[i])
-                                            )
-        index = 0
-        process_pool_data_list = []
-        for i in range(n_jobs):
-            first_patient = patient_ids[index+i*self.patients_per_process]
-            calculated_last_index = index+(i+1)*self.patients_per_process-1
-            last_index = calculated_last_index if calculated_last_index < num_patients else num_patients-1
-
-            last_patient = patient_ids[last_index]
-            first_patient_begin_index = patient_pos_dict[first_patient][0]
-            last_patient_end_index = patient_pos_dict[last_patient][1]
-            split_dataframe = dataframe[first_patient_begin_index:last_patient_end_index]
-            process_pool_data_list.append(split_dataframe)
 
         print("Start data preprocessing...")
         if self.process["perform_imputation"]:
             print("Impute missing data...")
             with Pool(processes=self.max_processes) as pool:
                 process_pool_data_list = pool.starmap(self.data_imputator.impute_missing_data, [(process_pool_data_list[i], i, n_jobs) for i in range(n_jobs)])
-            processing_done = True
+
             dataframe = pd.concat(process_pool_data_list).reset_index(drop=True)
 
             print("Finished imputing missing data.")
 
         if self.process["perform_unit_conversion"]:
             print("Convert units...")
+            columns_to_convert = []
+            for column in dataframe.columns:
+                if column in self.unit_converter.conversion_formulas[self.data_imputator].keys():
+                    columns_to_convert.append(column)
+
+
             with Pool(processes=self.max_processes) as pool:
-                process_pool_data_list = pool.starmap(self.unit_converter.convert_units, [(process_pool_data_list[i], self.database_name, i, n_jobs) for i in range(n_jobs)])
+                process_pool_data_list = pool.starmap(self.unit_converter.convert_units, [(process_pool_data_list[i], columns_to_convert,  self.database_name, i, n_jobs) for i in range(n_jobs)])
             dataframe = pd.concat(process_pool_data_list).reset_index(drop=True)
             print(f"Patients after unit conversion: {len(list(dataframe['patient_id'].unique()))}")
             print("Converted units!")
         if self.process["calculate_missing_params"]:
             print("Calculate missing parameters...")
+
             with Pool(processes=self.max_processes) as pool:
                 process_pool_data_list = pool.starmap(self.param_calculator.calculate_missing_params,
                                                       [(process_pool_data_list[i], i, n_jobs) for i in range(n_jobs)])
@@ -87,3 +74,34 @@ class DataProcessor:
             print("Filtered data!")
         print("Data preprocessing completed!")
         return dataframe
+
+
+    def _prepare_multiprocessing(self, dataframe: pd.DataFrame) -> (list[pd.DataFrame], int):
+        patient_ids = list(dataframe["patient_id"].unique())
+        num_patients = len(patient_ids)
+        n_jobs = math.ceil(num_patients / self.patients_per_process)
+
+        patient_pos_dict = {}
+        patient_max_time_df = dataframe.groupby("patient_id")["time"].idxmax().reset_index(drop=True)
+
+        patient_min_time_df = dataframe.groupby("patient_id")["time"].idxmin().reset_index(drop=True)
+        for i in range(len(patient_ids)):
+            patient_pos_dict[patient_ids[i]] = (int(patient_min_time_df[i]),
+                                                int(patient_max_time_df[i])
+                                                )
+        index = 0
+        process_pool_data_list = []
+        for i in range(n_jobs):
+            first_patient = patient_ids[index + i * self.patients_per_process]
+            calculated_last_index = index + (i + 1) * self.patients_per_process - 1
+            last_index = calculated_last_index if calculated_last_index < num_patients else num_patients - 1
+
+            last_patient = patient_ids[last_index]
+            first_patient_begin_index = patient_pos_dict[first_patient][0]
+            last_patient_end_index = patient_pos_dict[last_patient][1]
+            split_dataframe = dataframe[first_patient_begin_index:last_patient_end_index]
+            process_pool_data_list.append(split_dataframe)
+
+        return process_pool_data_list, n_jobs
+
+    #def _create_meta_data(self):

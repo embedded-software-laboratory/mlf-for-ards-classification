@@ -8,3 +8,4 @@ from processing.load_file import FileLoader
 from processing.onset_determiner import OnsetDeterminer
 from processing.param_calculation import ParamCalculator
 from processing.unit_converter import UnitConverter
+from processing.datasets_metadata import TimeseriesMetaData, ImputationMetaData, OnsetDetectionMetaData, FeatureSelectionMetaData
