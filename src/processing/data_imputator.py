@@ -22,14 +22,14 @@ class DataImputator:
         self.impute_empty_cells = config["impute_empty_cells"]
         self.binary_variables = ["ards", "heart-failure", "hypervolemia", "mech-vent", "pneumonia", "xray", "sepsis",
                                  "chest-injury"]
-        self.metadata = ImputationMetaData(impute_empty_cells=self.impute_empty_cells, imputation_parameter_algorithm_dict=self.param_imputation_method)
+        self.meta_data = None
 
     def impute_missing_data(self, dataframe: pd.DataFrame, job_number: int, total_job_count: int) -> pd.DataFrame:
+        # TODO log how many values were imputed
         print("Start imputation for job " + str(job_number) + f" of {total_job_count} jobs...")
         columns = dataframe.columns
 
         for column in columns:
-
             if column in self.param_imputation_method.keys():
                 self.imputation_method = self.param_imputation_method[column]
             elif "all" in self.param_imputation_method.keys():
@@ -70,6 +70,9 @@ class DataImputator:
             dataframe = pd.DataFrame(columns=columns)
         print("Finished imputation for job " + str(job_number) + f" of {total_job_count} jobs...")
         return dataframe
+
+    def create_meta_data(self):
+        self.meta_data = ImputationMetaData(impute_empty_cells=self.impute_empty_cells, imputation_parameter_algorithm_dict=self.param_imputation_method)
 
 
     #def impute_missing_data_old(self, dataframe: pd.DataFrame, job_number: int, total_job_count: int) -> pd.DataFrame:

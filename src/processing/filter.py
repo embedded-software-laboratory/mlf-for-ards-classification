@@ -1,8 +1,15 @@
+from processing.datasets_metadata import FilteringMetaData
+
 class Filter():
     def __init__(self, config) -> None:
         self.filter = []
         self.available_filter = ["Strict", "Lite", "BD"]
         self.set_filter(config["filter"])
+        self.meta_data = None
+
+    def create_meta_data(self):
+        if len(self.filter) > 0:
+            self.meta_data = FilteringMetaData(self.filter)
 
     def filter_data(self, dataframe):
 

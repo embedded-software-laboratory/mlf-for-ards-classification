@@ -79,7 +79,7 @@ class Framework:
         self.method = config["image_model_parameters"]["method"]
         self.mode = config["image_model_parameters"]["mode"]
         self.outdir = config["storage_path"] if config["storage_path"] else "./Save/" + str(
-            datetime.now().strftime("%m-%d-%Y_%H-%M-%S")) + "/"
+            datetime.now().strftime("%Y-%m-%d_%H-%M-%S")) + "/"
         Path(self.outdir).mkdir(parents=True, exist_ok=True)
         if not self.outdir.endswith("/"):
             self.outdir += "/"
@@ -90,9 +90,10 @@ class Framework:
         dataframe = self.dataProcessor.process_data(dataframe)
         if self.process["perform_feature_selection"]:
             dataframe = self.feature_selector.perform_feature_selection(dataframe)
+            self.feature_selector.create_meta_data()
         if not os.path.isdir(self.outdir):
             os.makedirs(self.outdir, exist_ok=True)
-        dataframe.to_csv(self.outdir + os.path.basename(self.timeseries_file_path) + "_preprocessed.csv", index=False)
+
         print("Finished preprocessing and saved result to file!")
         if self.process["perform_data_segregation"]:
             training_data, test_data = self.segregator.segregate_data(dataframe)
@@ -100,10 +101,22 @@ class Framework:
             self.timeseries_test_data = test_data
         else:
             self.timeseries_test_data = self.timeseries_training_data = dataframe
-
+        current_time_str = str(datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
         self.timeseries_data_complete = dataframe
-        self.timeseries_test_data.to_csv(self.outdir + "test_data.csv", header=True, index=False)
-        self.timeseries_training_data.to_csv(self.outdir + "training_data.csv", header=True, index=False)
+        base_path_data = self.outdir + os.path.basename(self.timeseries_file_path) + f"_{current_time_str}_"
+        path_complete = base_path_data + "preprocessed"
+        path_training = base_path_data + "training"
+        path_test = base_path_data + "test"
+        self.timeseries_data_complete.to_csv(self.outdir + os.path.basename(
+            self.timeseries_file_path) + f"_{current_time_str}_preprocessed.csv", index=False)
+        self.timeseries_test_data.to_csv(self.outdir + f"test_data_{current_time_str}.csv", header=True, index=False)
+        self.timeseries_training_data.to_csv(self.outdir + f"training_data_{current_time_str}.csv", header=True, index=False)
+
+    def write_time_series_data(self, data: pd.DataFrame, path: str):
+        percentage_ards = data["ards"].sum()/len(data.index)
+
+
+
 
     def load_image_data(self):
         for dl_method in self.image_dl_methods:

@@ -6,6 +6,8 @@ from sklearn.neighbors import KNeighborsClassifier
 import pandas as pd
 import numpy as np
 
+from processing.datasets_metadata import FeatureSelectionMetaData
+
 class Feature_selection:
     def __init__(self, config) -> None:
         self.feature_selection_method = "low_variance"
@@ -13,6 +15,19 @@ class Feature_selection:
         self.set_selection_method(config["method"])
         self.variance = config["variance"]
         self.k = config["k"]
+        self.meta_data = None
+
+    def create_meta_data(self):
+        min_variance = None
+        num_features = None
+        if self.feature_selection_method == "low_variance":
+            min_variance = self.variance
+        if self.feature_selection_method in ["univariate", "recursive", "recursive_with_cv"]:
+            num_features = self.k
+        self.meta_data = FeatureSelectionMetaData(self.feature_selection_method, min_variance, num_features)
+
+
+
 
     def perform_feature_selection(self, dataframe):
         print("Start feature selection...")

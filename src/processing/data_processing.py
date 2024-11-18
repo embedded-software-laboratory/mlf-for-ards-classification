@@ -36,7 +36,7 @@ class DataProcessor:
                 process_pool_data_list = pool.starmap(self.data_imputator.impute_missing_data, [(process_pool_data_list[i], i, n_jobs) for i in range(n_jobs)])
 
             dataframe = pd.concat(process_pool_data_list).reset_index(drop=True)
-
+            self.data_imputator.create_meta_data()
             print("Finished imputing missing data.")
 
         if self.process["perform_unit_conversion"]:
@@ -45,12 +45,13 @@ class DataProcessor:
             for column in dataframe.columns:
                 if column in self.unit_converter.conversion_formulas[self.data_imputator].keys():
                     columns_to_convert.append(column)
-
+            self.unit_converter.columns_to_convert = columns_to_convert
 
             with Pool(processes=self.max_processes) as pool:
                 process_pool_data_list = pool.starmap(self.unit_converter.convert_units, [(process_pool_data_list[i], columns_to_convert,  self.database_name, i, n_jobs) for i in range(n_jobs)])
+
             dataframe = pd.concat(process_pool_data_list).reset_index(drop=True)
-            print(f"Patients after unit conversion: {len(list(dataframe['patient_id'].unique()))}")
+            self.unit_converter.create_meta_data(self.database_name)
             print("Converted units!")
         if self.process["calculate_missing_params"]:
             print("Calculate missing parameters...")
@@ -59,6 +60,7 @@ class DataProcessor:
                 process_pool_data_list = pool.starmap(self.param_calculator.calculate_missing_params,
                                                       [(process_pool_data_list[i], i, n_jobs) for i in range(n_jobs)])
             dataframe = pd.concat(process_pool_data_list).reset_index(drop=True)
+            self.param_calculator.create_metadata()
             print("Calculated missing params.")
         if self.process["perform_ards_onset_detection"]:
             print("Detect ARDS onset..")
@@ -66,11 +68,13 @@ class DataProcessor:
                 process_pool_data_list = pool.starmap(self.onset_determiner.determine_ards_onset,
                                                       [(process_pool_data_list[i], i, n_jobs) for i in range(n_jobs)])
             dataframe = pd.concat(process_pool_data_list).reset_index(drop=True)
+            self.onset_determiner.create_meta_data()
             print("Detected ARDS onset!")
 
         if self.process["perform_filtering"]:
             print("Filter data...")
             dataframe = self.filter.filter_data(dataframe)
+            self.filter.create_meta_data()
             print("Filtered data!")
         print("Data preprocessing completed!")
         return dataframe
@@ -104,4 +108,6 @@ class DataProcessor:
 
         return process_pool_data_list, n_jobs
 
-    #def _create_meta_data(self):
+    def get_processing_meta_data(self):
+        return self.database_name, self.data_imputator.meta_data, self.unit_converter.meta_data, self.param_calculator.meta_data, self.onset_determiner.meta_data, self.filter.meta_data
+
