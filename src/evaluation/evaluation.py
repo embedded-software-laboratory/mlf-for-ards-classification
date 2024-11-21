@@ -12,9 +12,11 @@ from ml_models.model_interface import Model
 
 import os
 
+from processing import TimeSeriesDataset, TimeSeriesMetaDataManagement, TimeSeriesDatasetManagement
+
 
 class Evaluation:
-    def __init__(self, config, dataset_training, dataset_test):
+    def __init__(self, config, dataset_training: TimeSeriesDataset, dataset_test: TimeSeriesDataset):
         self.config = config
         self.eval_info = EvaluationInformation(config, dataset_training, dataset_test)
         self.model_results = {}
@@ -27,9 +29,11 @@ class Evaluation:
                 continue
             else:
                 model_evaluation = ModelEvaluation(self.config, timeseries_model, self)
-                predictors = self.eval_info.dataset_test.loc[:, self.eval_info.dataset_test.columns != 'ards']
-                labels = self.eval_info.dataset_test['ards']
-                model_evaluation.evaluate_timeseries_model(predictors, labels, "Evaluation")
+                predictors = self.eval_info.dataset_test.content.loc[:, self.eval_info.dataset_test.content.columns != 'ards']
+                meta_data_training_set = self.eval_info.dataset_training.meta_data
+                meta_data_test_set = self.eval_info.dataset_test.meta_data
+                labels = self.eval_info.dataset_test.content['ards']
+                model_evaluation.evaluate_timeseries_model(predictors, labels, "Evaluation", meta_data_training_set, meta_data_test_set)
                 model_result = ModelResultFactory.factory_method(model_evaluation.model_eval_info,
                                                                 model_evaluation.evaluation_results,
                                                                 model_evaluation.model.training_evaluation,
@@ -61,7 +65,7 @@ class ModelEvaluation:
         self.model_eval_info = ModelEvaluationInformation(config, model)
         self.evaluation_results = {}
 
-    def evaluate_timeseries_model(self, predictors, true_labels, stage: str, split_name: str =" split") -> None:
+    def evaluate_timeseries_model(self, predictors, true_labels, stage: str, meta_data_training_set, meta_data_test_set, split_name: str =" split", ) -> None:
 
         eval_split_name = stage + split_name
 
@@ -82,16 +86,19 @@ class ModelEvaluation:
             optimizer_result = OptimizerFactory.factory_method([eval_result], optimizer)
             optimizer_list.append(optimizer_result)
 
-        result = EvalResultFactory.factory_method(optimizer_list, stage, evaluation_performed=True)
+        result = EvalResultFactory.factory_method(optimizer_list, meta_data_training_set, meta_data_test_set, stage, evaluation_performed=True)
 
         self.evaluation_results[stage] = result
 
-    def cross_validate_timeseries_model(self, data) -> None:
+    def cross_validate_timeseries_model(self, data: TimeSeriesDataset) -> None:
+
         if self.evaluation.eval_info is None:
             print("Can not perform cross validation without evaluation information")
             return
-        labels = data["ards"]
-        predictors = data.loc[:, data.columns != 'ards']
+
+        processing_meta_data = TimeSeriesMetaDataManagement.extract_procesing_meta_data(data.meta_data)
+        labels = data.content["ards"]
+        predictors = data.content.loc[:, data.content.columns != 'ards']
         n_splits = self.evaluation.eval_info.n_splits
         shuffle_cv = self.evaluation.eval_info.shuffle
         random_state = self.evaluation.eval_info.random_state
@@ -117,11 +124,19 @@ class ModelEvaluation:
 
             predictors_train = predictors.iloc[train_set]
             labels_train = labels.iloc[train_set]
-            training_data = predictors_train.assign(ards=labels_train)
+            training_data_df = predictors_train.assign(ards=labels_train)
+
+            training_storage_information = f"Training split {i} of data located at: {data.meta_data.additional_information}"
+
+            training_data = TimeSeriesDatasetManagement.factory_method(training_data_df, processing_meta_data, training_storage_information, "CrossValidation")
 
             predictors_test = predictors.iloc[test_set]
             labels_test = labels.iloc[test_set]
-            test_data = predictors_test.assign(ards=labels_test)
+            test_data_df = predictors_test.assign(ards=labels_test)
+
+            test_storage_information = f"Test split {i} of data located at: {data.meta_data.additional_information}"
+            test_data = TimeSeriesDatasetManagement.factory_method(test_data_df, processing_meta_data,
+                                                                       test_storage_information, "CrossValidation")
 
             # Learn model for the split
             self.model.train_timeseries(training_data, self.config, "Training")
@@ -165,14 +180,16 @@ class ModelEvaluation:
             optimizer_training_result = OptimizerFactory.factory_method(complete_training_list, optimizer)#
             optimizer_training_list.append(optimizer_training_result)
 
+        data.meta_data.additional_information = "To receive the training and test set generate the splits using the cross validation settings below."
 
-
-        eval_result_complete = EvalResultFactory.factory_method(optimizer_eval_list, "CrossValidation",
+        eval_result_complete = EvalResultFactory.factory_method(optimizer_eval_list, data.meta_data, data.meta_data,"CrossValidation",
                                                                 True, random_state,
                                                                 shuffle_cv, n_splits)
-        training_result_complete = EvalResultFactory.factory_method(optimizer_training_list, "CrossValidation",
+        data.meta_data.additional_information = "To receive the training and test set generate the splits using the cross validation settings below and use the training set as the test set. "
+        training_result_complete = EvalResultFactory.factory_method(optimizer_training_list, data.meta_data, data.meta_data,"CrossValidation",
                                                                 True, random_state,
                                                                 shuffle_cv, n_splits)
+        data.meta_data.additional_information = None
 
         self.evaluation_results["EvaluationCrossValidation"] = eval_result_complete
         self.evaluation_results["TrainingCrossValidation"] = training_result_complete

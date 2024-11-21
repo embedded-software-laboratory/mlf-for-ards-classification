@@ -9,7 +9,7 @@ class Filter():
 
     def create_meta_data(self):
         if len(self.filter) > 0:
-            self.meta_data = FilteringMetaData(self.filter)
+            self.meta_data = FilteringMetaData(applied_filters=self.filter)
 
     def filter_data(self, dataframe):
 

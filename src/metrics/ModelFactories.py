@@ -10,12 +10,14 @@ import json
 
 from sklearn.metrics import roc_curve
 
+from processing import TimeseriesMetaData
+
 
 class EvalResultFactory:
     """ Contains the result of a single evaluation run"""
 
     @staticmethod
-    def factory_method(optimizer_list: list[GenericThresholdOptimization],
+    def factory_method(optimizer_list: list[GenericThresholdOptimization], training_set_meta_data: TimeseriesMetaData, test_set_meta_data:TimeseriesMetaData,
                        evaltype: str, crossvalidation_performed: bool = False, crossvalidation_random_state: int =None,
                           crossvalidation_shuffle:bool= None, crossvalidation_splits: int =None, evaluation_performed:bool=False) -> EvalResult:
         #if evaltype not in ["Evaluation", "CrossValidation"]:
@@ -23,20 +25,18 @@ class EvalResultFactory:
 
         eval_name = evaltype
 
-        # TODO Replace by storage location of datasets
-        training_dataset = ""
-        test_dataset = ""
+
         dict_optimizer = {}
         for optimizer in optimizer_list:
             dict_optimizer[optimizer.optimization_name] = optimizer
         if crossvalidation_performed:
-            return EvalResult(eval_type=eval_name, training_dataset=training_dataset, test_dataset=test_dataset,
+            return EvalResult(eval_type=eval_name, training_dataset=training_set_meta_data, test_dataset=test_set_meta_data,
                               contained_optimizers=dict_optimizer, crossvalidation_performed=crossvalidation_performed,
                               crossvalidation_random_state=crossvalidation_random_state,crossvalidation_shuffle=crossvalidation_shuffle,
                               crossvalidation_splits=crossvalidation_splits, evaluation_performed=evaluation_performed
                               )
         else:
-            return EvalResult(eval_type=eval_name, training_dataset=training_dataset, test_dataset=test_dataset,
+            return EvalResult(eval_type=eval_name, training_dataset=test_set_meta_data, test_dataset=test_set_meta_data,
                               contained_optimizers=dict_optimizer, crossvalidation_performed=crossvalidation_performed,
                               evaluation_performed=evaluation_performed
                               )

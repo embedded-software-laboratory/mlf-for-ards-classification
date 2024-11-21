@@ -24,7 +24,7 @@ class Feature_selection:
             min_variance = self.variance
         if self.feature_selection_method in ["univariate", "recursive", "recursive_with_cv"]:
             num_features = self.k
-        self.meta_data = FeatureSelectionMetaData(self.feature_selection_method, min_variance, num_features)
+        self.meta_data = FeatureSelectionMetaData(feature_selection_algorithm=self.feature_selection_method, min_required_variance=min_variance, num_features_to_select=num_features, first_selection=True)
 
 
 

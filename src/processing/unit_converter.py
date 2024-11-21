@@ -10,14 +10,14 @@ class UnitConverter:
         #                            "MIMIC3": {"hemoglobin": "source_value * 0.6206", "Harnstoff": "source_value * 0.1665", "creatinine": "source_value * 0.1665", "albumin": "source_value * 151.5152", "crp": "source_value * 9.5238", "bilirubin": "source_value * 17.1037"},
         #                           "MIMIC4": {"hemoglobin": "source_value * 0.6206"},
         #                           "UKA": {}}
-        self.conversion_formulas = {
-            "eICU": {"hemoglobin": (lambda x: x * 0.6206), "creatinine": ( lambda x: x * 0.1665),
-                     "albumin": (lambda x: x * 151.5152), "crp": (lambda x: x * 9.5238),
-                     "bilirubin": (lambda x: x * 17.1037), "etco2": (lambda x: x * 1.7)},
-            "MIMIC3": {"hemoglobin": (lambda x: x * 0.6206), "Harnstoff": (lambda x: x * 0.1665),
-                       "creatinine": (lambda x: x * 0.1665), "albumin": (lambda x: x * 151.5152),
-                       "crp": (lambda x: x * 9.5238), "bilirubin": (lambda x: x * 17.1037)},
-            "MIMIC4": {"hemoglobin": (lambda x: x * 0.6206)},
+        self._conversion_formulas = {
+            "eICU": {"hemoglobin": self.convert_hemoglobin, "creatinine": self.convert_creatinine,
+                     "albumin": self.convert_albumin, "crp":self.convert_crp,
+                     "bilirubin": self.convert_bilirubin, "etco2": self.convert_etco2},
+            "MIMIC3": {"hemoglobin": self.convert_hemoglobin, "Harnstoff": self.convert_harnstoff,
+                       "creatinine": self.convert_creatinine, "albumin": self.convert_albumin, "crp":self.convert_crp,
+                       "bilirubin": self.convert_bilirubin},
+            "MIMIC4": {"hemoglobin": self.convert_hemoglobin},
             "UKA": {}}
         self._columns_to_convert = None
         self.meta_data = None
@@ -40,7 +40,40 @@ class UnitConverter:
         meta_data_dict = {}
         for column in self._columns_to_convert:
             meta_data_dict[column] = self.conversion_formulas[database_name][column]
-        self.meta_data = UnitConversionMetaData(meta_data_dict)
+        self.meta_data = UnitConversionMetaData(conversions=meta_data_dict)
+
+    @property
+    def conversion_formulas(self):
+        return self._conversion_formulas
+
+
+    @staticmethod
+    def convert_hemoglobin(value):
+        return value * 0.6206
+
+    @staticmethod
+    def convert_creatinine(value):
+        return value * 0.1665
+
+    @staticmethod
+    def convert_harnstoff(value):
+        return value * 0.1665
+
+    @staticmethod
+    def convert_albumin(value):
+        return value * 151.5152
+
+    @staticmethod
+    def convert_crp(value):
+        return value * 9.5238
+
+    @staticmethod
+    def convert_bilirubin(value):
+        return value * 17.1037
+
+    @staticmethod
+    def convert_etco2(value):
+        return value * 1.7
 
 
     @property

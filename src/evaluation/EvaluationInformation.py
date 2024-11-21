@@ -1,14 +1,15 @@
 from ml_models.model_interface import Model
 from metrics.Metrics import *
+from processing import TimeSeriesDataset
 
 
 class EvaluationInformation:
 
-    def __init__(self, config, dataset_training=None, dataset_test=None):
-        self.dataset_training = dataset_training  # TODO replace by representation of dataset
-        self.dataset_test = dataset_test  # TODO replace by representation of dataset
+    def __init__(self, config, dataset_training: TimeSeriesDataset=None, dataset_test: TimeSeriesDataset=None):
+        self.dataset_training = dataset_training
+        self.dataset_test = dataset_test
         self.experiment_name = config['evaluation']['evaluation_name']
-        self.eval_storage_location = config['storage_path']  # TODO check what is correct
+        self.eval_storage_location = config['storage_path']
         self.cross_validation_performed = config["process"]["perform_cross_validation"]
         self.evaluation_performed = config["process"]["calculate_evaluation_metrics"]
         if self.cross_validation_performed:

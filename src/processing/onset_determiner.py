@@ -38,10 +38,10 @@ class OnsetDeterminer:  #class to determine the ARDS onset in a given dataset
             update_ards_values = self.update_ards_values
             impute_missing_rows = self.impute_missing_rows
 
-        self.meta_data = OnsetDetectionMetaData(self.detection_rule, self.return_rule, return_series_start,
-                                                return_series_end,
-                                                self.remove_ards_patients_without_onset, update_ards_values,
-                                                impute_missing_rows)
+        self.meta_data = OnsetDetectionMetaData(onset_detection_algorithm=self.detection_rule, onset_detection_return_type=self.return_rule,
+                                                series_begin=return_series_start, series_end=return_series_end,
+                                                remove_ards_patients_without_onset=self.remove_ards_patients_without_onset,
+                                                update_ards_diagnose=update_ards_values, fill_cells_out_of_patient_stay=impute_missing_rows)
 
     def set_detection_rule(self, rule):
         if rule not in self.available_detection_rules:

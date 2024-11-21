@@ -8,6 +8,7 @@ class Model:
         self.trained = False
         self._storage_location = None
         self.training_evaluation = None
+        self.meta_data = None
 
     def train_model(self, training_data):
         raise NotImplementedError

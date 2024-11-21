@@ -44,7 +44,7 @@ class ParamCalculator:
 
     def create_metadata(self):
         if len(list(self.calculated_params)) > 0:
-            self.meta_data = ParamCalculationMetaData(list(self.calculated_params))
+            self.meta_data = ParamCalculationMetaData(calculated_parameters=list(self.calculated_params))
 
     @staticmethod
     def calculate_delta_p(dataframe):

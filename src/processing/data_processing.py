@@ -24,7 +24,7 @@ class DataProcessor:
         self.database_name = database_name
         self.process = process
 
-    def process_data(self, dataframe: pd.DataFrame):
+    def process_data(self, dataframe: pd.DataFrame, dataset_metadata: TimeseriesMetaData):
 
         process_pool_data_list, n_jobs = self._prepare_multiprocessing(dataframe)
 
@@ -39,20 +39,26 @@ class DataProcessor:
             self.data_imputator.create_meta_data()
             print("Finished imputing missing data.")
 
+
         if self.process["perform_unit_conversion"]:
-            print("Convert units...")
-            columns_to_convert = []
-            for column in dataframe.columns:
-                if column in self.unit_converter.conversion_formulas[self.data_imputator].keys():
-                    columns_to_convert.append(column)
-            self.unit_converter.columns_to_convert = columns_to_convert
+            if not dataset_metadata or  (dataset_metadata and not dataset_metadata.imputation):
+                print("Convert units...")
+                columns_to_convert = []
+                for column in dataframe.columns:
+                    if column in self.unit_converter.conversion_formulas[self.database_name].keys():
+                        columns_to_convert.append(column)
+                self.unit_converter.columns_to_convert = columns_to_convert
 
-            with Pool(processes=self.max_processes) as pool:
-                process_pool_data_list = pool.starmap(self.unit_converter.convert_units, [(process_pool_data_list[i], columns_to_convert,  self.database_name, i, n_jobs) for i in range(n_jobs)])
+                with Pool(processes=self.max_processes) as pool:
+                    process_pool_data_list = pool.starmap(self.unit_converter.convert_units, [(process_pool_data_list[i],   self.database_name, i, n_jobs) for i in range(n_jobs)])
 
-            dataframe = pd.concat(process_pool_data_list).reset_index(drop=True)
-            self.unit_converter.create_meta_data(self.database_name)
-            print("Converted units!")
+                dataframe = pd.concat(process_pool_data_list).reset_index(drop=True)
+                self.unit_converter.create_meta_data(self.database_name)
+                print("Converted units!")
+
+            else:
+                print("Data is already converted. Skipping...")
+
         if self.process["calculate_missing_params"]:
             print("Calculate missing parameters...")
 
@@ -62,14 +68,19 @@ class DataProcessor:
             dataframe = pd.concat(process_pool_data_list).reset_index(drop=True)
             self.param_calculator.create_metadata()
             print("Calculated missing params.")
+
+
         if self.process["perform_ards_onset_detection"]:
-            print("Detect ARDS onset..")
-            with Pool(processes=self.max_processes) as pool:
-                process_pool_data_list = pool.starmap(self.onset_determiner.determine_ards_onset,
-                                                      [(process_pool_data_list[i], i, n_jobs) for i in range(n_jobs)])
-            dataframe = pd.concat(process_pool_data_list).reset_index(drop=True)
-            self.onset_determiner.create_meta_data()
-            print("Detected ARDS onset!")
+            if not dataset_metadata or (dataset_metadata and not dataset_metadata.onset_detection):
+                print("Detect ARDS onset..")
+                with Pool(processes=self.max_processes) as pool:
+                    process_pool_data_list = pool.starmap(self.onset_determiner.determine_ards_onset,
+                                                          [(process_pool_data_list[i], i, n_jobs) for i in range(n_jobs)])
+                dataframe = pd.concat(process_pool_data_list).reset_index(drop=True)
+                self.onset_determiner.create_meta_data()
+                print("Detected ARDS onset!")
+            else:
+                print("Data is already converted. Skipping...")
 
         if self.process["perform_filtering"]:
             print("Filter data...")
@@ -109,5 +120,13 @@ class DataProcessor:
         return process_pool_data_list, n_jobs
 
     def get_processing_meta_data(self):
-        return self.database_name, self.data_imputator.meta_data, self.unit_converter.meta_data, self.param_calculator.meta_data, self.onset_determiner.meta_data, self.filter.meta_data
+        meta_data_dict = {
+            "database_name": self.database_name,
+            "imputator": self.data_imputator.meta_data,
+            "unit_converter": self.unit_converter.meta_data,
+            "param_calculator": self.param_calculator.meta_data,
+            "onset_determiner": self.onset_determiner.meta_data,
+            "filtering": self.filter.meta_data
+        }
+        return meta_data_dict
 

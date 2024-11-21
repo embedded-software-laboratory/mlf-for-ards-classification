@@ -3,6 +3,7 @@ from __future__ import annotations
 from pydantic import BaseModel, ValidationInfo, field_validator, model_serializer, root_validator, model_validator
 from typing import Any, Callable, Union
 
+from processing import TimeseriesMetaData
 
 
 class GenericSplit(BaseModel):
@@ -80,8 +81,8 @@ class EvalResult(BaseModel):
 
     eval_type: str
 
-    training_dataset: object = None  # TODO add data set information
-    test_dataset: object = None  # TODO add data set information
+    training_dataset: TimeseriesMetaData = None
+    test_dataset: TimeseriesMetaData = None
 
     contained_optimizers: dict[str, GenericThresholdOptimization]
 
