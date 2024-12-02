@@ -30,7 +30,7 @@ class TimeSeriesModel(Model):
         training_data = training_dataset.content
         training_data_meta_data = training_dataset.meta_data
         self.train_model(training_data)
-        self.meta_data = ModelMetaDataFactory.factory_method(self, training_data_meta_data)
+        self.meta_data = ModelMetaDataFactory.factory_method(self, training_data_meta_data.dataset_location, training_data_meta_data.dataset_location)
         labels = training_data["ards"]
         predictors = training_data.loc[:, training_data.columns != 'ards']
         model_evaluator.evaluate_timeseries_model(predictors, labels, stage, training_data_meta_data, training_data_meta_data, split_name)

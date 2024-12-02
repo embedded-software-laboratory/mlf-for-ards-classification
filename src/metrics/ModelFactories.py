@@ -30,13 +30,13 @@ class EvalResultFactory:
         for optimizer in optimizer_list:
             dict_optimizer[optimizer.optimization_name] = optimizer
         if crossvalidation_performed:
-            return EvalResult(eval_type=eval_name, training_dataset=training_set_meta_data, test_dataset=test_set_meta_data,
+            return EvalResult(eval_type=eval_name, training_dataset=training_set_meta_data, test_dataset=training_set_meta_data,
                               contained_optimizers=dict_optimizer, crossvalidation_performed=crossvalidation_performed,
                               crossvalidation_random_state=crossvalidation_random_state,crossvalidation_shuffle=crossvalidation_shuffle,
                               crossvalidation_splits=crossvalidation_splits, evaluation_performed=evaluation_performed
                               )
         else:
-            return EvalResult(eval_type=eval_name, training_dataset=test_set_meta_data, test_dataset=test_set_meta_data,
+            return EvalResult(eval_type=eval_name, training_dataset=training_set_meta_data, test_dataset=test_set_meta_data,
                               contained_optimizers=dict_optimizer, crossvalidation_performed=crossvalidation_performed,
                               evaluation_performed=evaluation_performed
                               )
