@@ -3,16 +3,16 @@ process:
   load_timeseries_data: True
   perform_imputation: True
   perform_unit_conversion: True
-  calculate_missing_params: False
+  calculate_missing_params: True
   perform_ards_onset_detection: True
-  perform_filtering: False
-  perform_feature_selection: False
+  perform_filtering: True
+  perform_feature_selection: True
   perform_data_segregation: True 
   perform_timeseries_training: True
   perform_timeseries_classification: True
   perform_threshold_optimization: True
   calculate_evaluation_metrics: True
-  perform_cross_validation: False
+  perform_cross_validation: True
   save_models: False
 
   load_image_data: False
@@ -58,7 +58,7 @@ storage_path: "Save/ExperimentResult"
 
 
 data:
-  timeseries_file_path: "/hpcwork/rwth1474/Data/time_series/uka_data_050623.npy"
+  timeseries_file_path: "../Data/uka_data_050623.npy"
   database: "UKA"
   image_file_path: "Data/Image_data"
   pneumonia_dataset: "balanced"
@@ -69,8 +69,8 @@ preprocessing:
   max_processes: 6
   filtering:
     filter:
-    - A
-    - C
+    - BD
+    - Lite
 
   imputation: 
     impute_empty_cells: True
