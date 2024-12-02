@@ -88,11 +88,11 @@ class LogisticRegressionModel(TimeSeriesModel):
         return logistic_regression
 
     def save_model(self, filepath):
-        file = open(filepath + ".txt", "wb")
+        file = open(filepath + f"_{self.algorithm}_{self.name}.pkl", "wb")
         pickle.dump(self.model, file)
 
     def load_model(self, filepath):
-        file = open(filepath + ".txt", "rb")
+        file = open(filepath + f"_{self.algorithm}_{self.name}.pkl", "rb")
         self.model = pickle.load(file)
 
 # Logistic_regression().save("../Save/Logistic_regression")

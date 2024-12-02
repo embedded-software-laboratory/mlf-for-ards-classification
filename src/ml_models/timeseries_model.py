@@ -42,23 +42,27 @@ class TimeSeriesModel(Model):
             print("It makes no sense to save the model before training it")
             return
 
-        evaluation_location = filepath + "_training_evaluation.json"
+        evaluation_location = filepath + f"_{self.algorithm}_{self.name}_training_evaluation.json"
         with open(evaluation_location, "w") as evaluation_file:
             evaluation_file.write(self.training_evaluation.to_json(indent=4))
 
         self.meta_data.ml_model_training_evaluation_location = evaluation_location
-        meta_data_path = filepath + "_meta_data.json"
+        meta_data_path = filepath + f"_{self.algorithm}_{self.name}_meta_data.json"
         with open(meta_data_path, "w", encoding="utf-8") as meta_data_file:
             meta_data_file.write(self.meta_data.model_dump_json(indent=4))
 
         self.save_model(filepath)
 
-    def load(self, filepath, model_name):
+    def load(self, filepath):
         # TODO finish
-        self.load_model(filepath + model_name)
-        meta_data_path = filepath + model_name + "_meta_data.json"
+        self.load_model(filepath)
+        meta_data_path = filepath  + f"_{self.algorithm}_{self.name}_meta_data.json"
         model_meta_data = pydantic.parse_raw(meta_data_path)
+        self.meta_data = model_meta_data
 
+        evaluation_location = filepath + f"_{self.algorithm}_{self.name}_training_evaluation.json"
+        model_training_evaluation = pydantic.parse_raw(evaluation_location)
+        self.training_evaluation = model_training_evaluation
         pass
 
 

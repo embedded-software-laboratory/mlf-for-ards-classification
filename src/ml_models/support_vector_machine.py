@@ -35,11 +35,11 @@ class SupportVectorMachineModel(TimeSeriesModel):
         return self.model.get_params(deep=True)
 
     def save_model(self, filepath):
-        file = open(filepath + ".txt", "wb")
+        file = open(filepath + f"_{self.algorithm}_{self.name}.pkl", "wb")
         pickle.dump(self.model, file)
 
     def load_model(self, filepath):
-        file = open(filepath + ".txt", "rb")
+        file = open(filepath + f"_{self.algorithm}_{self.name}.pkl", "rb")
         self.model = pickle.load(file)
 
     def has_predict_proba(self):

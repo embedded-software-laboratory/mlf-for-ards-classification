@@ -35,10 +35,10 @@ class XGBoostModel(TimeSeriesModel):
         return {'eval_metric': self.eval_metric}
 
     def save_model(self, filepath):
-        self.model.save_model(filepath + ".ubj")
+        self.model.save_model(filepath + f"_{self.algorithm}_{self.name}.ubj")
 
     def load_model(self, filepath):
-        self.model.load_model(filepath + ".ubj")
+        self.model.load_model(filepath + f"_{self.algorithm}_{self.name}.ubj")
 
     def has_predict_proba(self):
         return True

@@ -33,9 +33,9 @@ class AdaBoostModel(TimeSeriesModel):
         return self.model.get_params()
 
     def save_model(self, filepath):
-        with open(filepath + ".pkl", 'wb') as f:
+        with open(filepath + f"_{self.algorithm}_{self.name}.pkl", 'wb') as f:
             pickle.dump(self.model, f)
 
     def load_model(self, filepath):
-        with open(filepath + ".pkl", 'rb') as f:
+        with open(filepath + f"_{self.algorithm}_{self.name}.pkl", 'rb') as f:
             self.model = pickle.load(f)

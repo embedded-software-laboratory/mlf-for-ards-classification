@@ -50,11 +50,11 @@ class BayesianNetworkModel(TimeSeriesModel):
         return {"pseudocount": self.pseudocount}
 
     def save_model(self, filepath):
-        file = open(filepath + ".json", "w")
+        file = open(filepath + f"_{self.algorithm}_{self.name}.json", "w")
         json.dump(self.model.to_json(), file)
 
     def load_model(self, filepath):
-        file = open(filepath + ".json", "r")
+        file = open(filepath + f"_{self.algorithm}_{self.name}.json", "r")
         self.model = pomegranate.from_json(json.load(file))
 
     def convert_dataset(self, data):
