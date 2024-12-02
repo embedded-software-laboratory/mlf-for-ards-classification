@@ -6,10 +6,10 @@ import os
 import pandas as pd
 from pydantic import ValidationError
 
-from processing import TimeseriesMetaData
+from processing.datasets_metadata import  TimeseriesMetaData
 
 
-class FileLoader():
+class FileLoader:
 
     def load_file(self, file_path: str) -> (pd.DataFrame, TimeseriesMetaData):
         splitted_path = os.path.splitext(file_path)

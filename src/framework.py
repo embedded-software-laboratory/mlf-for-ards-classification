@@ -79,7 +79,7 @@ class Framework:
         self.ards_dataset = config["data"]["ards_dataset"]
         self.dataProcessor = DataProcessor(config["preprocessing"], config["data"]["database"], config["process"])
         self.feature_selector = Feature_selection(config["feature_selection"])
-        self.segregator = Data_segregator(config["data_segregation"])
+        self.segregator = DataSegregator(config["data_segregation"])
         self.dataset_generator = ImageDatasetGenerator()
         self.process = config["process"]
         self.model_base_paths = config["algorithm_base_path"]
@@ -302,10 +302,15 @@ class Framework:
             json.dump(self.config, f)
 
         if self.process["load_models"]:
+            raise NotImplementedError("Currently this feature is broken")
             self.load_models()
 
         if self.process["load_timeseries_data"]:
             self.load_timeseries_data()
+
+        if not self.process["save_models"]:
+            for model in self.timeseries_models:
+                model.storage_location = "Model is not saved"
 
         if self.process["perform_timeseries_training"]:
             if not self.timeseries_training_set:
