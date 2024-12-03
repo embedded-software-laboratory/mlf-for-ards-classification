@@ -1,3 +1,4 @@
+from ml_models import TimeSeriesProbaModel
 from ml_models.model_interface import Model
 from ml_models.timeseries_model import TimeSeriesModel
 from sklearn.linear_model import LogisticRegression
@@ -6,13 +7,29 @@ from statsmodels.stats.outliers_influence import variance_inflation_factor
 import pandas as pd
 
 
-class LogisticRegressionModel(TimeSeriesModel):
+class LogisticRegressionModel(TimeSeriesProbaModel):
 
     def __init__(self):
         super().__init__()
         self.name = "Logistic_regression"
         self.algorithm = "Logistic Regression"
-
+        self.hyperparameters = {
+            "penalty": "l2",
+            "dual": False,
+            "tol": 0.0001,
+            "C": 1.0,
+            "fit_intercept": True,
+            "intercept_scaling": 1,
+            "class_weight": None,
+            "random_state": 42,
+            "solver": "saga",
+            "max_iter": 100000,
+            "multi_class": "auto",
+            "verbose": 0,
+            "warm_start": False,
+            "n_jobs": -1,
+            "l1_ratio": None,
+        }
 
         self.penalty = 'l2'
         self.solver = 'saga'
@@ -45,6 +62,12 @@ class LogisticRegressionModel(TimeSeriesModel):
     def predict_proba(self, data):
         return self.model.predict_proba(data)
 
+    def set_params(self, params):
+        for key, value in params.items():
+            if key in self.hyperparameters:
+                self.hyperparameters[key] = value
+        self.model.set_params(**self.hyperparameters)
+
     def get_params(self):
         return self.model.get_params(deep=True)
 
@@ -69,22 +92,8 @@ class LogisticRegressionModel(TimeSeriesModel):
         """Function that intializes the Random Forest"""
 
         # Init LR
-        logistic_regression = LogisticRegression(
-            penalty=self.penalty,
-            tol=self.tol,
-            C=self.C,
-            fit_intercept=self.fit_intercept,
-            intercept_scaling=self.intercept_scaling,
-            class_weight=self.class_weight,
-            random_state=3308,
-            solver=self.solver,
-            max_iter=self.max_iter,
-            multi_class=self.multi_class,
-            verbose=self.verbose,
-            warm_start=self.warm_start,
-            n_jobs=self.n_jobs,
-            l1_ratio=self.l1_ratio,
-        )
+        logistic_regression = LogisticRegression()
+        logistic_regression.set_params(**self.hyperparameters)
         return logistic_regression
 
     def save_model(self, filepath):
