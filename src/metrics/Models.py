@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from pydantic import BaseModel, ValidationInfo, field_validator, model_serializer, root_validator, model_validator
-from typing import Any, Callable, Union
+from pydantic import BaseModel, ValidationInfo, field_validator, model_serializer, model_validator
+from typing import Any,  Union
 
 from processing import TimeseriesMetaData
 
@@ -60,8 +60,6 @@ class ExperimentResult(BaseModel):
     storage_location: str
     contained_model_results: dict
 
-
-
     class Config:
         arbitrary_types_allowed = True
 
@@ -72,6 +70,8 @@ class ModelResult(BaseModel):
 
     used_model_location: str
     used_model_name: str = None
+    used_model_algorithm: str = None
+    used_model_type: str = None
     contained_evals: dict
 
 
@@ -87,9 +87,9 @@ class EvalResult(BaseModel):
     contained_optimizers: dict[str, GenericThresholdOptimization]
 
     crossvalidation_performed: bool
-    crossvalidation_random_state: int = None
-    crossvalidation_shuffle: bool = None
-    crossvalidation_splits: int = None
+    crossvalidation_random_state: Union[int, None] = None
+    crossvalidation_shuffle: Union[bool, None] = None
+    crossvalidation_splits: Union[int, None] = None
     evaluation_performed: bool
 
     @field_validator('crossvalidation_random_state', 'crossvalidation_splits')
