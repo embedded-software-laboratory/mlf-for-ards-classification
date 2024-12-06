@@ -1,6 +1,4 @@
-from ml_models import TimeSeriesProbaModel
-from ml_models.model_interface import Model
-from ml_models.timeseries_model import TimeSeriesModel
+from ml_models.timeseries_model import TimeSeriesProbaModel
 from xgboost import XGBClassifier
 from sklearn.preprocessing import LabelEncoder
 
@@ -40,10 +38,10 @@ class XGBoostModel(TimeSeriesProbaModel):
         return self.hyperparameters
 
     def save_model(self, filepath):
-        self.model.save_model(filepath + f"_{self.algorithm}_{self.name}.ubj")
+        self.model.save_model(filepath + f"{self.algorithm}_{self.name}.ubj")
 
     def load_model(self, filepath):
-        self.model.load_model(filepath + f"_{self.algorithm}_{self.name}.ubj")
+        self.model.load_model(filepath + f"{self.algorithm}_{self.name}.ubj")
 
     def has_predict_proba(self):
         return True

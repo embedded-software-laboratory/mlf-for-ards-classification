@@ -1,6 +1,5 @@
-from ml_models import TimeSeriesProbaModel
-from ml_models.model_interface import Model
-from ml_models.timeseries_model import TimeSeriesModel
+from ml_models.timeseries_model import TimeSeriesProbaModel
+
 from sklearn.linear_model import LogisticRegression
 import pickle
 from statsmodels.stats.outliers_influence import variance_inflation_factor
@@ -97,11 +96,11 @@ class LogisticRegressionModel(TimeSeriesProbaModel):
         return logistic_regression
 
     def save_model(self, filepath):
-        file = open(filepath + f"_{self.algorithm}_{self.name}.pkl", "wb")
+        file = open(filepath + f"{self.algorithm}_{self.name}.pkl", "wb")
         pickle.dump(self.model, file)
 
     def load_model(self, filepath):
-        file = open(filepath + f"_{self.algorithm}_{self.name}.pkl", "rb")
+        file = open(filepath + f"{self.algorithm}_{self.name}.pkl", "rb")
         self.model = pickle.load(file)
 
 # Logistic_regression().save("../Save/Logistic_regression")

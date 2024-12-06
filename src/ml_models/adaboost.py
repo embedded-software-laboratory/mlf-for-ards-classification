@@ -1,5 +1,5 @@
-from ml_models import TimeSeriesProbaModel
-from ml_models.timeseries_model import TimeSeriesModel
+
+from ml_models.timeseries_model import TimeSeriesProbaModel
 from sklearn.ensemble import AdaBoostClassifier
 import pickle
 
@@ -16,8 +16,7 @@ class AdaBoostModel(TimeSeriesProbaModel):
             "n_estimators": 50,
             "learning_rate": 1.0,
             "algorithm": 'SAMME.R',
-            "random_state": 42,
-            "base_estimator": None
+            "random_state": 42
         }
         self.model = self._init()
 
@@ -52,9 +51,9 @@ class AdaBoostModel(TimeSeriesProbaModel):
         self.model.set_params(**self.hyperparameters)
 
     def save_model(self, filepath):
-        with open(filepath + f"_{self.algorithm}_{self.name}.pkl", 'wb') as f:
+        with open(filepath + f"{self.algorithm}_{self.name}.pkl", 'wb') as f:
             pickle.dump(self.model, f)
 
     def load_model(self, filepath):
-        with open(filepath + f"_{self.algorithm}_{self.name}.pkl", 'rb') as f:
+        with open(filepath + f"{self.algorithm}_{self.name}.pkl", 'rb') as f:
             self.model = pickle.load(f)

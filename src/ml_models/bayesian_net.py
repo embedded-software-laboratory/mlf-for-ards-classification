@@ -1,6 +1,6 @@
-from ml_models import TimeSeriesProbaModel
+
 from ml_models.model_interface import Model
-from ml_models.timeseries_model import TimeSeriesModel
+from ml_models.timeseries_model import TimeSeriesProbaModel
 from pomegranate import DiscreteDistribution, ConditionalProbabilityTable, Node, BayesianNetwork
 import numpy as np
 import pomegranate
@@ -62,11 +62,11 @@ class BayesianNetworkModel(TimeSeriesProbaModel):
 
 
     def save_model(self, filepath):
-        file = open(filepath + f"_{self.algorithm}_{self.name}.json", "w")
+        file = open(filepath + f"{self.algorithm}_{self.name}.json", "w")
         json.dump(self.model.to_json(), file)
 
     def load_model(self, filepath):
-        file = open(filepath + f"_{self.algorithm}_{self.name}.json", "r")
+        file = open(filepath + f"{self.algorithm}_{self.name}.json", "r")
         self.model = pomegranate.from_json(json.load(file))
 
     def convert_dataset(self, data):
