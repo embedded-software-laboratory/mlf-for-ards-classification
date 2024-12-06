@@ -1,4 +1,7 @@
 #(informal) interface for all ards detection ml_models
+import pandas as pd
+
+
 class Model:
     def __init__(self):
         self.model = None
@@ -10,22 +13,22 @@ class Model:
         self.training_evaluation = None
         self.meta_data = None
 
-    def train_model(self, training_data):
+    def train_model(self, training_data: pd.DataFrame):
         raise NotImplementedError
 
-    def predict(self, patient_data):
+    def predict(self, patient_data: pd.DataFrame):
         raise NotImplementedError
 
-    def predict_proba(self, data):
+    def predict_proba(self, data: pd.DataFrame):
         raise NotImplementedError
 
     def has_predict_proba(self):
         raise NotImplementedError
 
-    def save_model(self, filepath):
+    def save_model(self, filepath: str):
         raise NotImplementedError
 
-    def load_model(self, filepath):
+    def load_model(self, filepath: str):
         raise NotImplementedError
 
     @property
