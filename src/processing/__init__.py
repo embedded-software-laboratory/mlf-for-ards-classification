@@ -3,7 +3,7 @@ from processing.data_imputator import DataImputator
 from processing.data_processing import DataProcessor
 from processing.data_segregator import DataSegregator
 
-from processing.feature_selection import Feature_selection
+from processing.featureselection import FeatureSelection
 from processing.filter import Filter
 from processing.load_file import FileLoader
 from processing.onset_determiner import OnsetDeterminer
