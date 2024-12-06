@@ -12,7 +12,7 @@ class ModelMetadata(BaseModel):
 
     ml_model_hyperparameters: dict
     ml_model_training_data_location: str
-    ml_model_evaluation_data_location: str
+    ml_model_training_evaluation_location: str
     ml_model_storage_location: str
 
 
@@ -35,4 +35,4 @@ class ModelMetaDataFactory:
                              ml_model_hyperparameters=ml_model_hyperparameters,
                              ml_model_storage_location=model.storage_location,
                              ml_model_training_data_location=training_data_location,
-                             ml_model_evaluation_data_location=training_evaluation_location)
+                             ml_model_training_evaluation_location=training_evaluation_location)
