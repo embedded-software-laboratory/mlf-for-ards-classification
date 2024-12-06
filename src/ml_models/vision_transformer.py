@@ -1,9 +1,13 @@
 from ml_models.image_model_interface import ImageModel
-import torch
+
 from processing.datasets import ImageDatasets
+
+import torch
 from torch import nn
-from sklearn.model_selection import KFold
 from torch.optim.lr_scheduler import ExponentialLR
+
+from sklearn.model_selection import KFold
+
 import time
 import os
 import csv

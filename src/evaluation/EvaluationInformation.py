@@ -1,6 +1,8 @@
 from ml_models.model_interface import Model
-from metrics.Metrics import *
 from processing import TimeSeriesDataset
+
+from metrics.Metrics import *
+
 
 
 class EvaluationInformation:

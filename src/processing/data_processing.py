@@ -1,15 +1,16 @@
-import math
-from multiprocessing import Pool
 
-from processing.datasets_metadata import *
-
-import pandas as pd
-
+from processing.filter import Filter
 from processing.unit_converter import UnitConverter
 from processing.data_imputator import DataImputator
 from processing.param_calculation import ParamCalculator
 from processing.onset_determiner import OnsetDeterminer
-from processing.filter import Filter
+from processing.datasets_metadata import TimeseriesMetaData
+
+import pandas as pd
+import math
+from multiprocessing import Pool
+
+
 
 
 class DataProcessor:

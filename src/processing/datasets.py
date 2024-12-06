@@ -1,17 +1,33 @@
-import pandas as pd
-import torch
-from pydantic import BaseModel
+#import pandas as pd
+#import torch
+#from pydantic import BaseModel
+#from torch.utils.data import Dataset
+#import os
+#import albumentations
+#import torch
+#import cv2
+#import numpy as np
+#import re
+#
+#from winerror import NOERROR
+#
+#from processing.datasets_metadata import TimeseriesMetaData, TimeSeriesMetaDataManagement
+
+from processing.datasets_metadata import TimeseriesMetaData, TimeSeriesMetaDataManagement
+
 from torch.utils.data import Dataset
-import os
+from pydantic import BaseModel
+
 import albumentations
 import torch
 import cv2
+
 import numpy as np
+import pandas as pd
+
+import os
 import re
 
-from winerror import NOERROR
-
-from processing.datasets_metadata import TimeseriesMetaData, TimeSeriesMetaDataManagement
 
 
 class ImageDatasets(Dataset):
@@ -198,6 +214,7 @@ class TimeSeriesDataset(BaseModel):
         arbitrary_types_allowed = True
 
     content: pd.DataFrame
+
     meta_data: TimeseriesMetaData
 
 class TimeSeriesDatasetManagement:
