@@ -1,14 +1,18 @@
-import torch
-import numpy as np
-import tensorflow as tf
-import gc
 import os
+import gc
+import csv
+
+import torch
 from torch.utils.data import DataLoader, SubsetRandomSampler
 from torchmetrics import Accuracy, Precision, Recall, Specificity, AUROC, F1Score
-import csv
-import sys
 
-class ImageModel():
+import numpy as np
+
+import tensorflow as tf
+
+
+
+class ImageModel:
 
     def __init__(self, image_model_parameters, model_name):
         # for explanation of the parameters, see the manual for the config file (doc/Anleitung Config-Datei.md)

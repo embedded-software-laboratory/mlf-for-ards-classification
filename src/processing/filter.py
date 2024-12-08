@@ -1,6 +1,6 @@
 from processing.datasets_metadata import FilteringMetaData
 
-class Filter():
+class Filter:
     def __init__(self, config) -> None:
         self.filter = []
         self.available_filter = ["Strict", "Lite", "BD"]

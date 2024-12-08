@@ -13,11 +13,123 @@ process:
   perform_threshold_optimization: True
   calculate_evaluation_metrics: True
   perform_cross_validation: True
-  save_models: False
+  save_models: True
 
   load_image_data: False
   train_image_models: False
   test_image_models: False
+
+models:
+    timeseries_models:
+        to_train:
+          AdaBoost:
+            Names: [ "Test"]
+            Configs: [ "test.yaml"]
+            Active: False
+          BayesianNetwork:
+            Names: [ ]
+            Configs: []
+            Active: False
+          LightGBM:
+            Names: [ ]
+            Configs: []
+            Active: False
+          LogisticRegression:
+            Names: [ ]
+            Configs: []
+            Active: False
+          RandomForest:
+            Names: [ ]
+            Configs: []
+            Active: False
+          SupportVectorMachine:
+            Names: [ ]
+            Configs: []
+            Active: False
+          XGBoost:
+            Names: [ ]
+            Configs: []
+            Active: False
+
+        to_execute:
+          AdaBoost:
+            Names: []
+            Active: False
+          BayesianNetwork:
+            Names: []
+            Active: False
+          LightGBM:
+            Names: []
+            Active: False
+          LogisticRegression:
+            Names: []
+            Active: False
+          RandomForest:
+            Names: []
+            Active: False
+          SupportVectorMachine:
+            Names: []
+            Active: False
+          XGBoost:
+            Names: []
+            Active: False
+
+        to_evaluate:
+          AdaBoost:
+            Names: ["Default", "Test"]
+            Active: False
+          BayesianNetwork:
+            Names: []
+            Active: False
+          LightGBM:
+            Names: []
+            Active: False
+          LogisticRegression:
+            Names: []
+            Active: False
+          RandomForest:
+            Names: []
+            Active: False
+          SupportVectorMachine:
+            Names: []
+            Active: False
+          XGBoost:
+            Names: []
+            Active: False
+
+        to_cross_validate:
+          AdaBoost:
+            Names: ["Default", "Test"]
+            Configs: ["default", "test.yaml"]
+            Active: True
+          BayesianNetwork:
+            Names: [ ]
+            Configs: [ ]
+            Active: False
+          LightGBM:
+            Names: [ ]
+            Configs: [ ]
+            Active: False
+          LogisticRegression:
+            Names: [ ]
+            Configs: [ ]
+            Active: False
+          RandomForest:
+            Names: [ ]
+            Configs: [ ]
+            Active: False
+          SupportVectorMachine:
+            Names: [ ]
+            Configs: [ ]
+            Active: False
+          XGBoost:
+            Names: [ ]
+            Configs: [ ]
+            Active: False
+        base_path_config:
+          to_train: "../Data/Models/TimeSeriesModels/Config/Training/"
+          to_cross_validate: "../Data/Models/TimeSeriesModels/Config/CrossValidation/"
+
 
 # Since this determines which kind of Model should be trained it is right to use Algorithm types here
 timeseries_models_to_train:
@@ -47,10 +159,15 @@ image_models_to_execute:
   - VisionTransformerModel
 
 algorithm_base_path:
-  RandomForestModel: "default"
-  SupportVectorMachineModel: "default"
-  BayesianNetModel: "default"
-  RecurrentNeuralNetworkModel: "Save/Cross validation results/Recurrent neural network_1"
+  AdaBoost: "default"
+  BayesianNet: "default"
+  LightGBM: "default"
+  LogisticRegression: "default"
+  RandomForest: "default"
+  SupportVectorMachine: "default"
+  XGBoost: "default"
+  RecurrentNeuralNetwork: "Save/Cross validation results/Recurrent neural network_1"
+
 
 storage_path: "Save/ExperimentResult"
 
@@ -130,7 +247,6 @@ supported_algorithms:
     - LightGBMModel
     - LogisticRegressionModel
     - RandomForestModel
-    - RecurrentNeuralNetworkModel
     - SupportVectorMachineModel
     - XGBoostModel
 

@@ -1,17 +1,11 @@
-from sympy.codegen.ast import continue_
+from __future__ import annotations
 
-from evaluation.EvaluationInformation import ModelEvaluationInformation, EvaluationInformation
-from metrics.Models import GenericThresholdOptimization, EvalResult, GenericSplit
-from metrics.Metrics import OptimalProbability
-
-from metrics.ThresholdOptimizer import *
 from metrics.Metrics import *
-import json
-
-from sklearn.metrics import roc_curve
+from metrics.ThresholdOptimizer import *
 
 from processing import TimeseriesMetaData
 
+from sklearn.metrics import roc_curve
 
 class EvalResultFactory:
     """ Contains the result of a single evaluation run"""
@@ -55,8 +49,8 @@ class ModelResultFactory:
 
 
 
-        return ModelResult(used_model_location=evaluation.model.storage_location, used_model_name=evaluation.model_name,
-                           contained_evals=contained_evals)
+        return ModelResult(used_model_location=evaluation.model.storage_location, used_model_name=evaluation.model.name,
+                           contained_evals=contained_evals, used_model_algorithm=evaluation.model.algorithm, used_model_type=evaluation.model.type)
 
 
 class ResultFactory:

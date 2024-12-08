@@ -1,18 +1,40 @@
-from ml_models.model_interface import Model
-from ml_models.timeseries_model import TimeSeriesModel
+from ml_models.timeseries_model import TimeSeriesProbaModel
 from sklearn import svm
 import pickle
 
 
-class SupportVectorMachineModel(TimeSeriesModel):
+class SupportVectorMachineModel(TimeSeriesProbaModel):
 
     def __init__(self):
         super().__init__()
         self.name = "Support Vector Machine"
         self.algorithm = "Support Vector Machine"
-        self.random_state = 0
 
-        self.model = svm.SVC(kernel="linear", probability=True, random_state=self.random_state)
+
+        self.hyperparameters = {
+            "C": 1.0,
+            "kernel": 'linear',
+            "degree": 3,
+            "gamma": 'scale',
+            "coef0": 0.0,
+            "shrinking": True,
+            "probability": True,
+            "tol": 0.001,
+            "cache_size": 1000,
+            "class_weight": None,
+            "verbose": False,
+            "max_iter": -1,
+            "decision_function_shape": 'ovr',
+            "break_ties": False,
+            "random_state": 42
+        }
+
+        self.model = self._init()
+
+    def _init(self):
+        svm_model = svm.SVC()
+        svm_model.set_params(**self.hyperparameters)
+        return svm_model
 
     def train_model(self, training_data):
         """Function that starts the learning process of the SVM and stores the resulting model after completion"""
@@ -34,12 +56,18 @@ class SupportVectorMachineModel(TimeSeriesModel):
     def get_params(self):
         return self.model.get_params(deep=True)
 
+    def set_params(self, params: dict):
+        for key, value in params.items():
+            if key in self.hyperparameters:
+                self.hyperparameters[key] = value
+        self.model.set_params(**self.hyperparameters)
+
     def save_model(self, filepath):
-        file = open(filepath + f"_{self.algorithm}_{self.name}.pkl", "wb")
+        file = open(filepath + f"{self.algorithm}_{self.name}.pkl", "wb")
         pickle.dump(self.model, file)
 
     def load_model(self, filepath):
-        file = open(filepath + f"_{self.algorithm}_{self.name}.pkl", "rb")
+        file = open(filepath + f"{self.algorithm}_{self.name}.pkl", "rb")
         self.model = pickle.load(file)
 
     def has_predict_proba(self):

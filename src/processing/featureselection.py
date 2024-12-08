@@ -1,14 +1,25 @@
-from sklearn.feature_selection import VarianceThreshold, SelectKBest, f_classif, RFE, RFECV, SelectFromModel, SequentialFeatureSelector
-from sklearn.model_selection import StratifiedKFold
-from sklearn.ensemble import ExtraTreesClassifier
-from sklearn.svm import SVC, LinearSVC
-from sklearn.neighbors import KNeighborsClassifier
-import pandas as pd
-import numpy as np
+#from sklearn.feature_selection import VarianceThreshold, SelectKBest, f_classif, RFE, RFECV, SelectFromModel, SequentialFeatureSelector
+#from sklearn.model_selection import StratifiedKFold
+#from sklearn.ensemble import ExtraTreesClassifier
+#from sklearn.svm import SVC, LinearSVC
+#from sklearn.neighbors import KNeighborsClassifier
+#import pandas as pd
+#import numpy as np
+#
+#from processing.datasets_metadata import FeatureSelectionMetaData
 
 from processing.datasets_metadata import FeatureSelectionMetaData
 
-class Feature_selection:
+import pandas as pd
+
+from sklearn.feature_selection import VarianceThreshold, SelectKBest, f_classif, RFE, RFECV, SelectFromModel, SequentialFeatureSelector
+from sklearn.svm import SVC, LinearSVC
+from sklearn.ensemble import ExtraTreesClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import StratifiedKFold
+
+
+class FeatureSelection:
     def __init__(self, config) -> None:
         self.feature_selection_method = "low_variance"
         self.available_methods = ["low_variance", "univariate", "recursive", "recursive_with_cv", "L1", "tree", "sequential"]

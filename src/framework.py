@@ -1,26 +1,22 @@
 
-import pandas as pd
-
-
-from processing import *
-from ml_models.vision_transformer import VisionTransformerModel
-from evaluation import ModelEvaluation, Evaluation
-from ml_models import *
-
-from visualization import plot_eval
-from metrics.Models import ModelResult, EvalResult, ExperimentResult
 
 from cli import make_parser
-
+from processing import FileLoader, DataProcessor, FeatureSelection, DataSegregator, ImageDatasetGenerator, TimeSeriesDatasetManagement, TimeSeriesDataset
+from ml_models import *
+from evaluation import Evaluation
+from metrics import ModelResult, ExperimentResult
 import os
 import yaml
-from datetime import datetime
 import json
+import pandas as pd
+
+from datetime import datetime
 from pathlib import Path
 
+#from pathlib import Path
 
 
-# TODO make sure we have trained models for evaluation
+
 
 
 
@@ -37,9 +33,23 @@ class Framework:
         self.loader = FileLoader()
         self.supported_timeseries_models = self.config['supported_algorithms']['timeseries_models']
         self.supported_images_models = self.config['supported_algorithms']['image_models']
-        self.timeseries_models_to_train = []
-        self.timeseries_models_to_evaluate = []
-        self.timeseries_algorithms_to_evaluate = []
+
+        self.available_timeseries_models = {}
+
+        for model in self.supported_timeseries_models:
+            algorithm = model.replace("Model", "")
+            self.available_timeseries_models[algorithm] = []
+
+
+        self.timeseries_model_use_config = self.config['models']['timeseries_models']
+
+
+
+        self.timeseries_models_to_train = self.create_needed_models(self.timeseries_model_use_config, 'to_train')
+        self.timeseries_models_to_evaluate = self.create_needed_models(self.timeseries_model_use_config, 'to_evaluate')
+        self.timeseries_models_to_execute = self.create_needed_models(self.timeseries_model_use_config, 'to_execute')
+        self.timeseries_models_to_cross_validate = self.create_needed_models(self.timeseries_model_use_config, 'to_cross_validate')
+
 
         self.timeseries_training_set = None
         self.timeseries_test_set = None
@@ -52,23 +62,12 @@ class Framework:
         self.processing_meta_data = {}
 
 
-        for model in config['timeseries_models_to_train']:
-            self.timeseries_models_to_train.append(str(model))
-
-        for model in config['timeseries_models_to_evaluate']:
-            self.timeseries_models_to_evaluate.append(str(model[1]))
-            self.timeseries_algorithms_to_evaluate.append(str(model[0]))
-
-
-
-
-        self.trained_timeseries_models  = []
 
         self.timeseries_models = []
-        self.timeseries_classes = []
-        for model in config["timeseries_models_to_execute"]:
-            self.timeseries_models.append(eval(model + "()"))
-            self.timeseries_classes.append(eval(model))
+        #self.timeseries_classes = []
+        #for model in config["timeseries_models_to_execute"]:
+        #    self.timeseries_models.append(eval(model + "()"))
+        #    self.timeseries_classes.append(eval(model))
         self.image_dl_methods = ["VIT"]
         self.image_models = [VisionTransformerModel(config["image_model_parameters"], "vit-small-16")]
 
@@ -78,7 +77,7 @@ class Framework:
         self.pneumonia_dataset = config["data"]["pneumonia_dataset"]
         self.ards_dataset = config["data"]["ards_dataset"]
         self.dataProcessor = DataProcessor(config["preprocessing"], config["data"]["database"], config["process"])
-        self.feature_selector = Feature_selection(config["feature_selection"])
+        self.feature_selector = FeatureSelection(config["feature_selection"])
         self.segregator = DataSegregator(config["data_segregation"])
         self.dataset_generator = ImageDatasetGenerator()
         self.process = config["process"]
@@ -92,6 +91,19 @@ class Framework:
         Path(self.outdir).mkdir(parents=True, exist_ok=True)
         if not self.outdir.endswith("/"):
             self.outdir += "/"
+
+    @staticmethod
+    def create_needed_models(config: dict, stage: str) -> dict[str, list[str]]:
+        stage_config = config[stage]
+        result_dict = {}
+        for model_algorithm in stage_config.keys():
+
+            if stage_config[model_algorithm]["Active"]:
+                content = stage_config[model_algorithm]
+                del content["Active"]
+                result_dict[model_algorithm] = content
+        return result_dict
+
 
     def load_timeseries_data(self):
         dataframe, dataset_metadata = self.loader.load_file(self.timeseries_file_path)
@@ -131,87 +143,157 @@ class Framework:
         TimeSeriesDatasetManagement.write(self.timeseries_training_set)
         TimeSeriesDatasetManagement.write(self.timeseries_test_set)
 
-    def load_image_data(self):
-        for dl_method in self.image_dl_methods:
-            self.image_pneumonia_training_data = self.dataset_generator.build_dataset(self.pneumonia_dataset, dl_method,
-                                                                                      'PNEUMONIA',
-                                                                                      path=self.image_file_path,
-                                                                                      augment=False)
-            self.image_ards_training_data = self.dataset_generator.build_dataset(self.ards_dataset, dl_method, 'ARDS',
-                                                                                 path=self.image_file_path,
-                                                                                 augment=False)
-            self.image_ards_test_data = self.dataset_generator.build_dataset('test', dl_method, 'ARDS',
-                                                                             path=self.image_file_path, augment=False)
+    def load_timeseries_models(self, stage: str):
+        if stage == "to_execute":
+            needed_models = self.timeseries_models_to_execute
+        elif stage == "to_evaluate":
+            needed_models = self.timeseries_models_to_evaluate
+        else:
+            print("For stage " + stage + " it does not make sense to load models")
+            return
+        for model_type, model_names in needed_models.items():
+            available_models = self.available_timeseries_models[model_type]
+            base_path = self.model_base_paths[model_type] if self.model_base_paths[model_type] != "default" else self.outdir
+            for model_name in model_names["Names"]:
+                found = False
+                for model in available_models:
+                    if model_name == model.name:
+                        found = True
+                if not found:
+                    model = eval(model_type + "Model()")
+                    model.name = model_name
+                    model.algorithm = model_type
+                    model.load(base_path)
+                    self.available_timeseries_models[model_type].append(model)
+                    print(f"Loaded model {model_name} of type {model_type}")
+
+    def create_timeseries_models_from_config(self, stage: str) -> dict[str, list]:
+
+        if stage == "to_train":
+            needed_models = self.timeseries_models_to_train
+        elif stage == "to_cross_validate":
+            needed_models = self.timeseries_models_to_cross_validate
+        else: # This should never happen
+            print("For stage " + stage + " it does not make sense to create models")
+            return {}
+        models_dict = {}
+        for model_type in needed_models:
+            print(model_type)
+            print(needed_models[model_type])
+            print(type(needed_models[model_type]))
+            print("....................")
+            names = needed_models[model_type]["Names"]
+            configs = needed_models[model_type]["Configs"]
+
+            for i in range(len(names)):
+                model = eval(model_type +  "Model()")
+                model.name = names[i]
+                base_config_file_path = self.timeseries_model_use_config["base_path_config"][stage]
+
+                if configs[i] != "default":
+                    hyperparameters_path = base_config_file_path + str.replace(model_type, "Model", "") + "/" + configs[i]
+                    with open(hyperparameters_path, 'r') as f:
+                        hyperparameters = yaml.safe_load(f)
+                    model.set_params(hyperparameters)
+
+
+
+                if self.process["save_models"]:
+                    model.storage_location = f"{self.outdir + model.algorithm}_{model.name}"
+                else:
+                    model.storage_location = "Model is not saved"
+                print(model.get_params())
+                if model_type in models_dict:
+                    models_dict[model_type].append(model)
+                else:
+                    models_dict[model_type] = [model]
+        return models_dict
 
     def learn_timeseries_models(self):
-        for model in self.timeseries_models:
 
-            model.train_timeseries(self.timeseries_training_set, self.config, "Training")
-            if self.process["save_models"]:
+        model_dict = self.create_timeseries_models_from_config("to_train")
 
-                model.save(self.outdir + model.name)
-            print("Successfully trained " + model.name)
+        for model_type, models in model_dict.items():
+            for model in models:
+                model.train_timeseries(self.timeseries_training_set, self.config, "Training")
+                if self.process["save_models"]:
+                    if self.config["algorithm_base_path"][model.algorithm] != "default":
+                        save_path = self.config["algorithm_base_path"][model.algorithm]
+                    else:
+                        save_path = self.outdir
+                    model.save(save_path)
+                print("Successfully trained " + model.name + " for algorithm " + model.algorithm)
+                self.available_timeseries_models[model.algorithm].append(model)
 
-    def learn_image_models(self):
-        for model in self.image_models:
-            info_list = [self.pneumonia_dataset, self.ards_dataset, model.model_name, [self.method, self.method],
-                         self.mode]
-            model.train_image_model(self.image_pneumonia_training_data, self.image_ards_training_data, info_list)
 
-    def test_image_models(self):
-        for model in self.image_models:
-            info_list = [self.pneumonia_dataset, self.ards_dataset, model.model_name, self.method, self.mode]
-            model.test_image_model(self.image_ards_test_data, info_list)
-
-    def predict_timeseries_models(self, test_set: TimeSeriesDataset):
+    def execute_timeseries_models(self, test_set: TimeSeriesDataset):
+        self.load_timeseries_models("to_execute")
         test_data = test_set.content
         input_features = test_data.drop(columns=['ards'])
         test_data = test_data.rename(columns={"ards": "ards_diagnosed"}).reset_index(drop=True)
-        for model in self.timeseries_models:
-            prediction = model.predict(input_features)
-            print(f"Finished prediction of {model.name}")
-            df = pd.DataFrame({"ards_predicted": prediction}).reset_index(drop=True)
-            df = pd.concat([test_data, df], axis=1)
-            df.to_csv(self.outdir + f"prediction_{model.name}.csv", index=False)
+
+
+
+        for model_type, model_names in self.timeseries_models_to_execute.items():
+            for model in self.available_timeseries_models[model_type]:
+                if model.name not in model_names["Names"]:
+                    continue
+                prediction = model.predict(input_features)
+                print(f"Finished prediction of {model.name}")
+                df = pd.DataFrame({"ards_predicted": prediction}).reset_index(drop=True)
+                df = pd.concat([test_data, df], axis=1)
+                df.to_csv(self.outdir + f"prediction_{model.algorithm}_{model.name}.csv", index=False)
 
     def evaluate_timeseries_models(self):
+        self.load_timeseries_models("to_evaluate")
+
+        models_to_evaluate_dict = {}
+        for model_type, model_name in self.timeseries_models_to_evaluate.items():
+            for model in self.available_timeseries_models[model_type]:
+                if model.name not in model_name["Names"]:
+                    continue
+                if model_type in models_to_evaluate_dict:
+                    models_to_evaluate_dict[model_type].append(model)
+                else:
+                    models_to_evaluate_dict[model_type] = [model]
 
         evaluator = Evaluation(self.config, dataset_training=self.timeseries_training_set,
                                dataset_test=self.timeseries_test_set)
-        overall_result = evaluator.evaluate_timeseries_models(self.timeseries_models)
+        overall_result = evaluator.evaluate_timeseries_models(models_to_evaluate_dict)
         self.timeseries_evaluations_result = overall_result
+
+
 
 
     def cross_validate_models(self):
         evaluator = Evaluation(self.config, dataset_training=self.timeseries_training_set,
                                dataset_test=self.timeseries_test_set)
-        overall_result = evaluator.cross_validate_timeseries_models(self.timeseries_models)
+
+        models_to_cross_validate_dict = self.create_timeseries_models_from_config("to_cross_validate")
+
+
+
+        overall_result = evaluator.cross_validate_timeseries_models(models_to_cross_validate_dict)
         self.timeseries_cross_validation_result = overall_result
 
 
     def save_models(self):
+        # TODO figure out if needed
         if not os.path.isdir(self.outdir):
             os.makedirs(self.outdir)
         for model in self.timeseries_models:
-            model.save_model(self.outdir + model.name)
+            model.save_model()
             #file.write(str(model_serialized))
         print("Successfully stored all models!")
 
-    def load_timeseries_models(self):
-        models_to_load = set(self.timeseries_models_to_evaluate).difference(set(self.timeseries_models))
-        for model_name in models_to_load:
-            index = self.timeseries_models.index(model_name)
-            algorithm = self.timeseries_algorithms_to_evaluate[index]
-            base_path = self.model_base_paths[algorithm]
-            model_obj = eval(algorithm + "()")
-            loaded_model = model_obj.load(base_path, model_name)
-            self.timeseries_models.append(loaded_model)
+
 
     def handle_timeseries_results(self):
 
         # TODO make plots
 
         result_location = self.outdir + 'results.json'
+
         if self.timeseries_cross_validation_result and self.timeseries_evaluations_result:
             eval_name = self.config['evaluation']['evaluation_name']
 
@@ -219,39 +301,41 @@ class Framework:
             eval_result = self.timeseries_evaluations_result
             contained_models = set()
             model_eval_dict = {}
-            model_name_dict = {}
+            model_algorithm_dict = {}
             model_storage_dict = {}
 
-            for model in cv_result.contained_model_results.keys():
-                contained_models.add(model)
-            for model in eval_result.contained_model_results.keys():
-                contained_models.add(model)
-            for model in list(contained_models):
-                model_eval_dict[model] = {}
+            for model_name in cv_result.contained_model_results.keys():
+                contained_models.add(model_name)
 
-                if model in eval_result.contained_model_results:
-                    for key in eval_result.contained_model_results[model].contained_evals.keys():
-                        model_eval_dict[model][key] = eval_result.contained_model_results[model].contained_evals[key]
+            for model_name in eval_result.contained_model_results.keys():
+                contained_models.add(model_name)
 
-                    model_name_dict[model] = eval_result.contained_model_results[model].used_model_name
-                    model_storage_dict[model] = eval_result.contained_model_results[model].used_model_location
-                if model in cv_result.contained_model_results:
-                    for key in cv_result.contained_model_results[model].contained_evals.keys():
-                        model_eval_dict[model][key] = cv_result.contained_model_results[model].contained_evals[key]
-                    if model not in eval_result.contained_model_results.keys():
-                        model_name_dict[model] = cv_result.contained_model_results[model].used_model_name
-                        model_storage_dict[model] = cv_result.contained_model_results[model].used_model_location
+            for model_name in list(contained_models):
+                model_eval_dict[model_name] = {}
+
+                if model_name in eval_result.contained_model_results:
+                    for key in eval_result.contained_model_results[model_name].contained_evals.keys():
+                        model_eval_dict[model_name][key] = eval_result.contained_model_results[model_name].contained_evals[key]
+
+                    model_algorithm_dict[model_name] =  eval_result.contained_model_results[model_name].used_model_algorithm
+                    model_storage_dict[model_name] = eval_result.contained_model_results[model_name].used_model_location
+                if model_name in cv_result.contained_model_results:
+                    for key in cv_result.contained_model_results[model_name].contained_evals.keys():
+                        model_eval_dict[model_name][key] = cv_result.contained_model_results[model_name].contained_evals[key]
+                    if model_name not in eval_result.contained_model_results.keys():
+                        model_algorithm_dict[model_name] = cv_result.contained_model_results[model_name].used_model_algorithm
+                        model_storage_dict[model_name] = cv_result.contained_model_results[model_name].used_model_location
             model_result_dict = {}
-            for model in model_eval_dict.keys():
-                contained_evals = model_eval_dict[model]
+            for model_name in model_eval_dict.keys():
+                contained_evals = model_eval_dict[model_name]
 
 
-                model_name = model_name_dict[model]
-                model_storage = model_storage_dict[model]
+                model_algorithm = model_algorithm_dict[model_name]
+                model_storage = model_storage_dict[model_name]
 
                 model_result = ModelResult( used_model_location= model_storage, used_model_name=model_name,
-                                            contained_evals=contained_evals)
-                model_result_dict[model] = model_result
+                                            contained_evals=contained_evals, used_model_type="TimeSeriesModel", used_model_algorithm=model_algorithm)
+                model_result_dict[model_name] = model_result
             final_result = ExperimentResult(result_name=eval_name, storage_location =result_location,
                                             contained_model_results= model_result_dict)
 
@@ -266,51 +350,48 @@ class Framework:
             return
 
         print(f"Save results to {self.outdir + 'results.json'}")
-        with (open(result_location, 'w', encoding='utf-8') as f):
+        with open(result_location, 'w', encoding='utf-8') as f:
             f.write(final_result.model_dump_json(indent=4))
 
-
-
-
+    def load_image_data(self):
+        for dl_method in self.image_dl_methods:
+            self.image_pneumonia_training_data = self.dataset_generator.build_dataset(self.pneumonia_dataset, dl_method,
+                                                                                      'PNEUMONIA',
+                                                                                      path=self.image_file_path,
+                                                                                      augment=False)
+            self.image_ards_training_data = self.dataset_generator.build_dataset(self.ards_dataset, dl_method, 'ARDS',
+                                                                                 path=self.image_file_path,
+                                                                                 augment=False)
+            self.image_ards_test_data = self.dataset_generator.build_dataset('test', dl_method, 'ARDS',
+                                                                             path=self.image_file_path, augment=False)
 
     def load_image_models(self):
-
+        raise NotImplementedError
         pass
 
+    def learn_image_models(self):
+        for model in self.image_models:
+            info_list = [self.pneumonia_dataset, self.ards_dataset, model.model_name, [self.method, self.method],
+                         self.mode]
+            model.train_image_model(self.image_pneumonia_training_data, self.image_ards_training_data, info_list)
+
+    def evaluate_image_models(self):
+        for model in self.image_models:
+            info_list = [self.pneumonia_dataset, self.ards_dataset, model.model_name, self.method, self.mode]
+            model.test_image_model(self.image_ards_test_data, info_list)
 
 
-
-    def load_models(self):
-        self.load_image_models()
-        self.load_timeseries_models()
-
-        for model in self.timeseries_models:
-            if model in self.model_base_paths:
-                if self.model_base_paths[model] != "default":
-                    model.load(self.model_base_paths[model.name])
-                else:
-                    model.load(self.outdir + model.name)
-            else:
-                model.load(self.outdir + model.name)
-        print("Successfully loaded all models!")
-
-    def execute(self):
+    def run(self):
         # Store configuration in outdir
         if not os.path.isdir(self.outdir):
             os.makedirs(self.outdir)
         with open(self.outdir + 'config.json', 'w') as f:
             json.dump(self.config, f)
 
-        if self.process["load_models"]:
-            raise NotImplementedError("Currently this feature is broken")
-            self.load_models()
 
         if self.process["load_timeseries_data"]:
             self.load_timeseries_data()
 
-        if not self.process["save_models"]:
-            for model in self.timeseries_models:
-                model.storage_location = "Model is not saved"
 
         if self.process["perform_timeseries_training"]:
             if not self.timeseries_training_set:
@@ -322,7 +403,7 @@ class Framework:
             if not self.timeseries_test_set:
                 print("Can not predict without test data. Exiting...")
                 exit()
-            self.predict_timeseries_models(self.timeseries_test_set)
+            self.execute_timeseries_models(self.timeseries_test_set)
 
         if self.process["calculate_evaluation_metrics"]:
             self.evaluate_timeseries_models()
@@ -334,6 +415,7 @@ class Framework:
             self.cross_validate_models()
 
         if self.timeseries_evaluations_result or self.timeseries_cross_validation_result:
+
             self.handle_timeseries_results()
 
 
@@ -347,4 +429,4 @@ class Framework:
             self.learn_image_models()
 
         if self.process["test_image_models"]:
-            self.test_image_models()
+            self.evaluate_image_models()
