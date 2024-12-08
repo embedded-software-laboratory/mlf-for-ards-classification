@@ -17,7 +17,6 @@ from pathlib import Path
 
 
 
-# TODO make sure we have trained models for evaluation
 
 
 
@@ -198,7 +197,7 @@ class Framework:
                     model.set_params(hyperparameters)
 
 
-                # TODO: Check if model location is set to correct path
+
                 if self.process["save_models"]:
                     model.storage_location = f"{self.outdir + model.algorithm}_{model.name}"
                 else:
