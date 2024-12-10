@@ -9,14 +9,14 @@ from pydantic import ValidationError
 from processing.datasets_metadata import  TimeseriesMetaData
 
 
-class FileLoader:
+class DataFileManager:
 
     def load_file(self, file_path: str) -> (pd.DataFrame, TimeseriesMetaData):
         splitted_path = os.path.splitext(file_path)
         if splitted_path[1] == ".csv":
-            dataset = self.load_csv_file(file_path)
+            dataset = self._load_csv_file(file_path)
         elif splitted_path[1] == ".npy":
-            dataset = self.load_numpy_file(file_path)
+            dataset = self._load_numpy_file(file_path)
         else:
             raise RuntimeError("File type " + splitted_path[1] + " not supported!")
 
@@ -33,11 +33,11 @@ class FileLoader:
 
         return dataset, dataset_metadata
     @staticmethod
-    def load_csv_file(file_path) -> pd.DataFrame:
+    def _load_csv_file(file_path) -> pd.DataFrame:
         return pd.read_csv(file_path)
 
     @staticmethod
-    def load_numpy_file(file_path) -> pd.DataFrame:
+    def _load_numpy_file(file_path) -> pd.DataFrame:
         data = np.load(file_path, mmap_mode="r+")
         variables_file = open(file_path + ".vars")
         variables = variables_file.read().split(" ")
