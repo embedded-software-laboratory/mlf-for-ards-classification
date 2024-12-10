@@ -10,7 +10,7 @@ from evaluation.EvaluationInformation import EvaluationInformation, ModelEvaluat
 
 from processing import TimeSeriesDataset, TimeSeriesDatasetManagement, TimeSeriesMetaDataManagement
 from ml_models import Model
-from metrics.ModelFactories import ExperimentResult, ModelResultFactory, ResultFactory, SplitFactory, OptimizerFactory, EvalResultFactory
+from metrics.ModelFactories import ExperimentResult, ModelResultFactory, ResultManagement, SplitFactory, OptimizerFactory, EvalResultFactory
 
 from sklearn.model_selection import StratifiedKFold
 
@@ -47,8 +47,8 @@ class Evaluation:
                                                                     model_evaluation.model.training_evaluation,
                                                                     "Evaluation")
                     self.model_results[timeseries_model.name] = model_result
-
-        overall_result = ResultFactory.factory_method(self.eval_info, self.model_results)
+        ingredients = {"EvaluationInformation": self.eval_info, "model_results": self.model_results}
+        overall_result = ResultManagement().factory_method("new", ingredients)
         return overall_result
 
     def cross_validate_timeseries_models(self, models_to_cross_validate_dict: dict[str, list[Model]]) -> ExperimentResult:
@@ -60,8 +60,8 @@ class Evaluation:
                 model_result = ModelResultFactory.factory_method(model_evaluation.model_eval_info, model_evaluation.evaluation_results,
                                                                  model_evaluation.model.training_evaluation, stage="CrossValidation")
                 self.model_results[timeseries_model.name] = model_result
-
-        overall_result = ResultFactory.factory_method(self.eval_info, self.model_results)
+        ingredients = {"EvaluationInformation": self.eval_info, "model_results": self.model_results}
+        overall_result = ResultManagement().factory_method("new", ingredients)
         return overall_result
 
 
