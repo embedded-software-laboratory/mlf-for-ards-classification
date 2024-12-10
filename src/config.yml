@@ -25,7 +25,7 @@ models:
           AdaBoost:
             Names: [ "Test"]
             Configs: [ "test.yaml"]
-            Active: False
+            Active: True
           BayesianNetwork:
             Names: [ ]
             Configs: []
@@ -53,8 +53,8 @@ models:
 
         to_execute:
           AdaBoost:
-            Names: []
-            Active: False
+            Names: ["Default", "Test"]
+            Active: True
           BayesianNetwork:
             Names: []
             Active: False
@@ -77,7 +77,7 @@ models:
         to_evaluate:
           AdaBoost:
             Names: ["Default", "Test"]
-            Active: False
+            Active: True
           BayesianNetwork:
             Names: []
             Active: False
@@ -131,29 +131,12 @@ models:
           to_cross_validate: "../Data/Models/TimeSeriesModels/Config/CrossValidation/"
 
 
-# Since this determines which kind of Model should be trained it is right to use Algorithm types here
-timeseries_models_to_train:
-  - RandomForestModel
-  - XGBoostModel
-  - AdaBoostModel
 
 
-# Instead of using Algorithm names real model names in combination with algorithms should be used here, e.g [<algorithm>, <modelname>]
-timeseries_models_to_evaluate:
-  - RandomForestModel
-  - XGBoostModel
-  - AdaBoostModel
 
-# Since models are newly trained during crossvalidation using Algorithms is right here
-timeseries_models_to_crossvalidate:
-  - RandomForestModel
-  - XGBoostModel
-  - AdaBoostModel
 
-timeseries_models_to_execute:
-  - RandomForestModel
-  - XGBoostModel
-  - AdaBoostModel
+
+
 
 image_models_to_execute:
   - VisionTransformerModel
