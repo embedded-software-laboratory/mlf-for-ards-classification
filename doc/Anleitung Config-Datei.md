@@ -46,21 +46,33 @@ In diesem Abschnitt wird festgelegt, welche Schritte ausgeführt werden sollen. 
 17. **train_image_models**: Falls aktiviert, werden die unter "image_models_to_execute" angegebenen Modelle für Röntenbilder trainiert. Dies umfasst das Training für die Erkennung von Lungenentzündungen sowie das Transfer-Learning zu ARDS. 
 18. **test_image_models**: Falls aktiviert,w erden die trainierten Bilddaten-Modelle mit dem geladenen ARDS-Bilddatensatz evaluiert. 
 
+## models
+In diesem Abschnitt werden die Modelle, die in den unterschiedlichen Schritten des Frameworks verwendet werden sollen festgelgt.
 
-## timeseries_models_to_execute
+### timeseries_models
+Dieser Abschnitt enthält die Modelle, die für die Zeitreihenklassifizierung verwendet werden sollen.
 
-Hier wird festgelegt, welche Zeitreihenmodelle vom Framework berücksichtigt werden sollen. Jedes zu berücksichtigende Modell wird als eigener Unterpunkt aufgeführt. Der Unterpunkt muss hierbei der Name der entsprechenden Klasse sein. 
+Für jede Phase des Frameworks (Training, Klassifizierung, Evaluation, Cross Validation) gibt es eine eigene Liste, in der die unterschiedlichen Algorithmen aufgeführt werden. Die einzelnen Algorithmen müssen durch das Setzen von "Active: True" aktiviert werden.
+
+Die für die einzelnen Phasen zu verwendenden Modelle werden mit ihrem Namen in einer Liste unter "Names:" aufgeführt. Für die Phasen to_train und to_cross_validate ist es darüber hinaus möglich, den Namen von Konfigurationsdateien für die Hyperparameter anzugeben. Diese Dateien müssen in dem unter "base_path_config" angegebenen Verzeichnis in einem Ordner mit dem Algorithmennamen liegen (siehe Beispielstruktur in Data). Sollte keine Konfigurationsdatei angegeben werden, so muss für dieses Modell der Wert "default" angegeben werden. Einzelnen Modelle werden sowohl in "Names" als auch in "Configs" durch ein Komma getrennt.
+
+Es wird sichergestellt, dass Modelle, die bisher nicht durch Training verfügbar waren, in der Phase, in der sie benötigt werden, von der Festplatte geladen werden. Das Laden von der Festplatte macht nur für die Phasen to_execute und to_evaluate Sinn. Der Speicherort setzt sich dabei aus dem unter "algorithm_base_path" angegebenen Pfad und dem Namen des Modells zusammen.
+
 
 ## image_models_to_execute
 
 Hier wird festgelegt, welche Bilddatenmodelle vom Framework berücksichtigt werden sollen. Jedes zu berücksichtigende Modell wird als eigener Unterpunkt aufgeführt. Der Unterpunkt muss hierbei der Name der entsprechenden Klasse sein. 
 
-## loading_paths
+## algorithm_base_path
 
-Hier werden die Pfade angegeben, von wo die Modelle geladen werden sollen, falls im Bereich "process" der Punkt "load_models" auf True gesetzt wurde.
-Jeder Unterpunkt gibt den genauen Dateipfad für das zu ladende Modell an. Der Unterpunkt muss exakt den Namen des Modells tragen, der im Konstruktor des entsprechenden Modells in die Variable "self.name" geschrieben wird. 
-Die angegebenen Pfade dürfen die Dateiendung nicht enthalten, da diese von der load-Methode jeden Modells automatisch ergänzt wird. 
-Falls als Pfad "default" angegeben wird oder ein Modell in dieser Liste gar nicht auftaucht, wird das Framework versuchen, das Modell den Standard-Speicherpfad (der Ordner "Save") zum Laden zu verwenden. 
+Hier werden die Pfade angegeben, von wo die Modelle geladen werden sollen, falls diese benötigt werden.
+Jeder Unterpunkt zum Ordner an wo das zu ladende Modell liegt. Der Name der Datei wird unter "models" in der "Names" Liste der jeweiligen Phase gespeichert. Der Unterpunkt muss den Klassennamen des Algorithmus tragen zu dem das Modell gehört. 
+Falls der Pfad auf "default" gesetzt wird, so wird dieser auf das Standard-Out-Verzeichnis gesetzt, welches unter "storage_path" angeben ist.
+
+## storage_path
+Dieser Pfad gibt an, wo sich das Standard-Output-Verzeichnis befindet, in dem Modelle, Daten, Metadaten und Ergebnisse gespeichert werden.
+Sollte dieser Eintrag nicht gesetzt sein, so wird das Standard-Output-Verzeichnis auf den Ordner "Save/%Y-%m-%d_%H-%M-%S" im aktuellen Arbeitsverzeichnis gesetzt.
+ 
 
 ## data
 
