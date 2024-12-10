@@ -20,6 +20,14 @@ class Accuracy(FloatMetricSpec):
     def needs_probabilities(self) -> bool:
         return False
 
+    def create_from_value(self, metric_value: FloatValue, metric_name: str) -> GenericMetric:
+        return GenericMetric(metric_name=metric_name, metric_value=metric_value, metric_spec=Accuracy())
+
+    def create_from_dict(self, metric_dict: dict) -> GenericMetric:
+        return GenericMetric(metric_name=metric_dict['metric_name'],
+                             metric_value=FloatValue(metric_value=metric_dict['metric_value']),
+                             metric_spec=Accuracy())
+
 
 class AUC(FloatMetricSpec):
     def calculate_metric(self, metric_parameters: dict, stage:str) -> GenericMetric:
@@ -32,6 +40,14 @@ class AUC(FloatMetricSpec):
 
     def needs_probabilities(self) -> bool:
         return True
+
+    def create_from_value(self, metric_value: FloatValue, metric_name: str) -> GenericMetric:
+        return GenericMetric(metric_name=metric_name, metric_value=metric_value, metric_spec=AUC())
+
+    def create_from_dict(self, metric_dict: dict) -> GenericMetric:
+        return GenericMetric(metric_name=metric_dict['metric_name'],
+                             metric_value=FloatValue(metric_value=metric_dict['metric_value']),
+                             metric_spec=AUC())
 
 
 class F1Score(FloatMetricSpec):
@@ -46,6 +62,14 @@ class F1Score(FloatMetricSpec):
     def needs_probabilities(self) -> bool:
         return False
 
+    def create_from_value(self, metric_value: FloatValue, metric_name: str) -> GenericMetric:
+        return GenericMetric(metric_name=metric_name, metric_value=metric_value, metric_spec=F1Score())
+
+    def create_from_dict(self, metric_dict: dict) -> GenericMetric:
+        return GenericMetric(metric_name=metric_dict['metric_name'],
+                             metric_value=FloatValue(metric_value=metric_dict['metric_value']),
+                             metric_spec=F1Score())
+
 
 class FPR(ListMetricSpec):
     def calculate_metric(self, metric_parameters: dict, stage:str) -> GenericMetric:
@@ -55,8 +79,19 @@ class FPR(ListMetricSpec):
         return GenericMetric(metric_name="FPR" + " " + stage, metric_value=ListValue(metric_value=fpr),
                                             metric_spec=FPR())
 
+
     def needs_probabilities(self) -> bool:
         return True
+
+    def create_from_value(self, metric_value: ListValue, metric_name: str) -> GenericMetric:
+        return GenericMetric(metric_name=metric_name,
+                             metric_value=StringValue(metric_value="Mean calculation makes no sense for FPR"),
+                             metric_spec=FPR())
+
+    def create_from_dict(self, metric_dict: dict) -> GenericMetric:
+        return GenericMetric(metric_name=metric_dict['metric_name'],
+                             metric_value=ListValue(metric_value=metric_dict['metric_value']),
+                             metric_spec=FPR())
 
 
 class MCC(FloatMetricSpec):
@@ -70,6 +105,14 @@ class MCC(FloatMetricSpec):
 
     def needs_probabilities(self) -> bool:
         return False
+
+    def create_from_value(self, metric_value: FloatValue, metric_name: str) -> GenericMetric:
+        return GenericMetric(metric_name=metric_name, metric_value=metric_value, metric_spec=MCC())
+
+    def create_from_dict(self, metric_dict: dict) -> GenericMetric:
+        return GenericMetric(metric_name=metric_dict['metric_name'],
+                             metric_value=FloatValue(metric_value=metric_dict['metric_value']),
+                             metric_spec=MCC())
 
 
 class OptimalProbability(FloatMetricSpec):
@@ -86,6 +129,14 @@ class OptimalProbability(FloatMetricSpec):
     def needs_probabilities(self) -> bool:
         return True
 
+    def create_from_value(self, metric_value: FloatValue, metric_name: str) -> GenericMetric:
+        return GenericMetric(metric_name=metric_name, metric_value=metric_value, metric_spec=OptimalProbability())
+
+    def create_from_dict(self, metric_dict: dict) -> GenericMetric:
+        return GenericMetric(metric_name=metric_dict['metric_name'],
+                             metric_value=FloatValue(metric_value=metric_dict['metric_value']),
+                             metric_spec=OptimalProbability())
+
 
 class Sensitivity(FloatMetricSpec):
     def calculate_metric(self, metric_parameters: dict, stage:str) -> GenericMetric:
@@ -99,6 +150,14 @@ class Sensitivity(FloatMetricSpec):
 
     def needs_probabilities(self) -> bool:
         return False
+
+    def create_from_value(self, metric_value: FloatValue, metric_name: str) -> GenericMetric:
+        return GenericMetric(metric_name=metric_name, metric_value=metric_value, metric_spec=Sensitivity())
+
+    def create_from_dict(self, metric_dict: dict) -> GenericMetric:
+        return GenericMetric(metric_name=metric_dict['metric_name'],
+                             metric_value=FloatValue(metric_value=metric_dict['metric_value']),
+                             metric_spec=Sensitivity())
 
 
 class Specificity(FloatMetricSpec):
@@ -114,6 +173,14 @@ class Specificity(FloatMetricSpec):
     def needs_probabilities(self) -> bool:
         return False
 
+    def create_from_value(self, metric_value: FloatValue, metric_name: str) -> GenericMetric:
+        return GenericMetric(metric_name=metric_name, metric_value=metric_value, metric_spec=Specificity())
+
+    def create_from_dict(self, metric_dict: dict) -> GenericMetric:
+        return GenericMetric(metric_name=metric_dict['metric_name'],
+                             metric_value=FloatValue(metric_value=metric_dict['metric_value']),
+                             metric_spec=Specificity())
+
 
 class TPR(ListMetricSpec):
     def calculate_metric(self, metric_parameters: dict, stage:str) -> GenericMetric:
@@ -124,3 +191,11 @@ class TPR(ListMetricSpec):
 
     def needs_probabilities(self) -> bool:
         return True
+
+    def create_from_value(self, metric_value: ListValue, metric_name: str) -> GenericMetric:
+        return GenericMetric(metric_name=metric_name, metric_value=StringValue(metric_value="Mean calculation makes no sense for TPR"), metric_spec=TPR())
+
+    def create_from_dict(self, metric_dict: dict) -> GenericMetric:
+        return GenericMetric(metric_name=metric_dict['metric_name'],
+                             metric_value=ListValue(metric_value=metric_dict['metric_value']),
+                             metric_spec=TPR())

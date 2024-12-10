@@ -207,4 +207,23 @@ class TimeSeriesMetaDataManagement:
         with open(path, "w") as f:
             f.write(meta_data_dataset.model_dump_json(indent=4))
 
+    @staticmethod
+    def load_from_dict(meta_data_dict: dict) -> TimeseriesMetaData:
+        content = {
+            "datasource": meta_data_dict["datasource"],
+            "dataset_location": meta_data_dict["dataset_location"],
+            "dataset_type": meta_data_dict["dataset_type"],
+            "additional_information": meta_data_dict["additional_information"],
+            "imputation": ImputationMetaData(**meta_data_dict["imputation"]) if meta_data_dict["imputation"] else None,
+            "unit_conversion": UnitConversionMetaData(**meta_data_dict["unit_conversion"]) if meta_data_dict["unit_conversion"] else None,
+            "parameter_calculation": ParamCalculationMetaData(**meta_data_dict["parameter_calculation"]) if meta_data_dict["parameter_calculation"] else None,
+            "onset_detection": OnsetDetectionMetaData(**meta_data_dict["onset_detection"]) if meta_data_dict["onset_detection"] else None,
+            "filtering": FilteringMetaData(**meta_data_dict["filtering"]) if meta_data_dict["filtering"] else None,
+            "feature_selection": FeatureSelectionMetaData(**meta_data_dict["feature_selection"]) if meta_data_dict["feature_selection"] else None,
+            "percentage_of_ards": meta_data_dict["percentage_of_ards"],
+            "is_child": meta_data_dict["is_child"],
+            "parent_meta_data_location": meta_data_dict["parent_meta_data_location"]
+        }
+        return TimeseriesMetaData(**content)
+
 

@@ -76,8 +76,7 @@ class TimeSeriesModel(Model):
         evaluation_location = filepath + f"{self.algorithm}_{self.name}_training_evaluation.json"
         with open(evaluation_location, 'r') as evaluation_file:
             training_metrics = json.load(evaluation_file)
-
-        model_training_evaluation = EvalResult(**training_metrics)
+        model_training_evaluation = EvalResultFactory.from_dict(training_metrics)
 
         self.trained = True
         self.training_evaluation = model_training_evaluation

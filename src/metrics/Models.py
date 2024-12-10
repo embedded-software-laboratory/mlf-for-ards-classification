@@ -8,12 +8,18 @@ from processing import TimeseriesMetaData
 
 class GenericSplit(BaseModel):
     split_name: str
-    contained_metrics: dict
+    contained_metrics: dict[str, GenericMetric]
+
+    class Config:
+        arbitrary_types_allowed = True
 
 
 class GenericThresholdOptimization(BaseModel):
     optimization_name: str
-    contained_splits: dict
+    contained_splits: dict[str, GenericSplit]
+
+    class Config:
+        arbitrary_types_allowed = True
 
 
 class GenericMetric(BaseModel):
@@ -23,7 +29,7 @@ class GenericMetric(BaseModel):
 
     @model_serializer()
     def serialize(self):
-        return {"metric_name": self.metric_name, "metric_value": self.metric_value.metric_value}
+        return {"metric_name": self.metric_name, "metric_value": self.metric_value.metric_value, "metric_spec": self.metric_spec.__class__.__name__}
 
     def __lt__(self, other):
         return self.metric_value < other
@@ -37,6 +43,9 @@ class GenericValue(BaseModel):
 
     def __lt__(self, other):
         return self.metric_value < other
+
+    class Config:
+        arbitrary_types_allowed = True
 
 
 class ListValue(GenericValue):
@@ -58,6 +67,7 @@ class StringValue(GenericValue):
 class ExperimentResult(BaseModel):
     result_name: str
     storage_location: str
+    result_version: str = "1.0"
     contained_model_results: dict
 
     class Config:
@@ -135,6 +145,12 @@ class IMetricSpec:
     def needs_probabilities(self) -> bool:
         raise NotImplementedError
 
+    def create_from_value(self, metric_value: GenericValue, metric_name: str) -> GenericMetric:
+        raise NotImplementedError
+
+    def create_from_dict(self, metric_dict: dict) -> GenericMetric:
+        raise NotImplementedError
+
 
 class FloatMetricSpec(IMetricSpec):
 
@@ -150,6 +166,7 @@ class FloatMetricSpec(IMetricSpec):
         metric_value_sum = 0.0
         for value in average_parameters:
             metric_value_sum += value.metric_value.metric_value
+
         return FloatValue(metric_value=metric_value_sum / len(average_parameters))
 
 
