@@ -137,64 +137,10 @@ class Framework:
             print("For stage " + stage + " it does not make sense to load models")
             return
         self.available_timeseries_models = self.TimeseriesModelManager.load_models(needed_models, self.available_timeseries_models, self.model_base_paths)
-        #for model_type, model_names in needed_models.items():
-        #    available_models = self.available_timeseries_models[model_type]
-        #    base_path = self.model_base_paths[model_type] if self.model_base_paths[model_type] != "default" else self.outdir
-        #    for model_name in model_names["Names"]:
-        #        found = False
-        #        for model in available_models:
-        #            if model_name == model.name:
-        #                found = True
-        #        if not found:
-        #            model = eval(model_type + "Model()")
-        #            model.name = model_name
-        #            model.algorithm = model_type
-        #            model.load(base_path)
-        #            self.available_timeseries_models[model_type].append(model)
-        #            print(f"Loaded model {model_name} of type {model_type}")
 
-
-    def create_timeseries_models_from_config(self, stage: str) -> dict[str, list]:
-
-        if stage == "to_train":
-            needed_models = self.timeseries_models_to_train
-        elif stage == "to_cross_validate":
-            needed_models = self.timeseries_models_to_cross_validate
-        else: # This should never happen
-            print("For stage " + stage + " it does not make sense to create models")
-            return {}
-        models_dict = {}
-        for model_type in needed_models:
-            names = needed_models[model_type]["Names"]
-            configs = needed_models[model_type]["Configs"]
-
-            for i in range(len(names)):
-                model = eval(model_type +  "Model()")
-                model.name = names[i]
-                base_config_file_path = self.timeseries_model_use_config["base_path_config"][stage]
-
-                if configs[i] != "default":
-                    hyperparameters_path = base_config_file_path + str.replace(model_type, "Model", "") + "/" + configs[i]
-                    with open(hyperparameters_path, 'r') as f:
-                        hyperparameters = yaml.safe_load(f)
-                    model.set_params(hyperparameters)
-
-
-
-                if self.process["save_models"]:
-                    model.storage_location = f"{self.outdir + model.algorithm}_{model.name}"
-                else:
-                    model.storage_location = "Model is not saved"
-                print(model.get_params())
-                if model_type in models_dict:
-                    models_dict[model_type].append(model)
-                else:
-                    models_dict[model_type] = [model]
-        return models_dict
 
     def learn_timeseries_models(self):
 
-        #model_dict = self.create_timeseries_models_from_config("to_train")
         model_dict = self.TimeseriesModelManager.create_model_from_config(self.timeseries_models_to_train,
                                                                           self.timeseries_model_use_config["base_path_config"]["to_train"])
 
@@ -251,10 +197,8 @@ class Framework:
         evaluator = Evaluation(self.config, dataset_training=self.timeseries_training_set,
                                dataset_test=self.timeseries_test_set)
 
-        #models_to_cross_validate_dict = self.create_timeseries_models_from_config("to_cross_validate")
-
         models_to_cross_validate_dict =  self.TimeseriesModelManager.create_model_from_config(
-            self.timeseries_models_to_train, self.timeseries_model_use_config["base_path_config"]["to_cross_validate"])
+            self.timeseries_models_to_cross_validate, self.timeseries_model_use_config["base_path_config"]["to_cross_validate"])
 
         overall_result = evaluator.cross_validate_timeseries_models(models_to_cross_validate_dict)
         self.timeseries_cross_validation_result = overall_result
