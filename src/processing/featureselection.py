@@ -1,18 +1,44 @@
-from sklearn.feature_selection import VarianceThreshold, SelectKBest, f_classif, RFE, RFECV, SelectFromModel, SequentialFeatureSelector
-from sklearn.model_selection import StratifiedKFold
-from sklearn.ensemble import ExtraTreesClassifier
-from sklearn.svm import SVC, LinearSVC
-from sklearn.neighbors import KNeighborsClassifier
-import pandas as pd
-import numpy as np
+#from sklearn.feature_selection import VarianceThreshold, SelectKBest, f_classif, RFE, RFECV, SelectFromModel, SequentialFeatureSelector
+#from sklearn.model_selection import StratifiedKFold
+#from sklearn.ensemble import ExtraTreesClassifier
+#from sklearn.svm import SVC, LinearSVC
+#from sklearn.neighbors import KNeighborsClassifier
+#import pandas as pd
+#import numpy as np
+#
+#from processing.datasets_metadata import FeatureSelectionMetaData
 
-class Feature_selection:
+from processing.datasets_metadata import FeatureSelectionMetaData
+
+import pandas as pd
+
+from sklearn.feature_selection import VarianceThreshold, SelectKBest, f_classif, RFE, RFECV, SelectFromModel, SequentialFeatureSelector
+from sklearn.svm import SVC, LinearSVC
+from sklearn.ensemble import ExtraTreesClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import StratifiedKFold
+
+
+class FeatureSelection:
     def __init__(self, config) -> None:
         self.feature_selection_method = "low_variance"
         self.available_methods = ["low_variance", "univariate", "recursive", "recursive_with_cv", "L1", "tree", "sequential"]
         self.set_selection_method(config["method"])
         self.variance = config["variance"]
         self.k = config["k"]
+        self.meta_data = None
+
+    def create_meta_data(self):
+        min_variance = None
+        num_features = None
+        if self.feature_selection_method == "low_variance":
+            min_variance = self.variance
+        if self.feature_selection_method in ["univariate", "recursive", "recursive_with_cv"]:
+            num_features = self.k
+        self.meta_data = FeatureSelectionMetaData(feature_selection_algorithm=self.feature_selection_method, min_required_variance=min_variance, num_features_to_select=num_features, first_selection=True)
+
+
+
 
     def perform_feature_selection(self, dataframe):
         print("Start feature selection...")

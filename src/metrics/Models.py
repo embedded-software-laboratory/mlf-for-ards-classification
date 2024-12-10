@@ -1,18 +1,25 @@
 from __future__ import annotations
 
-from pydantic import BaseModel, ValidationInfo, field_validator, model_serializer, root_validator, model_validator
-from typing import Any, Callable, Union
+from pydantic import BaseModel, ValidationInfo, field_validator, model_serializer, model_validator
+from typing import Any,  Union
 
+from processing import TimeseriesMetaData
 
 
 class GenericSplit(BaseModel):
     split_name: str
-    contained_metrics: dict
+    contained_metrics: dict[str, GenericMetric]
+
+    class Config:
+        arbitrary_types_allowed = True
 
 
 class GenericThresholdOptimization(BaseModel):
     optimization_name: str
-    contained_splits: dict
+    contained_splits: dict[str, GenericSplit]
+
+    class Config:
+        arbitrary_types_allowed = True
 
 
 class GenericMetric(BaseModel):
@@ -22,7 +29,7 @@ class GenericMetric(BaseModel):
 
     @model_serializer()
     def serialize(self):
-        return {"metric_name": self.metric_name, "metric_value": self.metric_value.metric_value}
+        return {"metric_name": self.metric_name, "metric_value": self.metric_value.metric_value, "metric_spec": self.metric_spec.__class__.__name__}
 
     def __lt__(self, other):
         return self.metric_value < other
@@ -36,6 +43,9 @@ class GenericValue(BaseModel):
 
     def __lt__(self, other):
         return self.metric_value < other
+
+    class Config:
+        arbitrary_types_allowed = True
 
 
 class ListValue(GenericValue):
@@ -57,9 +67,8 @@ class StringValue(GenericValue):
 class ExperimentResult(BaseModel):
     result_name: str
     storage_location: str
+    result_version: str = "1.0"
     contained_model_results: dict
-
-
 
     class Config:
         arbitrary_types_allowed = True
@@ -71,6 +80,8 @@ class ModelResult(BaseModel):
 
     used_model_location: str
     used_model_name: str = None
+    used_model_algorithm: str = None
+    used_model_type: str = None
     contained_evals: dict
 
 
@@ -80,15 +91,15 @@ class EvalResult(BaseModel):
 
     eval_type: str
 
-    training_dataset: object = None  # TODO add data set information
-    test_dataset: object = None  # TODO add data set information
+    training_dataset: TimeseriesMetaData = None
+    test_dataset: TimeseriesMetaData = None
 
     contained_optimizers: dict[str, GenericThresholdOptimization]
 
     crossvalidation_performed: bool
-    crossvalidation_random_state: int = None
-    crossvalidation_shuffle: bool = None
-    crossvalidation_splits: int = None
+    crossvalidation_random_state: Union[int, None] = None
+    crossvalidation_shuffle: Union[bool, None] = None
+    crossvalidation_splits: Union[int, None] = None
     evaluation_performed: bool
 
     @field_validator('crossvalidation_random_state', 'crossvalidation_splits')
@@ -134,6 +145,12 @@ class IMetricSpec:
     def needs_probabilities(self) -> bool:
         raise NotImplementedError
 
+    def create_from_value(self, metric_value: GenericValue, metric_name: str) -> GenericMetric:
+        raise NotImplementedError
+
+    def create_from_dict(self, metric_dict: dict) -> GenericMetric:
+        raise NotImplementedError
+
 
 class FloatMetricSpec(IMetricSpec):
 
@@ -149,6 +166,7 @@ class FloatMetricSpec(IMetricSpec):
         metric_value_sum = 0.0
         for value in average_parameters:
             metric_value_sum += value.metric_value.metric_value
+
         return FloatValue(metric_value=metric_value_sum / len(average_parameters))
 
 

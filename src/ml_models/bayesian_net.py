@@ -1,18 +1,22 @@
+
 from ml_models.model_interface import Model
-from ml_models.timeseries_model import TimeSeriesModel
+from ml_models.timeseries_model import TimeSeriesProbaModel
 from pomegranate import DiscreteDistribution, ConditionalProbabilityTable, Node, BayesianNetwork
 import numpy as np
 import pomegranate
 import json
 
-class BayesianNetworkModel(TimeSeriesModel):
+class BayesianNetworkModel(TimeSeriesProbaModel):
 
     def __init__(self):
         super().__init__()
         self.name = "Bayesian Network"
         self.algorithm = "Bayesian Network"
+        self.hyperparameters = {
+            "pseudocount": 1
+        }
         self.model = self.make_bn()
-        self.pseudocount = 1
+
 
     def train_model(self, training_data):
         """Function that starts the learning process of the BN and stores the resulting model after completion"""
@@ -20,7 +24,7 @@ class BayesianNetworkModel(TimeSeriesModel):
         training_data = training_data.drop(columns=['patient_id'])
         converted_data = self.convert_dataset(training_data)
         # Init forest and read training data
-        self.model.fit(converted_data, pseudocount=self.pseudocount)
+        self.model.fit(converted_data, **self.hyperparameters)
         self.model.bake()
         self.trained = True
 
@@ -47,14 +51,22 @@ class BayesianNetworkModel(TimeSeriesModel):
         return True
 
     def get_params(self):
-        return {"pseudocount": self.pseudocount}
+        return self.hyperparameters
+
+    def set_param(self, params: dict[str, any]):
+
+        for key in params.keys():
+            if key in self.hyperparameters:
+                self.hyperparameters[key] = params[key]
+
+
 
     def save_model(self, filepath):
-        file = open(filepath + ".json", "w")
+        file = open(filepath + f"{self.algorithm}_{self.name}.json", "w")
         json.dump(self.model.to_json(), file)
 
     def load_model(self, filepath):
-        file = open(filepath + ".json", "r")
+        file = open(filepath + f"{self.algorithm}_{self.name}.json", "r")
         self.model = pomegranate.from_json(json.load(file))
 
     def convert_dataset(self, data):

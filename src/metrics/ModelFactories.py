@@ -1,21 +1,17 @@
-from sympy.codegen.ast import continue_
+from __future__ import annotations
 
-from evaluation.EvaluationInformation import ModelEvaluationInformation, EvaluationInformation
-from metrics.Models import GenericThresholdOptimization, EvalResult, GenericSplit
-from metrics.Metrics import OptimalProbability
-
-from metrics.ThresholdOptimizer import *
 from metrics.Metrics import *
-import json
+from metrics.ThresholdOptimizer import *
+
+from processing import TimeseriesMetaData, TimeSeriesMetaDataManagement
 
 from sklearn.metrics import roc_curve
-
 
 class EvalResultFactory:
     """ Contains the result of a single evaluation run"""
 
     @staticmethod
-    def factory_method(optimizer_list: list[GenericThresholdOptimization],
+    def factory_method(optimizer_list: list[GenericThresholdOptimization], training_set_meta_data: TimeseriesMetaData, test_set_meta_data:TimeseriesMetaData,
                        evaltype: str, crossvalidation_performed: bool = False, crossvalidation_random_state: int =None,
                           crossvalidation_shuffle:bool= None, crossvalidation_splits: int =None, evaluation_performed:bool=False) -> EvalResult:
         #if evaltype not in ["Evaluation", "CrossValidation"]:
@@ -23,23 +19,40 @@ class EvalResultFactory:
 
         eval_name = evaltype
 
-        # TODO Replace by storage location of datasets
-        training_dataset = ""
-        test_dataset = ""
+
         dict_optimizer = {}
         for optimizer in optimizer_list:
             dict_optimizer[optimizer.optimization_name] = optimizer
         if crossvalidation_performed:
-            return EvalResult(eval_type=eval_name, training_dataset=training_dataset, test_dataset=test_dataset,
+            return EvalResult(eval_type=eval_name, training_dataset=training_set_meta_data, test_dataset=training_set_meta_data,
                               contained_optimizers=dict_optimizer, crossvalidation_performed=crossvalidation_performed,
                               crossvalidation_random_state=crossvalidation_random_state,crossvalidation_shuffle=crossvalidation_shuffle,
                               crossvalidation_splits=crossvalidation_splits, evaluation_performed=evaluation_performed
                               )
         else:
-            return EvalResult(eval_type=eval_name, training_dataset=training_dataset, test_dataset=test_dataset,
+            return EvalResult(eval_type=eval_name, training_dataset=training_set_meta_data, test_dataset=test_set_meta_data,
                               contained_optimizers=dict_optimizer, crossvalidation_performed=crossvalidation_performed,
                               evaluation_performed=evaluation_performed
                               )
+    @staticmethod
+    def from_dict(eval_dict: dict) -> EvalResult:
+        contained_optimizers = {}
+        for optimizer in eval_dict["contained_optimizers"]:
+             contained_optimizers[optimizer] = OptimizerFactory.from_dict(eval_dict["contained_optimizers"][optimizer])
+
+        content = {
+            "eval_type": eval_dict["eval_type"],
+            "training_dataset": TimeSeriesMetaDataManagement.load_from_dict(eval_dict["training_dataset"]),
+            "test_dataset": TimeSeriesMetaDataManagement.load_from_dict(eval_dict["test_dataset"]),
+            "contained_optimizers": contained_optimizers,
+            "crossvalidation_performed": eval_dict["crossvalidation_performed"],
+            "crossvalidation_random_state": eval_dict["crossvalidation_random_state"],
+            "crossvalidation_shuffle": eval_dict["crossvalidation_shuffle"],
+            "crossvalidation_splits": eval_dict["crossvalidation_splits"],
+            "evaluation_performed": eval_dict["evaluation_performed"],
+
+            }
+        return EvalResult(**content)
 
 
 class ModelResultFactory:
@@ -55,17 +68,86 @@ class ModelResultFactory:
 
 
 
-        return ModelResult(used_model_location=evaluation.model.storage_location, used_model_name=evaluation.model_name,
-                           contained_evals=contained_evals)
+        return ModelResult(used_model_location=evaluation.model.storage_location, used_model_name=evaluation.model.name,
+                           contained_evals=contained_evals, used_model_algorithm=evaluation.model.algorithm, used_model_type=evaluation.model.type)
 
 
-class ResultFactory:
+class ResultManagement:
     """Contains the result of multiple models which may have multiple evaluation runs"""
 
+
+    def factory_method(self, factory_type: str, ingredients: dict) -> ExperimentResult:
+        if factory_type == "new":
+            exp_result = self._factory_method_new_result(ingredients["EvaluationInformation"], ingredients["model_results"])
+
+        else:
+            raise ValueError("Factory type must be Evaluation")
+        return exp_result
+
+    def merge(self, content: dict, merge_type: str) -> ExperimentResult:
+        if merge_type == "CV_EVAL":
+            return self._merge_cv_eval_results(content["CV"], content["Eval"], content["storage_location"], content["eval_name"])
+        else:
+            raise ValueError("Merge type must be CV_EVAL")
+
+
+
     @staticmethod
-    def factory_method(evaluation: EvaluationInformation, model_results: dict) -> ExperimentResult:
+    def _factory_method_new_result(evaluation: EvaluationInformation, model_results: dict) -> ExperimentResult:
         return ExperimentResult(result_name=evaluation.experiment_name, storage_location=evaluation.eval_storage_location,
                                 contained_model_results=model_results)
+
+    @staticmethod
+    def _factory_merge_result(result_info: dict) -> ExperimentResult:
+        return ExperimentResult(**result_info)
+
+
+    def _merge_cv_eval_results(self, cv_result: ExperimentResult, eval_result: ExperimentResult, storage_location: str, eval_name: str) -> ExperimentResult:
+
+        contained_models = set()
+        model_eval_dict = {}
+        model_algorithm_dict = {}
+        model_storage_dict = {}
+
+        for model_name in cv_result.contained_model_results.keys():
+            contained_models.add(model_name)
+
+        for model_name in eval_result.contained_model_results.keys():
+            contained_models.add(model_name)
+
+        for model_name in list(contained_models):
+            model_eval_dict[model_name] = {}
+
+            if model_name in eval_result.contained_model_results:
+                for key in eval_result.contained_model_results[model_name].contained_evals.keys():
+                    model_eval_dict[model_name][key] = eval_result.contained_model_results[model_name].contained_evals[
+                        key]
+
+                model_algorithm_dict[model_name] = eval_result.contained_model_results[model_name].used_model_algorithm
+                model_storage_dict[model_name] = eval_result.contained_model_results[model_name].used_model_location
+            if model_name in cv_result.contained_model_results:
+                for key in cv_result.contained_model_results[model_name].contained_evals.keys():
+                    model_eval_dict[model_name][key] = cv_result.contained_model_results[model_name].contained_evals[
+                        key]
+                if model_name not in eval_result.contained_model_results.keys():
+                    model_algorithm_dict[model_name] = cv_result.contained_model_results[
+                        model_name].used_model_algorithm
+                    model_storage_dict[model_name] = cv_result.contained_model_results[model_name].used_model_location
+        model_result_dict = {}
+        for model_name in model_eval_dict.keys():
+            contained_evals = model_eval_dict[model_name]
+
+            model_algorithm = model_algorithm_dict[model_name]
+            model_storage = model_storage_dict[model_name]
+
+            model_result = ModelResult(used_model_location=model_storage, used_model_name=model_name,
+                                       contained_evals=contained_evals, used_model_type="TimeSeriesModel",
+                                       used_model_algorithm=model_algorithm)
+            model_result_dict[model_name] = model_result
+        ingredients = {"result_name": eval_name, "storage_location": storage_location,
+                       "contained_model_results": model_result_dict}
+        return self._factory_merge_result(ingredients)
+
 
 
 #class ResultFactoryOld:
@@ -110,7 +192,8 @@ class SplitFactory:
                 else:
                     metric_dict[metric.metric_name].append(metric)
         for metric_name, metric_list in metric_dict.items():
-            average_metric = metric_list[0].metric_spec.calculate_metric_mean(metric_list)
+            average_value = metric_list[0].metric_spec.calculate_metric_mean(metric_list)
+            average_metric = metric_list[0].metric_spec.create_from_value(average_value, metric_list[0].metric_name)
             metric_dict[metric_name] = average_metric
         return GenericSplit(split_name="mean", contained_metrics=metric_dict)
 
@@ -131,7 +214,7 @@ class SplitFactory:
             metric_information["tpr"] = tpr
             metric_information["thresholds"] = thresholds
             if stage != "Training":
-                
+
                 training_eval = evaluation.model.training_evaluation.contained_optimizers
                 training_result = training_eval[optimizer_name].contained_splits["Training split"]
                 optimal_threshold_training = training_result.contained_metrics["OptimalProbability"].metric_value
@@ -151,6 +234,17 @@ class SplitFactory:
             contained_metrics_dict[metric] = metric_obj.calculate_metric(metric_information, stage)
         return GenericSplit(split_name=split_name, contained_metrics=contained_metrics_dict)
 
+    @staticmethod
+    def from_dict(split_dict: dict) -> GenericSplit:
+        contained_metrics = {}
+
+        for metric in split_dict["contained_metrics"]:
+            contained_metrics[metric] = eval(metric + "()").create_from_dict(split_dict["contained_metrics"][metric])
+
+
+        return GenericSplit(split_name=split_dict["split_name"], contained_metrics=contained_metrics)
+
+
 
 
 
@@ -164,3 +258,11 @@ class OptimizerFactory:
         for split in splits:
             contained_splits[split.split_name] = split
         return GenericThresholdOptimization(contained_splits=contained_splits, optimization_name=optimizer_name)
+
+    @staticmethod
+    def from_dict(optimizer_dict: dict) ->  GenericThresholdOptimization:
+        contained_splits = {}
+        for split in optimizer_dict["contained_splits"]:
+            contained_splits[split] = SplitFactory.from_dict(optimizer_dict["contained_splits"][split])
+
+        return GenericThresholdOptimization(contained_splits=contained_splits, optimization_name=optimizer_dict["optimization_name"])

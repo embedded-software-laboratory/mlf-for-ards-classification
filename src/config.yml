@@ -3,54 +3,154 @@ process:
   load_timeseries_data: True
   perform_imputation: True
   perform_unit_conversion: True
-  calculate_missing_params: False
+  calculate_missing_params: True
   perform_ards_onset_detection: True
-  perform_filtering: False
-  perform_feature_selection: False
+  perform_filtering: True
+  perform_feature_selection: True
   perform_data_segregation: True 
   perform_timeseries_training: True
   perform_timeseries_classification: True
   perform_threshold_optimization: True
   calculate_evaluation_metrics: True
-  perform_cross_validation: False
-  save_models: False
+  perform_cross_validation: True
+  save_models: True
 
   load_image_data: False
   train_image_models: False
   test_image_models: False
 
-# Since this determines which kind of Model should be trained it is right to use Algorithm types here
-timeseries_models_to_train:
-  - RandomForestModel
-  - XGBoostModel
-  - AdaBoostModel
+models:
+    timeseries_models:
+        to_train:
+          AdaBoost:
+            Names: [ "Test"]
+            Configs: [ "test.yaml"]
+            Active: True
+          BayesianNetwork:
+            Names: [ ]
+            Configs: []
+            Active: False
+          LightGBM:
+            Names: [ ]
+            Configs: []
+            Active: False
+          LogisticRegression:
+            Names: [ ]
+            Configs: []
+            Active: False
+          RandomForest:
+            Names: [ ]
+            Configs: []
+            Active: False
+          SupportVectorMachine:
+            Names: [ ]
+            Configs: []
+            Active: False
+          XGBoost:
+            Names: [ ]
+            Configs: []
+            Active: False
+
+        to_execute:
+          AdaBoost:
+            Names: ["Default", "Test"]
+            Active: True
+          BayesianNetwork:
+            Names: []
+            Active: False
+          LightGBM:
+            Names: []
+            Active: False
+          LogisticRegression:
+            Names: []
+            Active: False
+          RandomForest:
+            Names: []
+            Active: False
+          SupportVectorMachine:
+            Names: []
+            Active: False
+          XGBoost:
+            Names: []
+            Active: False
+
+        to_evaluate:
+          AdaBoost:
+            Names: ["Default", "Test"]
+            Active: True
+          BayesianNetwork:
+            Names: []
+            Active: False
+          LightGBM:
+            Names: []
+            Active: False
+          LogisticRegression:
+            Names: []
+            Active: False
+          RandomForest:
+            Names: []
+            Active: False
+          SupportVectorMachine:
+            Names: []
+            Active: False
+          XGBoost:
+            Names: []
+            Active: False
+
+        to_cross_validate:
+          AdaBoost:
+            Names: ["Default", "Test"]
+            Configs: ["default", "test.yaml"]
+            Active: True
+          BayesianNetwork:
+            Names: [ ]
+            Configs: [ ]
+            Active: False
+          LightGBM:
+            Names: [ ]
+            Configs: [ ]
+            Active: False
+          LogisticRegression:
+            Names: [ ]
+            Configs: [ ]
+            Active: False
+          RandomForest:
+            Names: [ ]
+            Configs: [ ]
+            Active: False
+          SupportVectorMachine:
+            Names: [ ]
+            Configs: [ ]
+            Active: False
+          XGBoost:
+            Names: [ ]
+            Configs: [ ]
+            Active: False
+        base_path_config:
+          to_train: "../Data/Models/TimeSeriesModels/Config/Training/"
+          to_cross_validate: "../Data/Models/TimeSeriesModels/Config/CrossValidation/"
 
 
-# Instead of using Algorithm names real model names in combination with algorithms should be used here, e.g [<algorithm>, <modelname>]
-timeseries_models_to_evaluate:
-  - RandomForestModel
-  - XGBoostModel
-  - AdaBoostModel
 
-# Since models are newly trained during crossvalidation using Algorithms is right here
-timeseries_models_to_crossvalidate:
-  - RandomForestModel
-  - XGBoostModel
-  - AdaBoostModel
 
-timeseries_models_to_execute:
-  - RandomForestModel
-  - XGBoostModel
-  - AdaBoostModel
+
+
+
+
 
 image_models_to_execute:
   - VisionTransformerModel
 
 algorithm_base_path:
-  RandomForestModel: "default"
-  SupportVectorMachineModel: "default"
-  BayesianNetModel: "default"
-  RecurrentNeuralNetworkModel: "Save/Cross validation results/Recurrent neural network_1"
+  AdaBoost: "default"
+  BayesianNet: "default"
+  LightGBM: "default"
+  LogisticRegression: "default"
+  RandomForest: "default"
+  SupportVectorMachine: "default"
+  XGBoost: "default"
+  RecurrentNeuralNetwork: "Save/Cross validation results/Recurrent neural network_1"
+
 
 storage_path: "Save/ExperimentResult"
 
@@ -58,7 +158,7 @@ storage_path: "Save/ExperimentResult"
 
 
 data:
-  timeseries_file_path: "/hpcwork/rwth1474/Data/time_series/uka_data_050623.npy"
+  timeseries_file_path: "../Data/uka_data_050623.npy"
   database: "UKA"
   image_file_path: "Data/Image_data"
   pneumonia_dataset: "balanced"
@@ -69,8 +169,8 @@ preprocessing:
   max_processes: 6
   filtering:
     filter:
-    - A
-    - C
+    - BD
+    - Lite
 
   imputation: 
     impute_empty_cells: True
@@ -130,7 +230,6 @@ supported_algorithms:
     - LightGBMModel
     - LogisticRegressionModel
     - RandomForestModel
-    - RecurrentNeuralNetworkModel
     - SupportVectorMachineModel
     - XGBoostModel
 

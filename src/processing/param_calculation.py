@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from processing.datasets_metadata import ParamCalculationMetaData
 
 class ParamCalculator:
 
@@ -7,27 +8,43 @@ class ParamCalculator:
         self.params_to_calculate = ["horovitz"]
         self.possible_params = ["delta-p", "tidal-vol-per-kg", "liquid-balance", "lymphocytes (absolute)", "horovitz",
                                 "i-e", "lymphocytes (percentage)", "age", "admission period"]
-        self.set_params_to_calculate(params_to_calculate)
+        for param in params_to_calculate:
+            self.add_param_to_calculate(param)
+        self.calculated_params = set()
+        self.meta_data = None
 
     def calculate_missing_params(self, dataframe, job_number: int, total_job_count: int) -> pd.DataFrame:
         print("Start unit conversion for job " + str(job_number) + f" of {total_job_count} jobs...")
+
+
         for param in self.params_to_calculate:
-            if param == "delta-p":
-                dataframe = self.calculate_delta_p(dataframe)
-            if param == "tidal-vol-per-kg":
-                dataframe = self.calculate_individual_tv(dataframe)
-            if param == "liquid-balance":
-                dataframe = self.calculate_fluid_balance(dataframe)
-            if param == "lymphocytes (absolute)":
-                dataframe = self.calculate_absolute_lymphocytes(dataframe)
-            if param == "horovitz":
-                dataframe = self.calculate_horovitz(dataframe)
-            if param == "i-e":
-                dataframe = self.calculate_ie_ratio(dataframe)
-            if param == "lymphocytes (prozentual)":
-                dataframe = self.calculate_lymphocyte_percentage(dataframe)
+            if param in dataframe.columns:
+                print(f"Skipping calculation of {param} since it already exists in the given dataset")
+            else:
+                if param == "delta-p":
+                    dataframe = self.calculate_delta_p(dataframe)
+                if param == "tidal-vol-per-kg":
+                    dataframe = self.calculate_individual_tv(dataframe)
+                if param == "liquid-balance":
+                    dataframe = self.calculate_fluid_balance(dataframe)
+                if param == "lymphocytes (absolute)":
+                    dataframe = self.calculate_absolute_lymphocytes(dataframe)
+                if param == "horovitz":
+                    dataframe = self.calculate_horovitz(dataframe)
+                if param == "i-e":
+                    dataframe = self.calculate_ie_ratio(dataframe)
+                if param == "lymphocytes (prozentual)":
+                    dataframe = self.calculate_lymphocyte_percentage(dataframe)
+
+                self.calculated_params.add(param)
+
+
         print("Finished unit conversion for job " + str(job_number) + f" of {total_job_count} jobs...")
         return dataframe
+
+    def create_metadata(self):
+        if len(list(self.calculated_params)) > 0:
+            self.meta_data = ParamCalculationMetaData(calculated_parameters=list(self.calculated_params))
 
     @staticmethod
     def calculate_delta_p(dataframe):

@@ -3,7 +3,8 @@ import pandas as pd
 from sklearn.model_selection import  train_test_split
 import random
 import math
-class Data_segregator():
+
+class DataSegregator:
 
     def __init__(self, config):
         self.training_test_ratio = config["training_test_ratio"]

@@ -1,10 +1,12 @@
+from processing.datasets import ImageDatasets, ImageDatasetGenerator, TimeSeriesDataset, TimeSeriesDatasetManagement
 from processing.data_imputator import DataImputator
 from processing.data_processing import DataProcessor
-from processing.data_segregator import Data_segregator
-from processing.datasets import ImageDatasets, ImageDatasetGenerator
-from processing.feature_selection import Feature_selection
+from processing.data_segregator import DataSegregator
+
+from processing.featureselection import FeatureSelection
 from processing.filter import Filter
-from processing.load_file import FileLoader
+from processing.FileManager import DataFileManager
 from processing.onset_determiner import OnsetDeterminer
 from processing.param_calculation import ParamCalculator
 from processing.unit_converter import UnitConverter
+from processing.datasets_metadata import TimeseriesMetaData, ImputationMetaData, OnsetDetectionMetaData, FeatureSelectionMetaData, TimeSeriesMetaDataManagement

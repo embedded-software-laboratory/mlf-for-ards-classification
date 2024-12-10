@@ -1,5 +1,7 @@
 import pandas as pd
-import numpy as np
+
+
+from processing.datasets_metadata import OnsetDetectionMetaData
 
 
 class OnsetDeterminer:  #class to determine the ARDS onset in a given dataset
@@ -21,6 +23,25 @@ class OnsetDeterminer:  #class to determine the ARDS onset in a given dataset
         self.impute_missing_rows = config["impute_missing_rows"]
         self.data_imputator = data_imputator
         self.update_ards_values = config["update_ards_values"]
+        self.meta_data = None
+
+    def create_meta_data(self):
+
+        return_series_start = None
+        return_series_end = None
+        update_ards_values = None
+        impute_missing_rows = None
+
+        if self.return_rule in ["data_series_as_point", "data_series_as_series"]:
+            return_series_start = self.return_series_start
+            return_series_end = self.return_series_end
+            update_ards_values = self.update_ards_values
+            impute_missing_rows = self.impute_missing_rows
+
+        self.meta_data = OnsetDetectionMetaData(onset_detection_algorithm=self.detection_rule, onset_detection_return_type=self.return_rule,
+                                                series_begin=return_series_start, series_end=return_series_end,
+                                                remove_ards_patients_without_onset=self.remove_ards_patients_without_onset,
+                                                update_ards_diagnose=update_ards_values, fill_cells_out_of_patient_stay=impute_missing_rows)
 
     def set_detection_rule(self, rule):
         if rule not in self.available_detection_rules:

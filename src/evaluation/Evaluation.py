@@ -1,54 +1,67 @@
+
+
 import copy
-from datetime import datetime
+
 from typing import Union
+from datetime import datetime
 
-import pandas as pd
-from sklearn.metrics import accuracy_score, auc, confusion_matrix, f1_score, matthews_corrcoef, roc_curve, make_scorer
+
+from evaluation.EvaluationInformation import EvaluationInformation, ModelEvaluationInformation
+
+from processing import TimeSeriesDataset, TimeSeriesDatasetManagement, TimeSeriesMetaDataManagement
+from ml_models import Model
+from metrics.ModelFactories import ExperimentResult, ModelResultFactory, ResultManagement, SplitFactory, OptimizerFactory, EvalResultFactory
+
 from sklearn.model_selection import StratifiedKFold
-from metrics.Models import EvalResult
-from metrics.ModelFactories import *
-from evaluation.EvaluationInformation import ModelEvaluationInformation, EvaluationInformation
-from ml_models.model_interface import Model
 
-import os
+
+
+
+
 
 
 class Evaluation:
-    def __init__(self, config, dataset_training, dataset_test):
+    def __init__(self, config, dataset_training: TimeSeriesDataset, dataset_test: TimeSeriesDataset):
         self.config = config
         self.eval_info = EvaluationInformation(config, dataset_training, dataset_test)
         self.model_results = {}
 
-    def evaluate_timeseries_models(self, timeseries_models: list[Model]) -> ExperimentResult:
-
-        for timeseries_model in timeseries_models:
-            if not timeseries_model.trained:
-                print(f"Skipping {timeseries_model.name} because it makes no sense to evaluate an untrained model")
-                continue
-            else:
-                model_evaluation = ModelEvaluation(self.config, timeseries_model, self)
-                predictors = self.eval_info.dataset_test.loc[:, self.eval_info.dataset_test.columns != 'ards']
-                labels = self.eval_info.dataset_test['ards']
-                model_evaluation.evaluate_timeseries_model(predictors, labels, "Evaluation")
-                model_result = ModelResultFactory.factory_method(model_evaluation.model_eval_info,
-                                                                model_evaluation.evaluation_results,
-                                                                model_evaluation.model.training_evaluation,
-                                                                "Evaluation")
-                self.model_results[timeseries_model.name] = model_result
-
-        overall_result = ResultFactory.factory_method(self.eval_info, self.model_results)
+    def evaluate_timeseries_models(self, models_to_evaluate_dict: dict[str, list[Model]]) -> ExperimentResult:
+        print("Evaluating models")
+        for model_algorithm in models_to_evaluate_dict:
+            print(f"Evaluating models for algorithm {model_algorithm}")
+            for timeseries_model in models_to_evaluate_dict[model_algorithm]:
+                print(f"Evaluating {timeseries_model.name}")
+                if not timeseries_model.trained:
+                    print(f"Skipping {timeseries_model.name} because it makes no sense to evaluate an untrained model")
+                    continue
+                else:
+                    model_evaluation = ModelEvaluation(self.config, timeseries_model, self)
+                    predictors = self.eval_info.dataset_test.content.loc[:, self.eval_info.dataset_test.content.columns != 'ards']
+                    meta_data_training_set = self.eval_info.dataset_training.meta_data
+                    meta_data_test_set = self.eval_info.dataset_test.meta_data
+                    labels = self.eval_info.dataset_test.content['ards']
+                    model_evaluation.evaluate_timeseries_model(predictors, labels, "Evaluation", meta_data_training_set, meta_data_test_set)
+                    model_result = ModelResultFactory.factory_method(model_evaluation.model_eval_info,
+                                                                    model_evaluation.evaluation_results,
+                                                                    model_evaluation.model.training_evaluation,
+                                                                    "Evaluation")
+                    self.model_results[timeseries_model.name] = model_result
+        ingredients = {"EvaluationInformation": self.eval_info, "model_results": self.model_results}
+        overall_result = ResultManagement().factory_method("new", ingredients)
         return overall_result
 
-    def cross_validate_timeseries_models(self, timeseries_models: list[Model]) -> ExperimentResult:
+    def cross_validate_timeseries_models(self, models_to_cross_validate_dict: dict[str, list[Model]]) -> ExperimentResult:
 
-        for timeseries_model in timeseries_models:
-            model_evaluation = ModelEvaluation(self.config, timeseries_model, self)
-            model_evaluation.cross_validate_timeseries_model(self.eval_info.dataset_training)
-            model_result = ModelResultFactory.factory_method(model_evaluation.model_eval_info, model_evaluation.evaluation_results,
-                                                             model_evaluation.model.training_evaluation, stage="CrossValidation")
-            self.model_results[timeseries_model.name] = model_result
-
-        overall_result = ResultFactory.factory_method(self.eval_info, self.model_results)
+        for model_algorithm in models_to_cross_validate_dict:
+            for timeseries_model in models_to_cross_validate_dict[model_algorithm]:
+                model_evaluation = ModelEvaluation(self.config, timeseries_model, self)
+                model_evaluation.cross_validate_timeseries_model(self.eval_info.dataset_training)
+                model_result = ModelResultFactory.factory_method(model_evaluation.model_eval_info, model_evaluation.evaluation_results,
+                                                                 model_evaluation.model.training_evaluation, stage="CrossValidation")
+                self.model_results[timeseries_model.name] = model_result
+        ingredients = {"EvaluationInformation": self.eval_info, "model_results": self.model_results}
+        overall_result = ResultManagement().factory_method("new", ingredients)
         return overall_result
 
 
@@ -61,7 +74,7 @@ class ModelEvaluation:
         self.model_eval_info = ModelEvaluationInformation(config, model)
         self.evaluation_results = {}
 
-    def evaluate_timeseries_model(self, predictors, true_labels, stage: str, split_name: str =" split") -> None:
+    def evaluate_timeseries_model(self, predictors, true_labels, stage: str, meta_data_training_set, meta_data_test_set, split_name: str =" split", ) -> None:
 
         eval_split_name = stage + split_name
 
@@ -82,16 +95,19 @@ class ModelEvaluation:
             optimizer_result = OptimizerFactory.factory_method([eval_result], optimizer)
             optimizer_list.append(optimizer_result)
 
-        result = EvalResultFactory.factory_method(optimizer_list, stage, evaluation_performed=True)
+        result = EvalResultFactory.factory_method(optimizer_list, meta_data_training_set, meta_data_test_set, stage, evaluation_performed=True)
 
         self.evaluation_results[stage] = result
 
-    def cross_validate_timeseries_model(self, data) -> None:
+    def cross_validate_timeseries_model(self, data: TimeSeriesDataset) -> None:
+
         if self.evaluation.eval_info is None:
             print("Can not perform cross validation without evaluation information")
             return
-        labels = data["ards"]
-        predictors = data.loc[:, data.columns != 'ards']
+
+        processing_meta_data = TimeSeriesMetaDataManagement.extract_procesing_meta_data(data.meta_data)
+        labels = data.content["ards"]
+        predictors = data.content.loc[:, data.content.columns != 'ards']
         n_splits = self.evaluation.eval_info.n_splits
         shuffle_cv = self.evaluation.eval_info.shuffle
         random_state = self.evaluation.eval_info.random_state
@@ -117,20 +133,35 @@ class ModelEvaluation:
 
             predictors_train = predictors.iloc[train_set]
             labels_train = labels.iloc[train_set]
-            training_data = predictors_train.assign(ards=labels_train)
+            training_data_df = predictors_train.assign(ards=labels_train)
+
+            training_storage_information = f"Training split {i} of data located at: {data.meta_data.additional_information}"
+
+            training_data = TimeSeriesDatasetManagement.factory_method(training_data_df, processing_meta_data, training_storage_information, "CrossValidation")
 
             predictors_test = predictors.iloc[test_set]
             labels_test = labels.iloc[test_set]
-            test_data = predictors_test.assign(ards=labels_test)
+            test_data_df = predictors_test.assign(ards=labels_test)
+
+            test_storage_information = f"Test split {i} of data located at: {data.meta_data.additional_information}"
+            test_data = TimeSeriesDatasetManagement.factory_method(test_data_df, processing_meta_data,
+                                                                       test_storage_information, "CrossValidation")
 
             # Learn model for the split
             self.model.train_timeseries(training_data, self.config, "Training")
             training_eval = self.model.training_evaluation
 
             if self.config["process"]["save_models"]:
-                save_path = self.config["storage_path"] if self.config["storage_path"] else "./Save/" + str(
-                    datetime.now().strftime("%m-%d-%Y_%H-%M-%S")) + "/" + self.model.name + "_split_" + str(i)
-                self.model.save_model(save_path)
+                if self.config["algorithm_base_path"][self.model.algorithm] != "default":
+                    save_path = self.config["algorithm_base_path"][self.model.algorithm]
+                else:
+                    save_path = self.config["storage_path"] + "/" if self.config["storage_path"] else "./Save/" + str(
+                        datetime.now().strftime("%m-%d-%Y_%H-%M-%S")) + "/"
+                model_name =  self.model.name + "_split_" + str(i)
+                old_model_name = self.model.name
+                self.model.name = model_name
+                self.model.save(save_path)
+                self.model.name = old_model_name
 
             if self.model.has_predict_proba():
                 self.model_eval_info.predicted_probas_test = self.model.predict_proba(predictors_test)[:, 1]
@@ -166,13 +197,20 @@ class ModelEvaluation:
             optimizer_training_list.append(optimizer_training_result)
 
 
+        eval_meta_data = data.meta_data
+        eval_meta_data.additional_information = "To receive the training and test set generate the splits using the cross validation settings below."
 
-        eval_result_complete = EvalResultFactory.factory_method(optimizer_eval_list, "CrossValidation",
+        training_meta_data = data.meta_data
+        training_meta_data.additional_information = "To receive the training and test set generate the splits using the cross validation settings below and use the training set as the test set. "
+
+        eval_result_complete = EvalResultFactory.factory_method(optimizer_eval_list, eval_meta_data, eval_meta_data,"CrossValidation",
                                                                 True, random_state,
                                                                 shuffle_cv, n_splits)
-        training_result_complete = EvalResultFactory.factory_method(optimizer_training_list, "CrossValidation",
+
+        training_result_complete = EvalResultFactory.factory_method(optimizer_training_list, training_meta_data, training_meta_data,"CrossValidation",
                                                                 True, random_state,
                                                                 shuffle_cv, n_splits)
+
 
         self.evaluation_results["EvaluationCrossValidation"] = eval_result_complete
         self.evaluation_results["TrainingCrossValidation"] = training_result_complete
