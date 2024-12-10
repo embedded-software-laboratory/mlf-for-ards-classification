@@ -54,7 +54,6 @@ class TimeSeriesModel(Model):
             base_path = filepath + name
         evaluation_location = base_path + "_training_evaluation.json"
         with open(evaluation_location, "w") as evaluation_file:
-            print(self.training_evaluation)
             evaluation_file.write(self.training_evaluation.model_dump_json(indent=4))
 
         self.meta_data.ml_model_training_evaluation_location = evaluation_location
