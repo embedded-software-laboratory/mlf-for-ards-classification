@@ -5,7 +5,7 @@ from processing.data_segregator import DataSegregator
 
 from processing.featureselection import FeatureSelection
 from processing.filter import Filter
-from processing.load_file import FileLoader
+from processing.FileManager import DataFileManager
 from processing.onset_determiner import OnsetDeterminer
 from processing.param_calculation import ParamCalculator
 from processing.unit_converter import UnitConverter

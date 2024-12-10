@@ -1,5 +1,6 @@
 from ml_models.model_interface import Model
 from ml_models.timeseries_model import TimeSeriesModel, TimeSeriesProbaModel
+from ml_models.MLModelManager import TimeSeriesModelManager
 from ml_models.ModelMetaData import ModelMetaDataFactory, ModelMetadata
 
 from ml_models.adaboost import AdaBoostModel
