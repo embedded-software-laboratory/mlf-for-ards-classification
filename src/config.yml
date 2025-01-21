@@ -26,10 +26,10 @@ models:
             Names: [ "Test"]
             Configs: [ "test.yaml"]
             Active: True
-          BayesianNetwork:
-            Names: [ ]
-            Configs: []
-            Active: False
+          #BayesianNetwork:
+          #  Names: [ ]
+          #  Configs: []
+          #  Active: False
           LightGBM:
             Names: [ ]
             Configs: []
@@ -55,9 +55,9 @@ models:
           AdaBoost:
             Names: ["Default", "Test"]
             Active: True
-          BayesianNetwork:
-            Names: []
-            Active: False
+          #BayesianNetwork:
+          #  Names: []
+          #  Active: False
           LightGBM:
             Names: []
             Active: False
@@ -78,9 +78,9 @@ models:
           AdaBoost:
             Names: ["Default", "Test"]
             Active: True
-          BayesianNetwork:
-            Names: []
-            Active: False
+          #BayesianNetwork:
+          #  Names: []
+          #  Active: False
           LightGBM:
             Names: []
             Active: False
@@ -102,10 +102,10 @@ models:
             Names: ["Default", "Test"]
             Configs: ["default", "test.yaml"]
             Active: True
-          BayesianNetwork:
-            Names: [ ]
-            Configs: [ ]
-            Active: False
+          ##BayesianNetwork:
+          ##  Names: [ ]
+          ##  Configs: [ ]
+          #  Active: False
           LightGBM:
             Names: [ ]
             Configs: [ ]
@@ -143,7 +143,7 @@ models:
 
 algorithm_base_path:
   AdaBoost: "default"
-  BayesianNet: "default"
+  #BayesianNet: "default"
   LightGBM: "default"
   LogisticRegression: "default"
   RandomForest: "default"
@@ -226,7 +226,7 @@ evaluation:
 supported_algorithms:
   timeseries_models:
     - AdaBoostModel
-    - BayesianNetworkModel
+    #- BayesianNetworkModel
     - LightGBMModel
     - LogisticRegressionModel
     - RandomForestModel

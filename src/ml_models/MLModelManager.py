@@ -2,7 +2,6 @@ import yaml
 
 from ml_models.timeseries_model import TimeSeriesModel
 from ml_models.adaboost import AdaBoostModel
-from ml_models.bayesian_net import BayesianNetworkModel
 from ml_models.lightGBM import LightGBMModel
 from ml_models.logistic_regression import LogisticRegressionModel
 from ml_models.random_forest import RandomForestModel
