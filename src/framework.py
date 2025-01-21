@@ -1,5 +1,5 @@
 from cli import make_parser
-from processing import DataFileManager, DataProcessor, FeatureSelection, DataSegregator, ImageDatasetGenerator, TimeSeriesDatasetManagement, TimeSeriesDataset
+from processing import DataFileManager, DataProcessor, FeatureSelection, DataSegregator,  TimeSeriesDatasetManagement, TimeSeriesDataset
 from ml_models import *
 from evaluation import Evaluation
 from metrics import ResultManagement
@@ -27,7 +27,7 @@ class Framework:
         self.config = config
         self.loader = DataFileManager()
         self.supported_timeseries_models = self.config['supported_algorithms']['timeseries_models']
-        self.supported_images_models = self.config['supported_algorithms']['image_models']
+
 
         self.available_timeseries_models = {}
 
@@ -50,24 +50,18 @@ class Framework:
         self.timeseries_cross_validation_result = None
         self.processing_meta_data = {}
 
-        self.image_dl_methods = ["VIT"]
-        self.image_models = [VisionTransformerModel(config["image_model_parameters"], "vit-small-16")]
 
-        self.image_pneumonia_training_data = None
-        self.image_ards_training_data = None
-        self.image_ards_test_data = None
-        self.pneumonia_dataset = config["data"]["pneumonia_dataset"]
-        self.ards_dataset = config["data"]["ards_dataset"]
+
+
+
         self.dataProcessor = DataProcessor(config["preprocessing"], config["data"]["database"], config["process"])
         self.feature_selector = FeatureSelection(config["feature_selection"])
         self.segregator = DataSegregator(config["data_segregation"])
-        self.dataset_generator = ImageDatasetGenerator()
+
         self.process = config["process"]
         self.model_base_paths = config["algorithm_base_path"]
         self.timeseries_file_path = config["data"]["timeseries_file_path"]
-        self.image_file_path = config["data"]["image_file_path"]
-        self.method = config["image_model_parameters"]["method"]
-        self.mode = config["image_model_parameters"]["mode"]
+
         self.outdir = config["storage_path"] if config["storage_path"] else "./Save/" + str(
             datetime.now().strftime("%Y-%m-%d_%H-%M-%S")) + "/"
         Path(self.outdir).mkdir(parents=True, exist_ok=True)
@@ -233,31 +227,20 @@ class Framework:
             f.write(final_result.model_dump_json(indent=4))
 
     def load_image_data(self):
-        for dl_method in self.image_dl_methods:
-            self.image_pneumonia_training_data = self.dataset_generator.build_dataset(self.pneumonia_dataset, dl_method,
-                                                                                      'PNEUMONIA',
-                                                                                      path=self.image_file_path,
-                                                                                      augment=False)
-            self.image_ards_training_data = self.dataset_generator.build_dataset(self.ards_dataset, dl_method, 'ARDS',
-                                                                                 path=self.image_file_path,
-                                                                                 augment=False)
-            self.image_ards_test_data = self.dataset_generator.build_dataset('test', dl_method, 'ARDS',
-                                                                             path=self.image_file_path, augment=False)
+        raise NotImplementedError
+        pass
 
     def load_image_models(self):
         raise NotImplementedError
         pass
 
     def learn_image_models(self):
-        for model in self.image_models:
-            info_list = [self.pneumonia_dataset, self.ards_dataset, model.model_name, [self.method, self.method],
-                         self.mode]
-            model.train_image_model(self.image_pneumonia_training_data, self.image_ards_training_data, info_list)
+        raise NotImplementedError
+        pass
 
     def evaluate_image_models(self):
-        for model in self.image_models:
-            info_list = [self.pneumonia_dataset, self.ards_dataset, model.model_name, self.method, self.mode]
-            model.test_image_model(self.image_ards_test_data, info_list)
+        raise NotImplementedError
+        pass
 
 
     def run(self):
@@ -299,10 +282,13 @@ class Framework:
 
 
         if self.process["load_image_data"]:
-            self.load_image_data()
+            print("Currently not supported")
+            #self.load_image_data()
 
         if self.process["train_image_models"]:
-            self.learn_image_models()
+            print("Currently not supported")
+            #self.learn_image_models()
 
         if self.process["test_image_models"]:
+            print("Currently not supported")
             self.evaluate_image_models()

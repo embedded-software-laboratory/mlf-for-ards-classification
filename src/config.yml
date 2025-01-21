@@ -127,8 +127,8 @@ models:
             Configs: [ ]
             Active: False
         base_path_config:
-          to_train: "../Data/Models/TimeSeriesModels/Config/Training/"
-          to_cross_validate: "../Data/Models/TimeSeriesModels/Config/CrossValidation/"
+          to_train: "Data/Models/TimeSeriesModels/Config/Training/"
+          to_cross_validate: "Data/Models/TimeSeriesModels/Config/CrossValidation/"
 
 
 
@@ -138,8 +138,8 @@ models:
 
 
 
-image_models_to_execute:
-  - VisionTransformerModel
+#image_models_to_execute:
+#  - VisionTransformerModel
 
 algorithm_base_path:
   AdaBoost: "default"
@@ -152,15 +152,15 @@ algorithm_base_path:
   RecurrentNeuralNetwork: "Save/Cross validation results/Recurrent neural network_1"
 
 
-storage_path: "Save/ExperimentResult"
+storage_path: "src/Save/ExperimentResult"
 
 
 
 
 data:
-  timeseries_file_path: "../Data/uka_data_050623.npy"
+  timeseries_file_path: "Data/uka_data_050623.npy"
   database: "UKA"
-  image_file_path: "Data/Image_data"
+  #image_file_path: "Data/Image_data"
   pneumonia_dataset: "balanced"
   ards_dataset: "weighted"
 
@@ -210,18 +210,18 @@ evaluation:
   evaluation_metrics: ["AUC", "Accuracy", "F1Score", "FPR", "MCC", "OptimalProbability", "Sensitivity", "Specificity", "TPR"]
   evaluation_name: "Evaluation X"
 
-image_model_parameters:
-  method: last_block
-  mode: mode1
-  num_epochs_pneumonia: 1
-  num_epochs_ards: 1
-  batch_size_pneumonia: 32
-  batch_size_ards: 32
-  SEED_pneumonia: 123
-  SEED_ards: 105
-  learning_rate: 0.05 
-  k_folds: 2
-  path: "Data/Image_data"
+#image_model_parameters:
+#  method: last_block
+#  mode: mode1
+#  num_epochs_pneumonia: 1
+#  num_epochs_ards: 1
+#  batch_size_pneumonia: 32
+#  batch_size_ards: 32
+#  SEED_pneumonia: 123
+#  SEED_ards: 105
+#  learning_rate: 0.05
+#  k_folds: 2
+#  path: "Data/Image_data"
 
 supported_algorithms:
   timeseries_models:
@@ -233,6 +233,6 @@ supported_algorithms:
     - SupportVectorMachineModel
     - XGBoostModel
 
-  image_models:
-    - VisionTransformerModel
-    - ConvolutionalNeuralNetworkModel
+  #image_models:
+  #  - VisionTransformerModel
+  #  - ConvolutionalNeuralNetworkModel
