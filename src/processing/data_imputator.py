@@ -60,10 +60,13 @@ class DataImputator:
                         frame.interpolate(method="linear", limit_direction="both"))], ignore_index=True)
                 dataframe[column] = temp_dataframe
 
-        dataframe.dropna(subset=['ards'], inplace=True, ignore_index=True, how="any", axis=0)
+        dataframe.dropna(subset=['ards'], inplace=True, how="any", axis=0)
+        dataframe.reset_index(drop=True, inplace=True)
         if not self.impute_empty_cells:
             dataframe.dropna(how="all", axis=1, ignore_index=True, inplace=True)
+            dataframe.reset_index(drop=True, inplace=True)
             dataframe.dropna(how="any", axis=0, ignore_index=True, inplace=True)
+            dataframe.reset_index(drop=True, inplace=True)
         else:
             dataframe.fillna(value=-100000, axis=1, inplace=True)
         if len(dataframe.index) == 0:
