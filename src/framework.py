@@ -116,7 +116,7 @@ class Framework:
 
         self.timeseries_training_set = TimeSeriesDatasetManagement.factory_method(training_data, processing_meta_data,path_training, "Training")
         self.timeseries_test_set = TimeSeriesDatasetManagement.factory_method(test_data, processing_meta_data, path_test, "Test")
-        self.timeseries_complete_set = TimeSeriesDatasetManagement.factory_method(test_data, processing_meta_data,path_complete, "Complete")
+        self.timeseries_complete_set = TimeSeriesDatasetManagement.factory_method(dataframe, processing_meta_data,path_complete, "Complete")
         TimeSeriesDatasetManagement.write(self.timeseries_complete_set)
         TimeSeriesDatasetManagement.write(self.timeseries_training_set)
         TimeSeriesDatasetManagement.write(self.timeseries_test_set)
