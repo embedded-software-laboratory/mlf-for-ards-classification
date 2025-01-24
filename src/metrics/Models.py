@@ -49,7 +49,7 @@ class GenericValue(BaseModel):
 
 
 class ListValue(GenericValue):
-    metric_value: list[Any]
+    metric_value: list[Union[int, float, str]]
 
 
 class IntValue(GenericValue):
