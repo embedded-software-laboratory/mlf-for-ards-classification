@@ -53,6 +53,19 @@ class TimeSeriesModel(Model):
         else:
             base_path = filepath + name
         evaluation_location = base_path + "_training_evaluation.json"
+        print(self.training_evaluation.training_dataset.model_dump_json(indent=4))
+        print(self.training_evaluation.test_dataset.model_dump_json(indent=4))
+        for contained_optimizer, generic_treshold_optimizer in self.training_evaluation.contained_optimizers.items():
+
+            for split_name, split_eval in generic_treshold_optimizer.split_evaluations.items():
+
+                for metric_name, metric_evaluation in split_eval.metric_evaluations.items():
+                    print(metric_name)
+                    print(metric_evaluation.model_dump_json(indent=4))
+                print(split_name)
+                print(split_eval.model_dump_json(indent=4))
+            print(contained_optimizer)
+            print(generic_treshold_optimizer.model_dump_json(indent=4))
         with open(evaluation_location, "w") as evaluation_file:
             evaluation_file.write(self.training_evaluation.model_dump_json(indent=4))
 
