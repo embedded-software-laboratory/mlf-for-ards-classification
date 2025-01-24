@@ -8,7 +8,7 @@ class SupportVectorMachineModel(TimeSeriesProbaModel):
     def __init__(self):
         super().__init__()
         self.name = "Support Vector Machine"
-        self.algorithm = "Support Vector Machine"
+        self.algorithm = "SupportVectorMachine"
 
 
         self.hyperparameters = {
