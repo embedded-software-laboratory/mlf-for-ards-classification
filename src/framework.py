@@ -140,6 +140,7 @@ class Framework:
 
         for model_type, models in model_dict.items():
             for model in models:
+                print("Start training " + model.name + " for algorithm " + model.algorithm)
                 model.train_timeseries(self.timeseries_training_set, self.config, "Training")
                 if self.process["save_models"]:
                     if self.config["algorithm_base_path"][model.algorithm] != "default":
