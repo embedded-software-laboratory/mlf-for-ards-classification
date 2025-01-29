@@ -6,8 +6,8 @@ process:
   calculate_missing_params: True
   perform_ards_onset_detection: True
   perform_filtering: False
-  perform_feature_selection: True
-  perform_data_segregation: True 
+  perform_feature_selection: False
+  perform_data_segregation: True
   perform_timeseries_training: True
   perform_timeseries_classification: True
   perform_threshold_optimization: True
@@ -152,7 +152,7 @@ algorithm_base_path:
   RecurrentNeuralNetwork: "Save/Cross validation results/Recurrent neural network_1"
 
 
-storage_path: "src/Save/ExperimentResult"
+storage_path: "../Save/ExperimentResult"
 
 
 
@@ -195,7 +195,7 @@ feature_selection:
   k: 15
 
 data_segregation:
-  training_test_ratio: 0.8
+  training_test_ratio: 0.2
   percentage_of_ards_patients: 0.1
   splitting_seed: 42
 
