@@ -207,11 +207,12 @@ class Framework:
     def handle_timeseries_results(self):
 
         # TODO make plots
-
-        result_location = self.outdir + 'results.json'
+        eval_name = self.config['evaluation']['evaluation_name']
+        eval_file_name = eval_name.replace(" ", "_") + "_results.json"
+        result_location = self.outdir + eval_file_name
 
         if self.timeseries_cross_validation_result and self.timeseries_evaluations_result:
-            eval_name = self.config['evaluation']['evaluation_name']
+
             cv_result = self.timeseries_cross_validation_result
             eval_result = self.timeseries_evaluations_result
 

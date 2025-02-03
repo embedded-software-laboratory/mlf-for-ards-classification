@@ -13,6 +13,7 @@ process:
   perform_threshold_optimization: True
   calculate_evaluation_metrics: True
   perform_cross_validation: True
+  visualize_results: False
   save_models: True
 
   load_image_data: False
@@ -209,6 +210,39 @@ evaluation:
   threshold_optimization_algorithms: ["Standard", "MaxTPR", "MaxTPRMinFPR", "GeometricRoot"]
   evaluation_metrics: ["AUC", "Accuracy", "F1Score", "FPR", "MCC", "OptimalProbability", "Sensitivity", "Specificity", "TPR"]
   evaluation_name: "Evaluation X"
+
+visualization:
+  model_result_settings:
+    Default:
+      active_models:
+        - all
+      active_eval_types:
+        - all
+      active_optimizers:
+        - all
+      active_metrics:
+        - all
+      plot_cv_comparison: False
+
+  model_comparison_settings:
+    EvaluationAllStandardFull:
+      eval_type_to_compare: "Evaluation"
+      metrics_to_compare:
+        - all
+      comparisons:
+        - Standard
+    # Not functional
+    EvaluationSpecificFull:
+      eval_type_to_compare: "Evaluation"
+      metrics_to_compare:
+        - all
+      comparisons:
+        - "<model_name>, <optimizer_name>"
+        - "<model_name>, <optimizer_name>"
+
+
+
+
 
 image_model_parameters:
   method: last_block
