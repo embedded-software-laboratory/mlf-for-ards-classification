@@ -44,6 +44,9 @@ class GenericValue(BaseModel):
     def __lt__(self, other):
         return self.metric_value < other
 
+    def __gt__(self, other):
+        return self.metric_value > other
+
     class Config:
         arbitrary_types_allowed = True
 

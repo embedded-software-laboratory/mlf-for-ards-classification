@@ -11,7 +11,7 @@ class LogisticRegressionModel(TimeSeriesProbaModel):
     def __init__(self):
         super().__init__()
         self.name = "Logistic_regression"
-        self.algorithm = "Logistic Regression"
+        self.algorithm = "LogisticRegression"
         self.hyperparameters = {
             "penalty": "l2",
             "dual": False,

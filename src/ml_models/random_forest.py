@@ -8,7 +8,7 @@ class RandomForestModel(TimeSeriesProbaModel):
     def __init__(self):
         super().__init__()
         self.name = "Random Forest"
-        self.algorithm = "Random Forest"
+        self.algorithm = "RandomForest"
 
         self.hyperparameters = {
             "n_estimators": 700,

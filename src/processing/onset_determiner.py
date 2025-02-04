@@ -131,7 +131,7 @@ class OnsetDeterminer:  #class to determine the ARDS onset in a given dataset
                 elif start_index_of_closest_series != -1:
                     if dataframe["ards"][dataframe[dataframe["patient_id"] == patientid].index[
                         0]] == 0 or self.remove_ards_patients_without_onset == False:
-                        return self.add_return_data(return_dataframe, dataframe, start_index_of_closest_series)
+                        return_dataframe =  self.add_return_data(return_dataframe, dataframe, start_index_of_closest_series)
                 else:
                     if (dataframe["ards"][dataframe[dataframe["patient_id"] == patientid].index[0]] == 0
                             or self.remove_ards_patients_without_onset is False):
