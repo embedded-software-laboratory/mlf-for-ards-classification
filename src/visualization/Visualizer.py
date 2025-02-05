@@ -39,7 +39,11 @@ class Visualisizer:
 
         pass
 
-    def _prepare_visualize_model(self, setting,  model: str):
+    def _prepare_visualize_experiment(self, setting):
+        metric_dict = None
+
+
+    def _prepare_visualize_model(self, setting,  model: str, metric_dict: dict):
         needed_evals = []
         if "all" in setting["active_evals"]:
             needed_evals = self.full_results.contained_model_results[model].contained_evals.keys()
@@ -50,9 +54,13 @@ class Visualisizer:
                 else:
                     print(f"No information for {exp_eval} available. Skipping...")
 
+        for eval_type in needed_evals:
+            if "crossvalidation" in eval_type.lower():
+                split = self.full_results.contained_model_results[model].contained_evals[""]
 
 
-    def _prepare_visualize_optimizer(self, setting, model: str, eval_type: str, split: Union[str, list[str]]):
+
+    def _prepare_visualize_optimizer(self, setting, model: str, eval_type: str, split: Union[str, list[str]], metric_dict: dict):
         needed_optimizers = []
         if "all" in setting["active_optimizers"]:
             needed_optimizers = self.full_results.contained_model_results[model].contained_evals[eval_type].contained_optimizers.keys()
@@ -65,13 +73,15 @@ class Visualisizer:
 
         for optimizer in needed_optimizers:
             if type(split) == list:
-                # TODO
+                for split_name in split:
+                    metric_dict = self._prepare_visualize_single_split(model, eval_type, optimizer, split_name, metric_dict)
                 pass
             elif type(split) == str:
-                self._prepare_visualize_single_split(model, eval_type, optimizer, split)
+                metric_dict = self._prepare_visualize_single_split(model, eval_type, optimizer, split, metric_dict)
             else:
                 print(f"Split type {type(split)} not supported. Skipping...")
 
+        return metric_dict
 
 
 
