@@ -153,7 +153,7 @@ algorithm_base_path:
   RecurrentNeuralNetwork: "Save/Cross validation results/Recurrent neural network_1"
 
 
-storage_path: "Save/ExperimentResult"
+storage_path: "../Save/ExperimentResult/ResultVisualizer"
 
 
 
@@ -216,7 +216,7 @@ visualization:
     Default:
       active_models:
         - all
-      active_eval_types:
+      active_evals:
         - all
       active_optimizers:
         - all
@@ -232,13 +232,13 @@ visualization:
       comparisons:
         - Standard
     # Not functional
-    EvaluationSpecificFull:
-      eval_type_to_compare: "Evaluation"
-      metrics_to_compare:
-        - all
-      comparisons:
-        - "<model_name>, <optimizer_name>"
-        - "<model_name>, <optimizer_name>"
+    #EvaluationSpecificFull:
+    #  eval_type_to_compare: "Evaluation"
+    #  metrics_to_compare:
+    #    - all
+    #  comparisons:
+    #    - "<model_name>, <optimizer_name>"
+    #    - "<model_name>, <optimizer_name>"
 
 
 

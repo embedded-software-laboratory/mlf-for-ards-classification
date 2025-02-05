@@ -1,0 +1,16 @@
+{
+    "ml_model_name": "Default",
+    "ml_model_type": "TimeSeriesModel",
+    "ml_model_algorithm": "AdaBoost",
+    "ml_model_hyperparameters": {
+        "algorithm": "SAMME.R",
+        "base_estimator": "deprecated",
+        "estimator": null,
+        "learning_rate": 1.0,
+        "n_estimators": 50,
+        "random_state": 42
+    },
+    "ml_model_training_data_location": "Training split 1 of data located at: None",
+    "ml_model_training_evaluation_location": "../Save/ExperimentResult/ResultVisualizer/AdaBoost_Default_split_1_training_evaluation.json",
+    "ml_model_storage_location": "../Save/ExperimentResult/ResultVisualizer/AdaBoost_Default"
+}

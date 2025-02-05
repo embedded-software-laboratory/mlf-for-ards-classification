@@ -3,6 +3,7 @@ from processing import DataFileManager, DataProcessor, FeatureSelection, DataSeg
 from ml_models import *
 from evaluation import Evaluation
 from metrics import ResultManagement
+from visualization import ResultVisualizer
 
 import os
 import yaml
@@ -228,6 +229,9 @@ class Framework:
         else:
             print("This should never happen")
             return
+
+        visualizer = ResultVisualizer(final_result, self.config["visualization"])
+        visualizer.visualize_results()
 
         print(f"Save results to {self.outdir + 'results.json'}")
         with open(result_location, 'w', encoding='utf-8') as f:
