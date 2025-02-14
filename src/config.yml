@@ -1,13 +1,14 @@
 process:
   load_models: False
   load_timeseries_data: True
-  perform_imputation: True
-  perform_unit_conversion: True
-  calculate_missing_params: True
-  perform_ards_onset_detection: True
-  perform_filtering: True
-  perform_feature_selection: True
-  perform_data_segregation: True 
+  perform_imputation: False
+  perform_unit_conversion: False
+  calculate_missing_params: False
+  perform_ards_onset_detection: False
+  perform_filtering: False
+  perform_feature_selection: False
+  perform_data_segregation: True
+  save_timeseries_data: False
   perform_timeseries_training: True
   perform_timeseries_classification: True
   perform_threshold_optimization: True
@@ -159,7 +160,7 @@ storage_path: "../Save/ExperimentResult/ResultVisualizer"
 
 
 data:
-  timeseries_file_path: "../Data/uka_data_050623.npy"
+  timeseries_file_path: "../Save/ExperimentResult/ResultVisualizer/uka_data_050623.npy_2025-02-11_15_33_42_complete.csv"
   database: "UKA"
   image_file_path: "Data/Image_data"
   pneumonia_dataset: "balanced"
@@ -222,7 +223,7 @@ visualization:
         - all
       active_metrics:
         - all
-      plot_cv_comparison: False
+      plot_cv_comparison: True
 
   model_comparison_settings:
     EvaluationAllStandardFull:

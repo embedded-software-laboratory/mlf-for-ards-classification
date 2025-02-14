@@ -98,10 +98,11 @@ class Framework:
 
         dataframe = self.dataProcessor.process_data(dataframe, dataset_metadata)
         processing_meta_data = self.dataProcessor.get_processing_meta_data()
-
+        print(dataframe.columns)
         if self.process["perform_feature_selection"]:
             dataframe = self.feature_selector.perform_feature_selection(dataframe)
             self.feature_selector.create_meta_data()
+        print(dataframe.columns)
         processing_meta_data["feature_selection"] = self.feature_selector.meta_data
 
         if not os.path.isdir(self.outdir):
@@ -123,10 +124,11 @@ class Framework:
 
         self.timeseries_training_set = TimeSeriesDatasetManagement.factory_method(training_data, processing_meta_data,path_training, "Training")
         self.timeseries_test_set = TimeSeriesDatasetManagement.factory_method(test_data, processing_meta_data, path_test, "Test")
-        self.timeseries_complete_set = TimeSeriesDatasetManagement.factory_method(test_data, processing_meta_data,path_complete, "Complete")
-        TimeSeriesDatasetManagement.write(self.timeseries_complete_set)
-        TimeSeriesDatasetManagement.write(self.timeseries_training_set)
-        TimeSeriesDatasetManagement.write(self.timeseries_test_set)
+        self.timeseries_complete_set = TimeSeriesDatasetManagement.factory_method(dataframe, processing_meta_data,path_complete, "Complete")
+        if self.process["save_timeseries_data"]:
+            TimeSeriesDatasetManagement.write(self.timeseries_complete_set)
+            TimeSeriesDatasetManagement.write(self.timeseries_training_set)
+            TimeSeriesDatasetManagement.write(self.timeseries_test_set)
 
     def load_timeseries_models(self, stage: str):
 
@@ -233,7 +235,7 @@ class Framework:
         visualizer = ResultVisualizer(final_result, self.config["visualization"])
         visualizer.visualize_results()
 
-        print(f"Save results to {self.outdir + 'results.json'}")
+        print(f"Save results to {result_location}")
         with open(result_location, 'w', encoding='utf-8') as f:
             f.write(final_result.model_dump_json(indent=4))
 

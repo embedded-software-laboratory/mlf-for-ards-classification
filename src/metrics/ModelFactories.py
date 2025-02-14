@@ -186,14 +186,14 @@ class SplitFactory:
         metric_dict = {}
 
         for split in splits:
-            for _, metric in split.contained_metrics.items():
-                if metric.metric_name not in metric_dict:
-                    metric_dict[metric.metric_name] = [metric]
+            for metric_name, metric in split.contained_metrics.items():
+                if metric_name not in metric_dict:
+                    metric_dict[metric_name] = [metric]
                 else:
-                    metric_dict[metric.metric_name].append(metric)
+                    metric_dict[metric_name].append(metric)
         for metric_name, metric_list in metric_dict.items():
             average_value = metric_list[0].metric_spec.calculate_metric_mean(metric_list)
-            average_metric = metric_list[0].metric_spec.create_from_value(average_value, metric_list[0].metric_name)
+            average_metric = metric_list[0].metric_spec.create_from_value(average_value, metric_name)
             metric_dict[metric_name] = average_metric
         return GenericSplit(split_name="mean", contained_metrics=metric_dict)
 
