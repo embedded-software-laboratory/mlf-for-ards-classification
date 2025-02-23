@@ -7,3 +7,6 @@ Runscripts
 .idea
 *.ipynb_checkpoints/
 Save/*
+Testing
+Testing/*
+/src/Testing/

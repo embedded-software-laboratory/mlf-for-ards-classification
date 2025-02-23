@@ -1,6 +1,7 @@
 import math
 from copy import deepcopy
 from re import split
+from symbol import comparison
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -12,16 +13,21 @@ from metrics import ExperimentResult
 
 class ResultVisualizer:
 
-    def __init__(self, results: ExperimentResult, config):
+    def __init__(self, results: ExperimentResult, config, result_path):
         self.full_results = results
         self.result_name = results.result_name
         self.prepared_data = {}
         self.visualisation_settings = config["model_result_settings"]
         self.comparison_settings = config["model_comparison_settings"]
         self.active_setting = None
+        self.result_path = result_path.replace("results", "visualizations")
 
 
     def visualize_results(self):
+        self._visualize_metrics()
+        self._visualize_comparison()
+
+    def _visualize_metrics(self):
 
         contained_models = list(self.full_results.contained_model_results.keys())
         for setting_name in self.visualisation_settings.keys():
@@ -45,12 +51,120 @@ class ResultVisualizer:
 
             for model in present_models:
                 model_metrics = metric_df[metric_df["model"] == model].reset_index(drop=True)
+                self.result_path = f"{self.result_path}_{model}"
 
 
                 n_rows,  n_optimizers, plot_index_type_dict, roc_plot_index_type_dict, optimizer_palette, model_metrics, \
                  bar_chart_metric_list, eval_types, fig_title, calculate_roc = self._setup_model_plot(setting_name, model_metrics)
                 self._visualize_model(n_rows,  n_optimizers, plot_index_type_dict, roc_plot_index_type_dict,optimizer_palette,model_metrics, \
                  bar_chart_metric_list, fig_title, calculate_roc)
+                self.result_path = self.result_path.replace(f"_{model}", "")
+
+
+    def _visualize_comparison(self):
+        contained_models = list(self.full_results.contained_model_results.keys())
+        supported_eval_types = ["Training", "Evaluation", "TrainingCrossValidation", "EvaluationCrossValidation"]
+        for setting_name in self.comparison_settings.keys():
+            setting = self.comparison_settings[setting_name]
+            comparisons = setting["comparisons"]
+            eval_types = setting["eval_type_to_compare"]
+            for eval_type in eval_types:
+                if eval_type not in supported_eval_types:
+                    print(f"Comparison for {eval_type} not supported. Skipping...")
+                    continue
+            metrics_requested = setting["metrics_to_compare"]
+
+            needed_models = {}
+            for given_comparison in comparisons:
+                model_name = given_comparison.split(", ")[0].strip()
+                optimizer_name = given_comparison.split(", ")[1].strip()
+                if model_name == "all":
+                    needed_models = { model: [optimizer_name] for model in contained_models}
+                    break
+                elif model_name in contained_models:
+                    if model_name in needed_models.keys():
+                        needed_models[model_name].append(optimizer_name)
+                    else:
+                        needed_models[model_name] = [optimizer_name]
+                else:
+                    print(f"No information for {model_name} available. Skipping...")
+
+            metric_dict = None
+            for eval_type in eval_types:
+                metric_dict = self._prepare_visualize_comparisons(needed_models, eval_type, metrics_requested, metric_dict)
+            metric_df = pd.DataFrame(metric_dict)
+
+            for eval_type in eval_types:
+                comparison_data = metric_df[metric_df["eval_type"] == eval_type].reset_index(drop=True)
+
+
+
+    def _prepare_visualize_comparisons(self, models: dict, eval_type: str, metrics_requested: list, metric_dict: dict = None) -> dict:
+        if "crossvalidation" in eval_type.lower():
+            split_name = "mean"
+        else:
+            split_name = eval_type + " split"
+        available_metrics = set()
+        not_in_all = []
+        for model in models.keys():
+            for optimizer in models[model]:
+                model_metrics = list(self.full_results.contained_model_results[model].contained_evals[eval_type].contained_optimizers[optimizer].contained_splits[split_name].contained_metrics.keys())
+                for metric in model_metrics:
+                    if metric not in not_in_all:
+                        available_metrics.add(metric)
+                for metric in list(available_metrics):
+                    if metric not in model_metrics:
+                        available_metrics.remove(metric)
+                        not_in_all.append(metric)
+
+        needed_metrics = []
+        if "all" in metrics_requested:
+            needed_metrics = list(available_metrics)
+            if "FPR" in needed_metrics and "TPR" in needed_metrics:
+                needed_metrics.append("ROC")
+                needed_metrics.remove("FPR")
+                needed_metrics.remove("TPR")
+        else:
+            for metric in metrics_requested:
+                if metric not in available_metrics:
+                    print(f"No information for {metric} available. Skipping...")
+                else:
+                    needed_metrics.append(metric)
+            if "FPR" in needed_metrics and "TPR" in needed_metrics:
+                needed_metrics.remove("FPR")
+                needed_metrics.remove("TPR")
+                needed_metrics.append("ROC")
+
+
+        for model in models.keys():
+            for optimizer in models[model]:
+                metric_dict = self._prepare_comparison_single_split(model, optimizer, eval_type, split_name, needed_metrics, metric_dict)
+        return metric_dict
+
+    def _prepare_comparison_single_split(self, model: str, optimizer: str, eval_type: str, needed_split: str, needed_metrics: list, metric_dict: dict = None) -> dict:
+        metrics = self.full_results.contained_model_results[model].contained_evals[eval_type].contained_optimizers[optimizer].contained_splits[needed_split].contained_metrics
+
+        if not metric_dict:
+            metric_dict = {"name": [model + " " + optimizer], "eval_type": [eval_type]}
+            for metric in needed_metrics:
+                if metric == "ROC":
+                    metric_dict[metric] = [(metrics["FPR"].metric_value.metric_value, metrics["TPR"].metric_value.metric_value)]
+                else:
+                    metric_dict[metric] = [metrics[metric].metric_value.metric_value]
+        else:
+            metric_dict["name"].append(model + " " + optimizer)
+
+            metric_dict["eval_type"].append(eval_type)
+            for metric in needed_metrics:
+                if metric == "ROC":
+                    metric_dict[metric].append((metrics["FPR"].metric_value.metric_value, metrics["TPR"].metric_value.metric_value))
+                else:
+                    metric_dict[metric].append(metrics[metric].metric_value.metric_value)
+        return metric_dict
+
+
+
+
 
 
 
@@ -62,11 +176,13 @@ class ResultVisualizer:
         columns_metric = bar_chart_metric_list
         columns_roc = ["ROC"]
 
-        self._create_charts(model_metrics, self._plot_metric_bar_chart, self._plot_metric_bar_chart_cv, n_rows, metric_plot_index_type_dict, optimizer_palette, fig_title, n_optimizers, columns_metric)
+        self._create_charts(model_metrics, n_rows, metric_plot_index_type_dict, optimizer_palette, fig_title,
+                            n_optimizers, columns_metric, "Metric")
 
 
         if calculate_roc:
-            self._create_charts(model_metrics, self._plot_roc_curve, self._plot_roc_curve_cv, n_rows, roc_plot_index_type_dict, optimizer_palette, fig_title, n_optimizers, columns_roc)
+            self._create_charts(model_metrics, n_rows, roc_plot_index_type_dict, optimizer_palette, fig_title,
+                                n_optimizers, columns_roc, "ROC")
 
     def _prepare_visualize_experiment(self) -> pd.DataFrame:
         metric_dict = None
@@ -132,9 +248,10 @@ class ResultVisualizer:
         metrics_to_visualize = []
         if "all" in active_metrics:
             metrics_to_visualize = available_metrics
-            metrics_to_visualize.append("ROC")
-            metrics_to_visualize.remove("FPR")
-            metrics_to_visualize.remove("TPR")
+            if "FPR" in metrics_to_visualize and "TPR" in metrics_to_visualize:
+                metrics_to_visualize.append("ROC")
+                metrics_to_visualize.remove("FPR")
+                metrics_to_visualize.remove("TPR")
         else:
             for metric in active_metrics:
                 if metric in available_metrics or (metric == "ROC" and "FPR" in available_metrics and "TPR" in available_metrics):
@@ -165,8 +282,7 @@ class ResultVisualizer:
 
         return metric_dict
 
-    def visualize_comparison(self):
-        pass
+
 
 
     @staticmethod
@@ -240,7 +356,7 @@ class ResultVisualizer:
         ax.set_xlabel("FPR")
         ax.set_ylabel("TPR")
         ax.set_title("ROC Curve by Threshold Optimizer for " + plot_name)
-        pass
+        return ax
 
 
     def _setup_model_plot(self, setting, model_metrics: pd.DataFrame):
@@ -306,9 +422,9 @@ class ResultVisualizer:
         return  n_rows, n_optimizers, metric_plot_index_type_dict, roc_plot_index_type_dict, \
             optimizer_palette,model_metrics, bar_chart_metric_list, eval_types, fig_title, calculate_roc
 
-    @staticmethod
-    def _create_charts( data: pd.DataFrame, std_func, cv_func, n_rows:int, plot_name_type_dict: dict,
-                       optimizer_palette, fig_title: str, n_optimizers: int, chart_columns: list):
+
+    def _create_charts(self, data: pd.DataFrame, n_rows: int, plot_name_type_dict: dict, optimizer_palette,
+                       fig_title: str, n_optimizers: int, chart_columns: list, chart_type: str):
 
         fig, axs = plt.subplots(n_rows, 2, figsize=(23.4, 33.1))
 
@@ -323,20 +439,34 @@ class ResultVisualizer:
             if "CV" in plot_type:
                 cv_columns = chart_columns + ["split"]
                 chart_data = data[data_start:data_end][cv_columns]
-                ax = cv_func(ax, chart_data, optimizer_palette, plot_name)
-                pass
+                if chart_type == "ROC":
+
+                    ax = self._plot_roc_curve_cv(ax, chart_data, optimizer_palette, plot_name)
+                elif chart_type == "Metric":
+                    ax = self._plot_metric_bar_chart_cv(ax, chart_data, optimizer_palette, plot_name)
+
             else:
                 standard_columns = chart_columns +  ["optimizer"]
                 chart_data = data[data_start:data_end][standard_columns]
+                if chart_type == "ROC":
 
-                ax = std_func(ax, chart_data, optimizer_palette, plot_name)
+                    ax = self._plot_roc_curve(ax, chart_data, optimizer_palette, plot_name)
+                elif chart_type == "Metric":
+                    ax = self._plot_metric_bar_chart(ax, chart_data, optimizer_palette, plot_name)
+
+
+
+
+
 
 
         fig.tight_layout(rect=[0, 0.03, 1, 0.95])
         fig.set_facecolor('w')
         fig.suptitle(fig_title, fontsize=16)
         fig.subplots_adjust(top=0.95)
-        plt.show()
+        #plt.savefig(f"{self.result_path}_{chart_type}.svg")
+        plt.savefig(f"{self.result_path}_{chart_type}.pdf")
+
 
 
 

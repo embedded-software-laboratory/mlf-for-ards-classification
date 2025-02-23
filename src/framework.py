@@ -211,8 +211,9 @@ class Framework:
 
         # TODO make plots
         eval_name = self.config['evaluation']['evaluation_name']
-        eval_file_name = eval_name.replace(" ", "_") + "_results.json"
-        result_location = self.outdir + eval_file_name
+        eval_file_name = eval_name.replace(" ", "_") + "_results"
+        result_path = self.outdir + eval_file_name
+        result_location = result_path +  ".json"
 
         if self.timeseries_cross_validation_result and self.timeseries_evaluations_result:
 
@@ -232,7 +233,7 @@ class Framework:
             print("This should never happen")
             return
 
-        visualizer = ResultVisualizer(final_result, self.config["visualization"])
+        visualizer = ResultVisualizer(final_result, self.config["visualization"], result_path)
         visualizer.visualize_results()
 
         print(f"Save results to {result_location}")
