@@ -184,15 +184,21 @@ class SplitFactory:
     @staticmethod
     def mean_split_factory_method(splits: list[GenericSplit]) -> GenericSplit:
         metric_dict = {}
-
+        fpr_tpr_dict = {"FPR": [], "TPR": []}
         for split in splits:
             for metric_name, metric in split.contained_metrics.items():
                 if metric_name not in metric_dict:
                     metric_dict[metric_name] = [metric]
                 else:
                     metric_dict[metric_name].append(metric)
+                if metric_name == "FPR" or metric_name == "TPR":
+                    fpr_tpr_dict[metric_name].append(metric.metric_value.metric_value)
+        fpr_tpr_list = list(zip(fpr_tpr_dict["FPR"], fpr_tpr_dict["TPR"]))
         for metric_name, metric_list in metric_dict.items():
-            average_value = metric_list[0].metric_spec.calculate_metric_mean(metric_list)
+            if metric_name == "TPR":
+                average_value = metric_list[0].metric_spec.calculate_metric_mean(fpr_tpr_list)
+            else:
+                average_value = metric_list[0].metric_spec.calculate_metric_mean(metric_list)
             average_metric = metric_list[0].metric_spec.create_from_value(average_value, metric_name)
             metric_dict[metric_name] = average_metric
         return GenericSplit(split_name="mean", contained_metrics=metric_dict)

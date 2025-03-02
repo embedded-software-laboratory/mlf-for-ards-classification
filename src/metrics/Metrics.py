@@ -1,5 +1,4 @@
-
-
+import numpy as np
 from sklearn.metrics import accuracy_score, matthews_corrcoef, confusion_matrix, roc_curve, f1_score, auc
 
 from metrics.Models import *
@@ -85,13 +84,16 @@ class FPR(ListMetricSpec):
 
     def create_from_value(self, metric_value: ListValue, metric_name: str) -> GenericMetric:
         return GenericMetric(metric_name=metric_name,
-                             metric_value=StringValue(metric_value="Mean calculation makes no sense for FPR"),
+                             metric_value=metric_value,
                              metric_spec=FPR())
 
     def create_from_dict(self, metric_dict: dict) -> GenericMetric:
         return GenericMetric(metric_name=metric_dict['metric_name'],
                              metric_value=ListValue(metric_value=metric_dict['metric_value']),
                              metric_spec=FPR())
+
+    def calculate_metric_mean(self, average_parameters: list) -> ListValue:
+        return ListValue(metric_value=np.linspace(0, 1, 100).tolist())
 
 
 class MCC(FloatMetricSpec):
@@ -193,9 +195,23 @@ class TPR(ListMetricSpec):
         return True
 
     def create_from_value(self, metric_value: ListValue, metric_name: str) -> GenericMetric:
-        return GenericMetric(metric_name=metric_name, metric_value=StringValue(metric_value="Mean calculation makes no sense for TPR"), metric_spec=TPR())
+        return GenericMetric(metric_name=metric_name, metric_value=metric_value, metric_spec=TPR())
 
     def create_from_dict(self, metric_dict: dict) -> GenericMetric:
         return GenericMetric(metric_name=metric_dict['metric_name'],
                              metric_value=ListValue(metric_value=metric_dict['metric_value']),
                              metric_spec=TPR())
+    def calculate_metric_mean(self, average_parameters: list) -> ListValue:
+
+        tprs = []
+        mean_fpr = np.linspace(0, 1, 100)
+        for parameter in average_parameters:
+            fpr = parameter[0]
+            tpr = parameter[1]
+            interp_tpr = np.interp(mean_fpr, fpr, tpr)
+            interp_tpr[0] = 0.0
+            tprs.append(interp_tpr)
+
+        mean_tpr = np.mean(tprs, axis=0).tolist()
+        mean_tpr[-1] = 1.0
+        return ListValue(metric_value=mean_tpr)
