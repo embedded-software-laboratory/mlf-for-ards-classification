@@ -53,12 +53,18 @@ class PhysicalLimitsDetector(AnomalyDetector):
     def _predict(self, dataframe: pd.DataFrame) -> dict:
         anomaly_dict = {}
         for column in dataframe.columns:
-            anomaly_dict[column] = []
-            for index, row in dataframe.iterrows():
-                if row[column] > self.physical_limits_dict[column]["max"] or row[column] < \
-                        self.physical_limits_dict[column]["min"]:
-                    anomaly_dict[column].append(True)
-                else:
-                    anomaly_dict[column].append(False)
+            if self.columns_to_check == [] or column in self.columns_to_check:
+
+                anomaly_dict[column] = []
+                min_value = self.physical_limits_dict[column]["min"]
+                max_value = self.physical_limits_dict[column]["max"]
+                column_present = column in self.physical_limits_dict.keys()
+                for index, row in dataframe.iterrows():
+                    if row[column] is None or not column_present:
+                        anomaly_dict[column].append(False)
+                    elif row[column] >= min_value or row[column] <= max_value:
+                        anomaly_dict[column].append(True)
+                    else:
+                        anomaly_dict[column].append(False)
         return anomaly_dict
 
