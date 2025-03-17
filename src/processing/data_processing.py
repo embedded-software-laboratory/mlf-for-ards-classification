@@ -5,7 +5,7 @@ from processing.data_imputator import DataImputator
 from processing.param_calculation import ParamCalculator
 from processing.onset_determiner import OnsetDeterminer
 from processing.datasets_metadata import TimeseriesMetaData
-from processing.ad_algorithms import PhysicalLimitsDetector, SW_ABSAD_Mod_Detector
+from processing.ad_algorithms import PhysicalLimitsDetector, SW_ABSAD_Mod_Detector, AnomalyDetector
 
 import pandas as pd
 import math
@@ -47,7 +47,7 @@ class DataProcessor:
         print("Start data preprocessing...")
         if self.process["perform_anomaly_detection"]:
             with Pool(processes=self.max_processes) as pool:
-                process_pool_data_list = pool.starmap(self.anomaly_detector.run, [(None, process_pool_data_list[i], i, n_jobs) for i in range(n_jobs)])
+                process_pool_data_list = pool.starmap(self.anomaly_detector.run, [(process_pool_data_list[i], i, n_jobs) for i in range(n_jobs)])
 
 
 

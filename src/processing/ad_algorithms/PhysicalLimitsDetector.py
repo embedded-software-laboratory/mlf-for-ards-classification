@@ -17,7 +17,7 @@ class PhysicalLimitsDetector(AnomalyDetector):
                 setattr(self, key, value)
         self.physical_limits_dict = physical_limits_database_dict[self.database]
 
-    def run(self, dataframe_training: pd.DataFrame, dataframe_detection: pd.DataFrame, job_count: int, total_jobs: int):
+    def run(self, dataframe_detection: pd.DataFrame, job_count: int, total_jobs: int):
 
         relevant_data = self._prepare_data(dataframe_detection)["dataframe"]
         anomaly_dict = self._predict(relevant_data)

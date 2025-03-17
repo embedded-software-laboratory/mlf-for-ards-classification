@@ -18,10 +18,10 @@ class AnomalyDetector:
                 setattr(self, key, value)
         pass
 
-    def run(self, dataframe_training: pd.DataFrame, dataframe_detection: pd.DataFrame, job_count: int, total_jobs: int) -> pd.DataFrame:
+    def run(self,  dataframe_detection: pd.DataFrame, job_count: int, total_jobs: int) -> pd.DataFrame:
         raise NotImplementedError()
 
-    def _train_ad_model(self):
+    def _train_ad_model(self, data_training, data_validation):
         raise NotImplementedError()
 
     def _predict(self, dataframe: pd.DataFrame) -> dict:

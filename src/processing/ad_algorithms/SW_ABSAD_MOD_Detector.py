@@ -38,7 +38,7 @@ class SW_ABSAD_Mod_Detector(AnomalyDetector):
 
 
 
-    def run(self, dataframe_training: pd.DataFrame, dataframe_detection: pd.DataFrame, job_count: int, total_jobs: int) -> pd.DataFrame:
+    def run(self, dataframe_detection: pd.DataFrame, job_count: int, total_jobs: int) -> pd.DataFrame:
         dataframe_detection = self._prepare_data(dataframe_detection)["dataframe"]
         anomaly_dict = self._predict(dataframe_detection)
         fixed_df = pd.concat(anomaly_dict["fixed_dfs"]).reset_index(drop=True)
