@@ -11,13 +11,14 @@ class AnomalyDetector:
         self.database = None
         self.fix_algorithm = None
         self.handling_strategy = None
-        self.threshold = None
+        self.anomaly_threshold = None
+        self.max_processes = 1
         for key, value in kwargs.items():
             if key in self.__dict__.keys():
                 setattr(self, key, value)
         pass
 
-    def run(self, dataframe_training: pd.DataFrame, dataframe_detection: pd.DataFrame) -> pd.DataFrame:
+    def run(self, dataframe_training: pd.DataFrame, dataframe_detection: pd.DataFrame, job_count: int, total_jobs: int) -> pd.DataFrame:
         raise NotImplementedError()
 
     def _train_ad_model(self):
@@ -63,7 +64,7 @@ class AnomalyDetector:
         dataframe = dataframe.fillna(-100000)
         index_to_drop = []
         for i in range(len(dataframe)):
-            if n_anomalies[i]/n_columns > self.threshold:
+            if n_anomalies[i]/n_columns > self.anomaly_threshold:
                 index_to_drop.append(i)
         dataframe = dataframe.drop(index_to_drop)
         dataframe = self._fix_deleted(dataframe)

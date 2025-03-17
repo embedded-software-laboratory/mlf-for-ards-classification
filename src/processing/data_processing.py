@@ -5,6 +5,7 @@ from processing.data_imputator import DataImputator
 from processing.param_calculation import ParamCalculator
 from processing.onset_determiner import OnsetDeterminer
 from processing.datasets_metadata import TimeseriesMetaData
+from processing.ad_algorithms import PhysicalLimitsDetector, SW_ABSAD_Mod_Detector
 
 import pandas as pd
 import math
@@ -18,6 +19,7 @@ class DataProcessor:
         self.filter = Filter(config["filtering"])
         self.patients_per_process = config["patients_per_process"]
         self.max_processes = config["max_processes"]
+        self.anomaly_detector = self._init_ad(config["anomaly_detection"], database_name)
         self.unit_converter = UnitConverter()
         self.data_imputator = DataImputator(config["imputation"])
         self.param_calculator = ParamCalculator(config["params_to_calculate"])
@@ -25,12 +27,30 @@ class DataProcessor:
         self.database_name = database_name
         self.process = process
 
+    def _init_ad(self, config, database_name):
+        for key, value in config.items():
+            if value["active"]:
+                value["database"] = database_name
+                value = value.remove("active")
+                value["max_processes"] = self.max_processes
+                if key == "Physical_Outliers":
+                    return PhysicalLimitsDetector(**value)
+                if key == "SW_ABSAD_Mod":
+                    return SW_ABSAD_Mod_Detector(**value)
+
+
     def process_data(self, dataframe: pd.DataFrame, dataset_metadata: TimeseriesMetaData):
 
         process_pool_data_list, n_jobs = self._prepare_multiprocessing(dataframe)
 
 
         print("Start data preprocessing...")
+        if self.process["perform_anomaly_detection"]:
+            with Pool(processes=self.max_processes) as pool:
+                process_pool_data_list = pool.starmap(self.anomaly_detector.run, [(None, process_pool_data_list[i], i, n_jobs) for i in range(n_jobs)])
+
+
+
         if self.process["perform_imputation"]:
             print("Impute missing data...")
             with Pool(processes=self.max_processes) as pool:

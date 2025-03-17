@@ -167,6 +167,36 @@ data:
 preprocessing:
   patients_per_process: 500
   max_processes: 6
+
+
+  anomaly_detection:
+    SW_ABSAD_MOD:
+      active: True
+      name: "SW_ABSAD_MOD"
+      columns_to_check: []
+      fix_algorithm: ""
+      handling_strategy: ""
+      anomaly_threshold: 0.5
+      replace_zeros: False
+      replace_physical_outliers: True
+      use_cl_modification: False
+      retrain_after_gap: True
+      window_length: 7
+      variance_check: False
+      clea_training: False
+      variance_window: 7
+      confidence_level: 0.95
+      theta: 0.5
+      k: 5
+      s: 5
+    Physical_Outliers:
+      active: True
+      name: "Physical_Outliers"
+      columns_to_check: [ ]
+      fix_algorithm: ""
+      handling_strategy: ""
+      anomaly_threshold: 0.5
+
   filtering:
     filter:
     - BD

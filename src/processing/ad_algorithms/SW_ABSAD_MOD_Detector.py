@@ -1,6 +1,7 @@
 import bisect
 import copy
 import math
+from multiprocessing import Pool
 
 import numpy as np
 import pandas as pd
@@ -19,6 +20,7 @@ class SW_ABSAD_Mod_Detector(AnomalyDetector):
         self.name = str(kwargs.get('name', "SW_ABSAD_Mod_Detector"))
         self.type = "SW_ABSAD_Mod"
         self.model = None
+        self.process_list = list(kwargs.get('process_list', []))
         self.replace_zeros = bool(kwargs.get('replace_zeros', False))
         self.replace_physical_outliers = bool(kwargs.get('replace_physical_outliers', False))
         self.use_cl_modification = bool(kwargs.get('use_cl_modification', False))
@@ -27,7 +29,7 @@ class SW_ABSAD_Mod_Detector(AnomalyDetector):
         self.variance_check = bool(kwargs.get('variance_check', False))
         self.clean_training = bool(kwargs.get('clean_training_window', False))
         self.variance_window_length = 5
-        self.use_columns = kwargs["use_columns"].split(",")
+        self.columns_to_check = kwargs["use_columns"].split(",")
         self.bandwidth = 0.5
         self.confidence_level = float(kwargs.get('confidence_level', 0.99))
         self.theta =  float(kwargs.get('theta', 0.5))
@@ -36,7 +38,7 @@ class SW_ABSAD_Mod_Detector(AnomalyDetector):
 
 
 
-    def run(self, dataframe_training: pd.DataFrame, dataframe_detection: pd.DataFrame) -> pd.DataFrame:
+    def run(self, dataframe_training: pd.DataFrame, dataframe_detection: pd.DataFrame, job_count: int, total_jobs: int) -> pd.DataFrame:
         dataframe_detection = self._prepare_data(dataframe_detection)["dataframe"]
         anomaly_dict = self._predict(dataframe_detection)
         fixed_df = pd.concat(anomaly_dict["fixed_dfs"]).reset_index(drop=True)
@@ -44,21 +46,21 @@ class SW_ABSAD_Mod_Detector(AnomalyDetector):
 
 
     def _prepare_data(self, dataframe_detection: pd.DataFrame) -> dict[str, pd.DataFrame]:
-        if self.use_columns[0]!='':
-            dataframe_detection = dataframe_detection[self.use_columns + ["time", "patient_id"]]
+        if self.columns_to_check[0]!= '':
+            dataframe_detection = dataframe_detection[self.columns_to_check + ["time", "patient_id"]]
         else:
             df_columns = dataframe_detection.columns
             df_columns.remove("timestamp")
             df_columns.remove("patient_id")
-            self.use_columns = df_columns
+            self.columns_to_check = df_columns
 
         if self.replace_zeros:
             dataframe_detection = dataframe_detection.replace(0, np.nan)
 
         if self.replace_physical_outliers:
 
-            physicalADDetector = PhysicalLimitsDetector(name="PhysicalLimitsDetectorSWABSABMOD", columns_to_check=self.use_columns, database=self.database, handling_strategy="delete_value")
-            dataframe_detection = physicalADDetector.run(dataframe_training=None, dataframe_detection=dataframe_detection)
+            physicalADDetector = PhysicalLimitsDetector(name="PhysicalLimitsDetectorSWABSABMOD", columns_to_check=self.columns_to_check, database=self.database, handling_strategy="delete_value")
+            dataframe_detection = physicalADDetector.run(dataframe_training=None, dataframe_detection=dataframe_detection, job_count=-1, total_jobs=-1)
 
         if self.replace_zeros:
             dataframe_detection = dataframe_detection.replace(0, np.nan)
@@ -69,12 +71,13 @@ class SW_ABSAD_Mod_Detector(AnomalyDetector):
     def _predict(self, dataframe: pd.DataFrame) -> dict:
 
         patient_list = dataframe["patient_id"].unique().tolist()
-        patient_anomaly_dict = {}
+
         fixed_dfs = []
+
         for patient_id in patient_list:
             patient_df = dataframe[dataframe["patient_id"] == patient_id]
-            if self.use_columns[0]!='':
-                relevant_data = patient_df[self.use_columns + ["time", "patient_id"]]
+            if self.columns_to_check[0]!= '':
+                relevant_data = patient_df[self.columns_to_check + ["time", "patient_id"]]
             else:
                 relevant_data = patient_df
             anomaly_dict = self._predict_patient(relevant_data)
