@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
 
 from tensorflow import keras
 
@@ -53,6 +55,10 @@ class DeepAntAnomalyDetector(AnomalyDetector):
         self.datasets_to_create = list(kwargs.get('dataset_to_create', []))
         self.std_rate = float(kwargs.get('std_rate', 2))
         self.model = DeepAnt(deep_ant_output_dim, deep_ant_hidden_units, deep_ant_max_epochs)
+        self.val_percentage = float(kwargs.get('val_percentage', 0.1))
+        self.train_percentage = float(kwargs.get('train_percentage', 0.1))
+        self.test_percentage = float(kwargs.get('test_percentage', 0.1))
+        self.seed = int(kwargs.get('seed', 42))
 
 
 
@@ -110,10 +116,28 @@ class DeepAntAnomalyDetector(AnomalyDetector):
     def _predict_proba(self):
         raise NotImplementedError()
 
-    def _prepare_data(self, dataframe: pd.DataFrame) -> dict:
+    def _prepare_data_dataset(self, dataframe: pd.DataFrame, dataset_to_create: dict[str, list[str]]) -> dict:
+
+        relevant_columns = dataset_to_create["labels"] + dataset_to_create["features"]
+        relevant_data = dataframe[relevant_columns]
+        relevant_data = relevant_data.dropna(how='any', axis=0)
+        train_data, remaining = train_test_split(relevant_data, test_size=1-self.train_percentage, random_state=self.seed, shuffle=True)
+        remaining_percentage = self.test_percentage / (1-self.train_percentage)
+        val_data, test_data = train_test_split(remaining, test_size=remaining_percentage, random_state=self.seed, shuffle=True)
+        scaler = MinMaxScaler()
+        scaler.fit(train_data)
+        train_data = scaler.transform(train_data.reset_index(drop=True))
+        val_data = scaler.transform(val_data.reset_index(drop=True))
+        test_data = scaler.transform(test_data.reset_index(drop=True))
+
+
+
         # TODO create sequence data
         # TODO create seperated sequences for each requested column / combinations of columns
+
         raise NotImplementedError()
 
     def _handle_anomalies(self, anomalies: dict, anomalous_data : pd.DataFrame, original_data: pd.DataFrame) -> pd.DataFrame:
         raise NotImplementedError()
+
+
