@@ -25,16 +25,17 @@ class SW_ABSAD_Mod_Detector(AnomalyDetector):
         self.replace_physical_outliers = bool(kwargs.get('replace_physical_outliers', False))
         self.use_cl_modification = bool(kwargs.get('use_cl_modification', False))
         self.retrain_after_gap = bool(kwargs.get('retrain_after_gap', False))
-        self.window_length = int(kwargs.get('window_length', 10))
+        self.window_length = int(kwargs.get('window_length', 100))
         self.variance_check = bool(kwargs.get('variance_check', False))
         self.clean_training = bool(kwargs.get('clean_training_window', False))
-        self.variance_window_length = 5
+        self.variance_window_length = 50
         self.columns_to_check = kwargs["use_columns"].split(",")
         self.bandwidth = 0.5
         self.confidence_level = float(kwargs.get('confidence_level', 0.99))
         self.theta =  float(kwargs.get('theta', 0.5))
-        self.k = int(kwargs.get('k', 5))
-        self.s = int(kwargs.get('s', 5))
+        self.k = int(kwargs.get('k', 50))
+        self.s = int(kwargs.get('s', 50))
+        self.needs_full_data = False
 
 
 
@@ -68,7 +69,7 @@ class SW_ABSAD_Mod_Detector(AnomalyDetector):
         return_dict = {"dataframe": dataframe_detection}
         return return_dict
 
-    def _predict(self, dataframe: pd.DataFrame) -> dict:
+    def _predict(self, dataframe: pd.DataFrame, **kwargs) -> dict:
 
         patient_list = dataframe["patient_id"].unique().tolist()
 
@@ -121,7 +122,7 @@ class SW_ABSAD_Mod_Detector(AnomalyDetector):
             elif self.handling_strategy == "use_prediction":
                 raise ValueError("Fixing strategy 'use_prediction' is not implemented for PhysicalLimitsDetector")
             else:
-                raise ValueError("Unknown fixing strategy")
+                raise ValueError(f"Unknown fixing strategy {self.handling_strategy}")
         finished_df = original_data
         finished_df.update(fixed_df)
         return finished_df
@@ -213,7 +214,7 @@ class SW_ABSAD_Mod_Detector(AnomalyDetector):
         number_outlier_treshold = 5
         next_position = 0
         next_variance_position = 0
-        print(sliding_window_normalized.shape)
+        #print(sliding_window_normalized.shape)
         while sample_counter < len(df_without_offset):
 
 
@@ -227,7 +228,7 @@ class SW_ABSAD_Mod_Detector(AnomalyDetector):
                 f2 = (df[timestamp_column].iloc[sample_counter])
                 if (f2 - f1) > (default_time_interval * 10):  # TODO change
                     if self.retrain_after_gap:
-                        print("Gap detected: Retraining")
+                        #print("Gap detected: Retraining")
                         training_required = True
             if training_required:
                 cleaned_rows = []
@@ -237,7 +238,7 @@ class SW_ABSAD_Mod_Detector(AnomalyDetector):
                     for single_row in sliding_window_normalized:
                         mean_vector = np.mean(sliding_window_normalized, axis=0)
                         V = np.cov(sliding_window_normalized.T)
-                        print(V)
+
                         p = np.linalg.pinv(V)
                         D = distance.mahalanobis(single_row, mean_vector, p)
                         mahalanobis_distances.append((current_row, D))
@@ -423,7 +424,7 @@ class SW_ABSAD_Mod_Detector(AnomalyDetector):
                 '''
                 training_required = False
                 sample_counter = sample_counter + training_sample_counter
-                print("Training phase completed")
+                #print("Training phase completed")
             '''
             Im Anschluss an die Trainingsphase wird jeweils ein neuer Punkt zum Sliding
             Window hinzugefügt und als möglicher Ausreißer getestet. Dieser Punkt ersetzt den
@@ -550,7 +551,7 @@ class SW_ABSAD_Mod_Detector(AnomalyDetector):
                         LOSsubsortges[sample_counter - i][old_lossubsortges] = new_outling_dim
                         LOSsubsortges[sample_counter - i][new_lossubsortges] = old_outling_dim
             if LOS_complete[sample_counter] > CL:
-                print('Outlier detected')
+                #print('Outlier detected')
                 outlier_table[sample_counter] = 1
             else:
                 number_outlier_series = 0
@@ -596,8 +597,8 @@ class SW_ABSAD_Mod_Detector(AnomalyDetector):
                 LOS_window = save.LOS_window
                 number_outlier_total = number_outlier_total + 1
                 number_outlier_series = number_outlier_series + 1
-                if number_outlier_series > number_outlier_treshold:
-                    print('Multiple consecutive outlier detected (Treshold: %s)' % str(number_outlier_treshold))
+                #if number_outlier_series > number_outlier_treshold:
+                #    print('Multiple consecutive outlier detected (Treshold: %s)' % str(number_outlier_treshold))
             # Iteration step
             sample_counter = sample_counter + 1
         df['outlier_table'] = outlier_table[:-1]
@@ -742,13 +743,20 @@ class SW_ABSAD_Mod_Detector(AnomalyDetector):
         '''
         CL = 0
         confidence_interval = 0
+        no_change_counter = 0
         while confidence_interval < self.confidence_level:
             old_confidence_interval = confidence_interval
             # first training: and CL < 5
             CL = CL + 0.001
             confidence_interval = kde.integrate_box_1d(-10, CL)
             if not old_confidence_interval != confidence_interval:
-                print(f"No change {confidence_interval}")
+                CL = CL + 0.001 * math.pow(10, no_change_counter)
+                no_change_counter = no_change_counter + 1
+                if no_change_counter == 100:
+                    print("Failed to calculate CL")
+                    return CL
+            else:
+                CL = CL + 0.001
 
 
         return CL

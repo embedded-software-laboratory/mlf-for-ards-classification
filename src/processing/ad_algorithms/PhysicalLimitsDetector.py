@@ -11,6 +11,7 @@ class PhysicalLimitsDetector(AnomalyDetector):
         self.type = "PhysicalLimits"
         self.model = None
         self.physical_limits_dict = None
+        self.needs_full_data = False
 
         for key, value in kwargs.items():
             if key in self.__dict__.keys():
@@ -50,7 +51,7 @@ class PhysicalLimitsDetector(AnomalyDetector):
         return_dict = {"dataframe": dataframe}
         return return_dict
 
-    def _predict(self, dataframe: pd.DataFrame) -> dict:
+    def _predict(self, dataframe: pd.DataFrame, **kwargs) -> dict:
         anomaly_dict = {}
         for column in dataframe.columns:
             if self.columns_to_check == [] or column in self.columns_to_check:

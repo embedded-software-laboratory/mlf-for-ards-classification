@@ -5,7 +5,7 @@ from processing.data_imputator import DataImputator
 from processing.param_calculation import ParamCalculator
 from processing.onset_determiner import OnsetDeterminer
 from processing.datasets_metadata import TimeseriesMetaData
-from processing.ad_algorithms import PhysicalLimitsDetector, SW_ABSAD_Mod_Detector, AnomalyDetector
+from processing.ad_algorithms import PhysicalLimitsDetector, SW_ABSAD_Mod_Detector, DeepAntAnomalyDetector
 
 import pandas as pd
 import math
@@ -37,6 +37,8 @@ class DataProcessor:
                     return PhysicalLimitsDetector(**value)
                 if key == "SW_ABSAD_Mod":
                     return SW_ABSAD_Mod_Detector(**value)
+                if key == "DeepAnt":
+                    return DeepAntAnomalyDetector(**value)
 
 
     def process_data(self, dataframe: pd.DataFrame, dataset_metadata: TimeseriesMetaData):
@@ -46,9 +48,13 @@ class DataProcessor:
 
         print("Start data preprocessing...")
         if self.process["perform_anomaly_detection"]:
-            with Pool(processes=self.max_processes) as pool:
-                process_pool_data_list = pool.starmap(self.anomaly_detector.run, [(process_pool_data_list[i], i, n_jobs) for i in range(n_jobs)])
-
+            if not self.anomaly_detector.needs_full_data:
+                with Pool(processes=self.max_processes) as pool:
+                    process_pool_data_list = pool.starmap(self.anomaly_detector.run, [(process_pool_data_list[i], i, n_jobs) for i in range(n_jobs)])
+            else:
+                dataframe = pd.concat(process_pool_data_list, ignore_index=True).reset_index(drop=True)
+                fixed_df = self.anomaly_detector.run(dataframe, 0, 1)
+                process_pool_data_list, n_jobs = self._prepare_multiprocessing(fixed_df)
 
 
         if self.process["perform_imputation"]:

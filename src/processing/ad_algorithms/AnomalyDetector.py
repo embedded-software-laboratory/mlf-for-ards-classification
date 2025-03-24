@@ -13,6 +13,9 @@ class AnomalyDetector:
         self.handling_strategy = None
         self.anomaly_threshold = None
         self.max_processes = 1
+        self.needs_full_data = False
+        # TODO add all static variables here
+        self.columns_not_to_check = ["patient_id", "time", "ards"]
         for key, value in kwargs.items():
             if key in self.__dict__.keys():
                 setattr(self, key, value)
@@ -21,10 +24,10 @@ class AnomalyDetector:
     def run(self,  dataframe_detection: pd.DataFrame, job_count: int, total_jobs: int) -> pd.DataFrame:
         raise NotImplementedError()
 
-    def _train_ad_model(self, data_training, data_validation):
+    def _train_ad_model(self, data_training, data_validation, **kwargs):
         raise NotImplementedError()
 
-    def _predict(self, dataframe: pd.DataFrame) -> dict:
+    def _predict(self, dataframe: pd.DataFrame, **kwargs) -> dict:
         raise NotImplementedError()
 
     def _predict_proba(self):
