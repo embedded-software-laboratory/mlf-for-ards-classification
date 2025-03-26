@@ -31,7 +31,7 @@ class SW_ABSAD_Mod_Detector(AnomalyDetector):
         self.variance_window_length = 50
         self.columns_to_check = kwargs["use_columns"].split(",")
         self.bandwidth = 0.5
-        self.confidence_level = float(kwargs.get('confidence_level', 0.99))
+        self.confidence_level = float(kwargs.get('confidence_level', 0.90))
         self.theta =  float(kwargs.get('theta', 0.5))
         self.k = int(kwargs.get('k', 50))
         self.s = int(kwargs.get('s', 50))
@@ -50,8 +50,8 @@ class SW_ABSAD_Mod_Detector(AnomalyDetector):
         if self.columns_to_check[0]!= '':
             dataframe_detection = dataframe_detection[self.columns_to_check + ["time", "patient_id"]]
         else:
-            df_columns = dataframe_detection.columns
-            df_columns.remove("timestamp")
+            df_columns = dataframe_detection.columns.tolist()
+            df_columns.remove("time")
             df_columns.remove("patient_id")
             self.columns_to_check = df_columns
 
@@ -216,7 +216,7 @@ class SW_ABSAD_Mod_Detector(AnomalyDetector):
         next_variance_position = 0
         #print(sliding_window_normalized.shape)
         while sample_counter < len(df_without_offset):
-
+            print(sample_counter)
 
             '''
             Konsistenzcheck. Prüft ob eine große Lücke zwischen den letzten Messungen war.
@@ -417,6 +417,8 @@ class SW_ABSAD_Mod_Detector(AnomalyDetector):
                 LOS angibt, anhand dessen Ausreißer von normalen Punkten unterschieden werden.
                 '''
                 CL = self.calculate_control_limit(LOS_window)
+                if CL == -1:
+                    continue
                 for current_point in range(self.window_length):
                     cl_complete_table[sample_counter + current_point] = CL
                 '''
@@ -573,6 +575,8 @@ class SW_ABSAD_Mod_Detector(AnomalyDetector):
 
                         CL = self.calculate_control_limit(
                             LOS_complete[sample_counter - self.window_length:sample_counter + 1])
+                    if CL == -1:
+                        continue
                 else:
                     '''
                     Das neue CL wird berechnet, wenn der aktuelle Punkt innerhalb des CL liegt
@@ -580,6 +584,8 @@ class SW_ABSAD_Mod_Detector(AnomalyDetector):
                     '''
                     if LOS_complete[sample_counter] <= CL:
                         CL = self.calculate_control_limit(LOS_window)
+                        if CL == -1:
+                            continue
 
             cl_complete_table[sample_counter] = CL
             '''
@@ -750,7 +756,7 @@ class SW_ABSAD_Mod_Detector(AnomalyDetector):
             CL = CL + 0.001
             confidence_interval = kde.integrate_box_1d(-10, CL)
             if not old_confidence_interval != confidence_interval:
-                CL = CL + 0.001 * math.pow(10, no_change_counter)
+                CL = CL + 0.001 * math.pow(1.1, no_change_counter)
                 no_change_counter = no_change_counter + 1
                 if no_change_counter == 100:
                     print("Failed to calculate CL")
