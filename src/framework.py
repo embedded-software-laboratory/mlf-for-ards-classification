@@ -232,9 +232,9 @@ class Framework:
         else:
             print("This should never happen")
             return
-
-        visualizer = ResultVisualizer(final_result, self.config["visualization"], result_path)
-        visualizer.visualize_results()
+        if self.process["visualize_results"]:
+            visualizer = ResultVisualizer(final_result, self.config["visualization"], result_path)
+            visualizer.visualize_results()
 
         print(f"Save results to {result_location}")
         with open(result_location, 'w', encoding='utf-8') as f:
