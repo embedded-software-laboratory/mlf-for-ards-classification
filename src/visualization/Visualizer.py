@@ -13,6 +13,7 @@ from metrics import ExperimentResult
 
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
+# TODO change TPR and FPR to TPRs and FPRs and adjusted to these metrics being stored on evaluation level
 
 class ResultVisualizer:
 

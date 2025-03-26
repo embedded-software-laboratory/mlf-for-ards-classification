@@ -70,13 +70,13 @@ class F1Score(FloatMetricSpec):
                              metric_spec=F1Score())
 
 
-class FPR(ListMetricSpec):
+class FPRs(ListMetricSpec):
     def calculate_metric(self, metric_parameters: dict, stage:str) -> GenericMetric:
         prediction_probs = metric_parameters['prediction_probs']
         true_labels = metric_parameters['true_labels']
         fpr, _, _ = roc_curve(true_labels, prediction_probs)
-        return GenericMetric(metric_name="FPR" + " " + stage, metric_value=ListValue(metric_value=fpr),
-                                            metric_spec=FPR())
+        return GenericMetric(metric_name="FPRs" + " " + stage, metric_value=ListValue(metric_value=fpr),
+                             metric_spec=FPRs(), metric_in_eval=True)
 
 
     def needs_probabilities(self) -> bool:
@@ -85,12 +85,12 @@ class FPR(ListMetricSpec):
     def create_from_value(self, metric_value: ListValue, metric_name: str) -> GenericMetric:
         return GenericMetric(metric_name=metric_name,
                              metric_value=metric_value,
-                             metric_spec=FPR())
+                             metric_spec=FPRs(), metric_in_eval=True)
 
     def create_from_dict(self, metric_dict: dict) -> GenericMetric:
         return GenericMetric(metric_name=metric_dict['metric_name'],
                              metric_value=ListValue(metric_value=metric_dict['metric_value']),
-                             metric_spec=FPR())
+                             metric_spec=FPRs(), metric_in_eval=True)
 
     def calculate_metric_mean(self, average_parameters: list) -> ListValue:
         return ListValue(metric_value=np.linspace(0, 1, 100).tolist())
@@ -184,23 +184,23 @@ class Specificity(FloatMetricSpec):
                              metric_spec=Specificity())
 
 
-class TPR(ListMetricSpec):
+class TPRs(ListMetricSpec):
     def calculate_metric(self, metric_parameters: dict, stage:str) -> GenericMetric:
         prediction_probs = metric_parameters['prediction_probs']
         true_labels = metric_parameters['true_labels']
         _, tpr, _ = roc_curve(true_labels, prediction_probs)
-        return GenericMetric(metric_name="TPR" + " " + stage, metric_value=ListValue(metric_value=tpr), metric_spec=TPR())
+        return GenericMetric(metric_name="TPRs" + " " + stage, metric_value=ListValue(metric_value=tpr), metric_spec=TPRs(), metric_in_eval=True)
 
     def needs_probabilities(self) -> bool:
         return True
 
     def create_from_value(self, metric_value: ListValue, metric_name: str) -> GenericMetric:
-        return GenericMetric(metric_name=metric_name, metric_value=metric_value, metric_spec=TPR())
+        return GenericMetric(metric_name=metric_name, metric_value=metric_value, metric_spec=TPRs(), metric_in_eval=True)
 
     def create_from_dict(self, metric_dict: dict) -> GenericMetric:
         return GenericMetric(metric_name=metric_dict['metric_name'],
                              metric_value=ListValue(metric_value=metric_dict['metric_value']),
-                             metric_spec=TPR())
+                             metric_spec=TPRs(), metric_in_eval=True)
     def calculate_metric_mean(self, average_parameters: list) -> ListValue:
 
         tprs = []
@@ -215,3 +215,117 @@ class TPR(ListMetricSpec):
         mean_tpr = np.mean(tprs, axis=0).tolist()
         mean_tpr[-1] = 1.0
         return ListValue(metric_value=mean_tpr)
+
+class PPV(FloatMetricSpec):
+    def calculate_metric(self, metric_parameters: dict, stage:str) -> GenericMetric:
+        prediction_labels = metric_parameters['predicted_label']
+        true_labels = metric_parameters['true_labels']
+        tn, fp, fn, tp = confusion_matrix(true_labels, prediction_labels).ravel()
+
+        return GenericMetric(metric_name="PPV" + " " + stage,
+                             metric_value=FloatValue(metric_value=(tp / (tp + fp))),
+                             metric_spec=PPV())
+
+    def needs_probabilities(self) -> bool:
+        return False
+
+    def create_from_value(self, metric_value: FloatValue, metric_name: str) -> GenericMetric:
+        return GenericMetric(metric_name=metric_name, metric_value=metric_value, metric_spec=PPV())
+
+    def create_from_dict(self, metric_dict: dict) -> GenericMetric:
+        return GenericMetric(metric_name=metric_dict['metric_name'],
+                             metric_value=FloatValue(metric_value=metric_dict['metric_value']),
+                             metric_spec=PPV())
+
+class NPV(FloatMetricSpec):
+    def calculate_metric(self, metric_parameters: dict, stage:str) -> GenericMetric:
+        prediction_labels = metric_parameters['predicted_label']
+        true_labels = metric_parameters['true_labels']
+        tn, fp, fn, tp = confusion_matrix(true_labels, prediction_labels).ravel()
+
+        return GenericMetric(metric_name="NPV" + " " + stage,
+                             metric_value=FloatValue(metric_value=(tn / (tn + fn))),
+                             metric_spec=NPV())
+
+    def needs_probabilities(self) -> bool:
+        return False
+
+    def create_from_value(self, metric_value: FloatValue, metric_name: str) -> GenericMetric:
+        return GenericMetric(metric_name=metric_name, metric_value=metric_value, metric_spec=NPV())
+
+    def create_from_dict(self, metric_dict: dict) -> GenericMetric:
+        return GenericMetric(metric_name=metric_dict['metric_name'],
+                             metric_value=FloatValue(metric_value=metric_dict['metric_value']),
+                             metric_spec=NPV())
+
+class PPVs(ListMetricSpec):
+    def calculate_metric(self, metric_parameters: dict, stage:str) -> GenericMetric:
+        prediction_probs = metric_parameters['prediction_probs']
+        true_labels = metric_parameters['true_labels']
+        thresholds = metric_parameters['thresholds']
+        ppvs = []
+        for threshold in thresholds:
+            predicted_labels = [1 if prob >= threshold else 0 for prob in prediction_probs]
+            tn, fp, fn, tp = confusion_matrix(true_labels, predicted_labels).ravel()
+            ppvs.append(tp / (tp + fp))
+        return GenericMetric(metric_name="PPVs" + " " + stage, metric_value=ListValue(metric_value=ppvs), metric_spec=PPVs(), metric_in_eval=True)
+
+    def needs_probabilities(self) -> bool:
+        return True
+
+    def create_from_value(self, metric_value: ListValue, metric_name: str) -> GenericMetric:
+        return GenericMetric(metric_name=metric_name, metric_value=metric_value, metric_spec=PPVs(), metric_in_eval=True)
+
+    def create_from_dict(self, metric_dict: dict) -> GenericMetric:
+        return GenericMetric(metric_name=metric_dict['metric_name'],
+                             metric_value=ListValue(metric_value=metric_dict['metric_value']),
+                             metric_spec=PPVs(), metric_in_eval=True)
+
+    def calculate_metric_mean(self, average_parameters: list) -> ListValue:
+        raise NotImplementedError
+
+class NPVs(ListMetricSpec):
+
+    def calculate_metric(self, metric_parameters: dict, stage:str) -> ListValue:
+        prediction_probs = metric_parameters['prediction_probs']
+        true_labels = metric_parameters['true_labels']
+        thresholds = metric_parameters['thresholds']
+        npvs = []
+        for threshold in thresholds:
+            predicted_labels = [1 if prob >= threshold else 0 for prob in prediction_probs]
+            tn, fp, fn, tp = confusion_matrix(true_labels, predicted_labels).ravel()
+            npvs.append(tn / (tn + fn))
+        return  GenericMetric(metric_name="NPVs" + " " + stage, metric_value=ListValue(metric_value=npvs), metric_spec=NPVs(), metric_in_eval=True)
+
+    def needs_probabilities(self) -> bool:
+        return True
+
+    def create_from_value(self, metric_value: ListValue, metric_name: str) -> GenericMetric:
+        return GenericMetric(metric_name=metric_name, metric_value=metric_value, metric_spec=NPVs(), metric_in_eval=True)
+
+    def create_from_dict(self, metric_dict: dict) -> GenericMetric:
+        return GenericMetric(metric_name=metric_dict['metric_name'],
+                             metric_value=ListValue(metric_value=metric_dict['metric_value']),
+                             metric_spec=NPVs(), metric_in_eval=True)
+
+    def calculate_metric_mean(self, average_parameters: list) -> ListValue:
+        raise NotImplementedError
+
+class Thresholds(ListMetricSpec):
+
+    def calculate_metric(self, metric_parameters: dict, stage:str) -> ListValue:
+        return GenericMetric(metric_name="Thresholds" + " " + stage, metric_value=ListValue(metric_value=metric_parameters['thresholds']), metric_spec=Thresholds(), metric_in_eval=True)
+
+    def needs_probabilities(self) -> bool:
+        return True
+
+    def create_from_value(self, metric_value: ListValue, metric_name: str) -> GenericMetric:
+        return GenericMetric(metric_name=metric_name, metric_value=metric_value, metric_spec=Thresholds(), metric_in_eval=True)
+
+    def create_from_dict(self, metric_dict: dict) -> GenericMetric:
+        return GenericMetric(metric_name=metric_dict['metric_name'],
+                             metric_value=ListValue(metric_value=metric_dict['metric_value']),
+                             metric_spec=Thresholds(), metric_in_eval=True)
+
+    def calculate_metric_mean(self, average_parameters: list) -> ListValue:
+        raise NotImplementedError

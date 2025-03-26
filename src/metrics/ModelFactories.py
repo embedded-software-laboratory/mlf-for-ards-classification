@@ -18,27 +18,44 @@ class EvalResultFactory:
         #    raise ValueError("Evaluation type must be either Evaluation or CrossValidation.")
 
         eval_name = evaltype
-
+        evaluation_layer_metrics = ["TPRs", "FPRs", "PPVs", "NPVs", "Thresholds"]
 
         dict_optimizer = {}
+        evaluation_layer_splits = {}
+        first = True
         for optimizer in optimizer_list:
             dict_optimizer[optimizer.optimization_name] = optimizer
+            if first:
+                first = False
+                for split_name, split in optimizer.contained_splits.items():
+
+                    contained_metrics = {}
+                    for metric in split.contained_metrics.values():
+                        if metric.metric_name.split(" ")[0] in evaluation_layer_metrics:
+                            contained_metrics[metric.metric_name] = metric
+                    evaluation_layer_split = GenericSplit(split_name=split_name, contained_metrics=contained_metrics)
+                    evaluation_layer_splits[split_name] = evaluation_layer_split
+        # TODO figure out why no metrics for general splits are being displayed
+
         if crossvalidation_performed:
             return EvalResult(eval_type=eval_name, training_dataset=training_set_meta_data, test_dataset=training_set_meta_data,
                               contained_optimizers=dict_optimizer, crossvalidation_performed=crossvalidation_performed,
                               crossvalidation_random_state=crossvalidation_random_state,crossvalidation_shuffle=crossvalidation_shuffle,
-                              crossvalidation_splits=crossvalidation_splits, evaluation_performed=evaluation_performed
+                              crossvalidation_splits=crossvalidation_splits, evaluation_performed=evaluation_performed, contained_general_splits=evaluation_layer_splits
                               )
         else:
             return EvalResult(eval_type=eval_name, training_dataset=training_set_meta_data, test_dataset=test_set_meta_data,
                               contained_optimizers=dict_optimizer, crossvalidation_performed=crossvalidation_performed,
-                              evaluation_performed=evaluation_performed
+                              evaluation_performed=evaluation_performed, contained_general_splits=evaluation_layer_splits
                               )
     @staticmethod
     def from_dict(eval_dict: dict) -> EvalResult:
         contained_optimizers = {}
+        contained_evaluation_layer_splits = {}
         for optimizer in eval_dict["contained_optimizers"]:
              contained_optimizers[optimizer] = OptimizerFactory.from_dict(eval_dict["contained_optimizers"][optimizer])
+        for split in eval_dict["contained_general_splits"]:
+            contained_evaluation_layer_splits[split] = SplitFactory.from_dict(eval_dict["contained_general_splits"][split])
 
         content = {
             "eval_type": eval_dict["eval_type"],
@@ -50,6 +67,7 @@ class EvalResultFactory:
             "crossvalidation_shuffle": eval_dict["crossvalidation_shuffle"],
             "crossvalidation_splits": eval_dict["crossvalidation_splits"],
             "evaluation_performed": eval_dict["evaluation_performed"],
+            "contained_general_splits": contained_evaluation_layer_splits
 
             }
         return EvalResult(**content)
@@ -150,33 +168,6 @@ class ResultManagement:
 
 
 
-#class ResultFactoryOld:
-#    @staticmethod
-#    def factory_method(evaluation: ModelEvaluationInformation, optimizer_list: list[GenericThresholdOptimization]) \
-#            -> EvalResult:
-#        result_name = evaluation.experiment_name
-#        used_model_name = evaluation.model_name
-#        used_model_type = evaluation.model
-#        cross_validation_performed = evaluation.cross_validation_performed
-#        n_splits = None
-#        shuffle = None
-#        random_state = None
-#        if cross_validation_performed:
-#            n_splits = evaluation.n_splits
-#            shuffle = evaluation.shuffle
-#            random_state = evaluation.random_state
-#        evaluation_performed = evaluation.evaluation_performed
-#
-#        storage_location = evaluation.eval_storage_location
-#
-#        return EvalResult(result_name=result_name, storage_location=storage_location,
-#                          training_dataset=evaluation.dataset_training, test_dataset=evaluation.dataset_test,
-#                          used_model_type=used_model_type, used_model_name=used_model_name,
-#                          contained_optimizers=dict_optimizer, crossvalidation_performed=cross_validation_performed,
-#                          cross_validation_random_state=random_state, cross_validation_shuffle=shuffle,
-#                          cross_validation_splints=n_splits, evaluation_performed=evaluation_performed)
-#
-
 class SplitFactory:
 
 
@@ -184,18 +175,18 @@ class SplitFactory:
     @staticmethod
     def mean_split_factory_method(splits: list[GenericSplit]) -> GenericSplit:
         metric_dict = {}
-        fpr_tpr_dict = {"FPR": [], "TPR": []}
+        fpr_tpr_dict = {"FPRs": [], "TPRs": []}
         for split in splits:
             for metric_name, metric in split.contained_metrics.items():
                 if metric_name not in metric_dict:
                     metric_dict[metric_name] = [metric]
                 else:
                     metric_dict[metric_name].append(metric)
-                if metric_name == "FPR" or metric_name == "TPR":
+                if metric_name == "FPRs" or metric_name == "TPRs":
                     fpr_tpr_dict[metric_name].append(metric.metric_value.metric_value)
-        fpr_tpr_list = list(zip(fpr_tpr_dict["FPR"], fpr_tpr_dict["TPR"]))
+        fpr_tpr_list = list(zip(fpr_tpr_dict["FPRs"], fpr_tpr_dict["TPRs"]))
         for metric_name, metric_list in metric_dict.items():
-            if metric_name == "TPR":
+            if metric_name == "TPRs":
                 average_value = metric_list[0].metric_spec.calculate_metric_mean(fpr_tpr_list)
             else:
                 average_value = metric_list[0].metric_spec.calculate_metric_mean(metric_list)
@@ -236,6 +227,7 @@ class SplitFactory:
         metric_information["true_labels"] = evaluation.true_labels_test
 
         for metric in evaluation.contained_metrics:
+
             metric_obj = eval(metric + "()")
             contained_metrics_dict[metric] = metric_obj.calculate_metric(metric_information, stage)
         return GenericSplit(split_name=split_name, contained_metrics=contained_metrics_dict)
