@@ -33,9 +33,9 @@ class EvalResultFactory:
                     for metric in split.contained_metrics.values():
                         if metric.metric_name.split(" ")[0] in evaluation_layer_metrics:
                             contained_metrics[metric.metric_name] = metric
-                    evaluation_layer_split = GenericSplit(split_name=split_name, contained_metrics=contained_metrics)
+                    evaluation_layer_split = GenericSplit(split_name=split_name, contained_metrics=contained_metrics, split_layer="Evaluation")
                     evaluation_layer_splits[split_name] = evaluation_layer_split
-        # TODO figure out why no metrics for general splits are being displayed
+
 
         if crossvalidation_performed:
             return EvalResult(eval_type=eval_name, training_dataset=training_set_meta_data, test_dataset=training_set_meta_data,

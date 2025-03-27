@@ -7,10 +7,11 @@ from processing import TimeseriesMetaData
 
 
 class GenericSplit(BaseModel):
-    # TODO filter out the metrics that are displayed in evaluation layer
+
 
     split_name: str
     contained_metrics: dict[str, GenericMetric]
+    split_layer: str = "Model"
 
     class Config:
         arbitrary_types_allowed = True
@@ -19,9 +20,14 @@ class GenericSplit(BaseModel):
     def serialize(self):
         evaluation_layer_metrics = ["TPRs", "FPRs", "PPVs", "NPVs", "Thresholds"]
         contained_metrics = {}
-        for metric in self.contained_metrics.values():
-            if metric.metric_name.split(" ")[0] not in evaluation_layer_metrics:
-                contained_metrics[metric.metric_name] = metric.serialize()
+        if self.split_layer == "Model":
+            for metric in self.contained_metrics.values():
+                if metric.metric_name.split(" ")[0] not in evaluation_layer_metrics:
+                    contained_metrics[metric.metric_name] = metric.serialize()
+        elif self.split_layer == "Evaluation":
+            for metric in self.contained_metrics.values():
+                if metric.metric_name.split(" ")[0] in evaluation_layer_metrics:
+                    contained_metrics[metric.metric_name] = metric.serialize()
         return {"split_name": self.split_name,
                 "contained_metrics": contained_metrics}
 
@@ -115,7 +121,7 @@ class EvalResult(BaseModel):
     crossvalidation_splits: Union[int, None] = None
     contained_general_splits: dict[str, GenericSplit]
     evaluation_performed: bool
-    # TODO add Fields for TPR, FPR, PPVs, NPVs, tresholds
+
 
     @field_validator('crossvalidation_random_state', 'crossvalidation_splits')
     @classmethod
