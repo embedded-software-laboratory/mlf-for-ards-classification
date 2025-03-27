@@ -32,7 +32,7 @@ class ResultVisualizer:
         self._visualize_comparison()
 
     def _visualize_metrics(self):
-        # TODO figure out why only one AUC is shown
+
         self.result_path = self.result_path + "visualisation"
         contained_models = list(self.full_results.contained_model_results.keys())
         for setting_name in self.visualisation_settings.keys():

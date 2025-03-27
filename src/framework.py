@@ -209,7 +209,7 @@ class Framework:
 
     def handle_timeseries_results(self):
 
-        # TODO make plots
+
         eval_name = self.config['evaluation']['evaluation_name']
         eval_file_name = eval_name.replace(" ", "_") + "_results"
         result_path = self.outdir + eval_file_name
