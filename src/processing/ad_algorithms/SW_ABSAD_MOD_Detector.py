@@ -23,27 +23,28 @@ class SW_ABSAD_Mod_Detector(AnomalyDetector):
         self.process_list = list(kwargs.get('process_list', []))
         self.replace_zeros = bool(kwargs.get('replace_zeros', False))
         self.replace_physical_outliers = bool(kwargs.get('replace_physical_outliers', False))
-        self.use_cl_modification = bool(kwargs.get('use_cl_modification', False))
-        self.retrain_after_gap = bool(kwargs.get('retrain_after_gap', False))
+        self.use_cl_modification = bool(kwargs.get('use_cl_modification', True))
+        self.retrain_after_gap = bool(kwargs.get('retrain_after_gap', True))
         self.window_length = int(kwargs.get('window_length', 100))
         self.variance_check = bool(kwargs.get('variance_check', False))
-        self.clean_training = bool(kwargs.get('clean_training_window', False))
+        self.clean_training = bool(kwargs.get('clean_training_window', True))
         self.variance_window_length = 50
         self.columns_to_check = kwargs["use_columns"].split(",")
         self.bandwidth = 0.5
         self.confidence_level = float(kwargs.get('confidence_level', 0.90))
         self.theta =  float(kwargs.get('theta', 0.5))
-        self.k = int(kwargs.get('k', 50))
-        self.s = int(kwargs.get('s', 50))
+        self.k = int(kwargs.get('k', 20))
+        self.s = int(kwargs.get('s', 20))
         self.needs_full_data = False
 
 
 
     def run(self, dataframe_detection: pd.DataFrame, job_count: int, total_jobs: int) -> pd.DataFrame:
+        print("Patient: ", job_count)
         dataframe_detection = self._prepare_data(dataframe_detection)["dataframe"]
         anomaly_dict = self._predict(dataframe_detection)
-        fixed_df = pd.concat(anomaly_dict["fixed_dfs"]).reset_index(drop=True)
-        return fixed_df
+        #fixed_df = pd.concat(anomaly_dict["fixed_dfs"]).reset_index(drop=True)
+        #return fixed_df
 
 
     def _prepare_data(self, dataframe_detection: pd.DataFrame) -> dict[str, pd.DataFrame]:
@@ -83,7 +84,7 @@ class SW_ABSAD_Mod_Detector(AnomalyDetector):
                 relevant_data = patient_df
             anomaly_dict = self._predict_patient(relevant_data)
 
-            fixed_dfs.append(self._handle_anomalies_patient(anomaly_dict, relevant_data, dataframe))
+            #fixed_dfs.append(self._handle_anomalies_patient(anomaly_dict, relevant_data, dataframe))
         return {"fixed_dfs": fixed_dfs}
 
 
@@ -152,7 +153,9 @@ class SW_ABSAD_Mod_Detector(AnomalyDetector):
         sorted_interval = sorted(((interval.count(e), e) for e in set(interval)), reverse=True)
         count, default_time_interval = sorted_interval[0]
         if self.window_length >= len(df):
-            raise ValueError("Window size larger than dataset.")
+            return {}
+
+
         # Dimensionen jedes Datenpunktes in samples_normalized
         self.num_data_dimensions = len(df_without_offset.columns)
         # Tabelle, die die Varianz für jeden Punkt in jeder Dimension speichert
@@ -216,7 +219,7 @@ class SW_ABSAD_Mod_Detector(AnomalyDetector):
         next_variance_position = 0
         #print(sliding_window_normalized.shape)
         while sample_counter < len(df_without_offset):
-            print(sample_counter)
+
 
             '''
             Konsistenzcheck. Prüft ob eine große Lücke zwischen den letzten Messungen war.
