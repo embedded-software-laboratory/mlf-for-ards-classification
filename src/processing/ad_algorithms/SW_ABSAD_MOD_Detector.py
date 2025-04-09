@@ -11,6 +11,7 @@ import json
 
 from processing.ad_algorithms.AnomalyDetector import AnomalyDetector
 from processing.ad_algorithms.PhysicalLimitsDetector import PhysicalLimitsDetector
+from processing.datasets_metadata import AnomalyDetectionMetaData
 
 
 class SW_ABSAD_Mod_Detector(AnomalyDetector):
@@ -37,14 +38,34 @@ class SW_ABSAD_Mod_Detector(AnomalyDetector):
         self.s = int(kwargs.get('s', 20))
         self.needs_full_data = False
 
-
+    def create_meta_data(self):
+        meta_data_dict = super().create_meta_data()
+        meta_data_dict["anomaly_detection_algorithm"] = self.type
+        meta_data_dict["algorithm_specific_settings"] = {"replace_zeros": self.replace_zeros,
+                                                         "replace_physical_outliers": self.replace_physical_outliers,
+                                                         "use_cl_modification": self.use_cl_modification,
+                                                         "retrain_after_gap": self.retrain_after_gap,
+                                                         "training_window_length": self.window_length,
+                                                         "variance_check": self.variance_check,
+                                                         "clean_training": self.clean_training,
+                                                         "bandwidth": self.bandwidth,
+                                                         "confidence_level": self.confidence_level,
+                                                         "theta": self.theta,
+                                                         "n_nearest_neighbors": self.k,
+                                                         "n_reference_windows": self.s,
+                                                         }
+        if self.variance_check:
+            meta_data_dict["algorithm_specific_settings"]["variance_window_length"] = self.variance_window_length
+        return AnomalyDetectionMetaData(**meta_data_dict)
 
     def run(self, dataframe_detection: pd.DataFrame, job_count: int, total_jobs: int) -> pd.DataFrame:
         print("Patient: ", job_count)
         dataframe_detection = self._prepare_data(dataframe_detection)["dataframe"]
         anomaly_dict = self._predict(dataframe_detection)
-        #fixed_df = pd.concat(anomaly_dict["fixed_dfs"]).reset_index(drop=True)
-        #return fixed_df
+
+
+        fixed_df = pd.concat(anomaly_dict["fixed_dfs"]).reset_index(drop=True)
+        return fixed_df
 
 
     def _prepare_data(self, dataframe_detection: pd.DataFrame) -> dict[str, pd.DataFrame]:
@@ -75,17 +96,26 @@ class SW_ABSAD_Mod_Detector(AnomalyDetector):
         patient_list = dataframe["patient_id"].unique().tolist()
 
         fixed_dfs = []
-
+        anomaly_count = None
         for patient_id in patient_list:
             patient_df = dataframe[dataframe["patient_id"] == patient_id]
             if self.columns_to_check[0]!= '':
                 relevant_data = patient_df[self.columns_to_check + ["time", "patient_id"]]
             else:
                 relevant_data = patient_df
-            anomaly_dict = self._predict_patient(relevant_data)
+            result_dict = self._predict_patient(relevant_data)
+            if anomaly_count is None:
+                anomaly_count = result_dict["anomaly_count"]
+            else:
+                for key, value in result_dict["anomaly_count"].items():
+                    if key in anomaly_count.keys():
+                        anomaly_count[key] += value
+                    else:
+                        anomaly_count[key] = value
 
-            #fixed_dfs.append(self._handle_anomalies_patient(anomaly_dict, relevant_data, dataframe))
-        return {"fixed_dfs": fixed_dfs}
+            fixed_dfs.append(self._handle_anomalies_patient(result_dict["anomaly_dict"], relevant_data, dataframe))
+        return {"fixed_dfs": fixed_dfs,
+                "anomaly_count": anomaly_count}
 
 
     def _handle_anomalies_patient(self, anomaly_dict: dict, relevant_data: pd.DataFrame, original_data: pd.DataFrame) -> pd.DataFrame:
@@ -627,7 +657,7 @@ class SW_ABSAD_Mod_Detector(AnomalyDetector):
             outlier_for_column = {}
             _counter = 0
             for index, row in df.iterrows():
-                outlier_for_column[row[0]] = row['outlier_table']
+                outlier_for_column[index] = row['outlier_table']
             # for every time value
             for key, value in outlier_for_column.items():
                 if training_windows[_counter] == 1:
@@ -648,7 +678,7 @@ class SW_ABSAD_Mod_Detector(AnomalyDetector):
             for index, row in df_with_nan.iterrows():
                 if column_name in df_with_nan.columns:
                     if np.isnan(row[column_name]):
-                        outlier_for_column[row[0]] = 1
+                        outlier_for_column[index] = 0
             result[column_name] = outlier_for_column
 
         # self.signal_add_plot("LOSVar", df[df.columns[0]], df['LOS'], df.columns[0], "LOS/Variance")
