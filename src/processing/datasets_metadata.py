@@ -2,6 +2,19 @@ from typing import Union, Dict
 
 from pydantic import  BaseModel
 
+class AnomalyDetectionMetaData(BaseModel):
+    name: str
+    anomaly_detection_algorithm: str
+
+    anomaly_handling_strategy: str
+    anomaly_fixing_algorithm: Union[str, None] = None
+    anomaly_threshold: Union[float, None] = None
+    columns_checked: list[dict[str, list[str]]]
+    anomaly_statistics: dict[str, Union[int, float]]
+    algorithm_specific_settings: dict[str, Union[str, int, float, bool, None]] = None
+
+
+
 class ImputationMetaData(BaseModel):
     impute_empty_cells: bool
     imputation_parameter_algorithm_dict: Union[Dict[str, str], None]

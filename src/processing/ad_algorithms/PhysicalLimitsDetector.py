@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from processing.datasets_metadata import AnomalyDetectionMetaData
 
 from processing.ad_algorithms.AnomalyDetector import AnomalyDetector
 from processing.ad_algorithms.configs import physical_limits_database_dict
@@ -28,7 +29,7 @@ class PhysicalLimitsDetector(AnomalyDetector):
 
 
     def handle_anomalies(self, anomaly_dict: dict, relevant_data: pd.DataFrame, original_data: pd.DataFrame):
-        anomaly_df = pd.DataFrame.from_dict(anomaly_dict)
+        anomaly_df = pd.DataFrame.from_dict(anomaly_dict["anomaly_dict"])
         if self.handling_strategy == "delete_value":
             fixed_df = self._delete_value(anomaly_df, original_data)
         elif self.handling_strategy == "delete_than_impute":
@@ -67,5 +68,15 @@ class PhysicalLimitsDetector(AnomalyDetector):
                         anomaly_dict[column].append(True)
                     else:
                         anomaly_dict[column].append(False)
-        return anomaly_dict
+        anomaly_count = {}
+        for column in anomaly_dict.keys():
+            anomaly_count[column] = sum(anomaly_dict[column])
+        predicted_dict = {"anomaly_dict": anomaly_dict, "anomaly_count": anomaly_count}
+        return predicted_dict
+
+    def create_meta_data(self):
+        meta_data_dict = super().create_meta_data()
+        meta_data_dict["anomaly_detection_algorithm"] = self.type
+        meta_data_dict["algorithm_specific_settings"] = {"physical_limits_dict": self.physical_limits_dict}
+        return AnomalyDetectionMetaData(**meta_data_dict)
 
