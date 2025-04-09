@@ -41,6 +41,9 @@ class WindowGenerator:
 
     def generate_dataset(self):
         data = np.array(self.data, dtype=np.float32)
+        if data.shape[0] <= self.total_window_size:
+            return None
+
         ds = tf.keras.preprocessing.timeseries_dataset_from_array(
             data=data,
             targets=None,
