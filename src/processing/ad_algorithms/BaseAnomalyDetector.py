@@ -4,7 +4,7 @@ from processing.processing_utils import prepare_multiprocessing
 import pandas as pd
 
 
-class AnomalyDetector:
+class BaseAnomalyDetector:
 
     def __init__(self, **kwargs):
         self.name = None
@@ -67,10 +67,23 @@ class AnomalyDetector:
 
         return process_pool_data_list, n_jobs, dataframe
 
-    def run(self,  dataframe_detection: pd.DataFrame, job_count: int, total_jobs: int) -> (pd.DataFrame, dict):
+    def run(self,  dataframe_detection: pd.DataFrame, job_count: int, total_jobs: int) -> pd.DataFrame:
+        """
+            Runs the anomaly detection process from start to finish.
+
+            Args:
+                dataframe_detection (pd.DataFrame): The input DataFrame containing the data to be processed.
+                job_count (int): The current job count (Irrelevant for approaches that need the full dataset).
+                total_jobs (int): The total number of jobs (Irrelevant for approaches that need the full dataset).
+
+            Returns:
+                pd.DataFrame: The processed DataFrame with anomalies handled.
+
+        """
         raise NotImplementedError()
 
     def _train_ad_model(self, data_training, data_validation, **kwargs):
+
         raise NotImplementedError()
 
     def _predict(self, dataframe: pd.DataFrame, **kwargs) -> dict:
@@ -85,7 +98,8 @@ class AnomalyDetector:
     def _handle_anomalies(self, anomalies: dict, anomalous_data : pd.DataFrame, original_data: pd.DataFrame) -> pd.DataFrame:
         raise NotImplementedError()
 
-    def _delete_value(self, anomaly_df: pd.DataFrame, dataframe: pd.DataFrame) -> pd.DataFrame:
+    @staticmethod
+    def _delete_value(anomaly_df: pd.DataFrame, dataframe: pd.DataFrame) -> pd.DataFrame:
         dataframe = dataframe.mask(anomaly_df)
         return dataframe
 

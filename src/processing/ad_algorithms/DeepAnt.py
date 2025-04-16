@@ -10,7 +10,7 @@ from sklearn.preprocessing import MinMaxScaler
 
 from tensorflow import keras
 
-from processing.ad_algorithms.AnomalyDetector import AnomalyDetector
+from processing.ad_algorithms.BaseAnomalyDetector import BaseAnomalyDetector
 from processing.ad_algorithms.WindowGenerator import WindowGenerator
 from processing.datasets_metadata import AnomalyDetectionMetaData
 tf.config.threading.set_inter_op_parallelism_threads(8)
@@ -56,7 +56,7 @@ class DeepAntPredictor:
         return self.model.predict(sequence)
 
 
-class DeepAntAnomalyDetector(AnomalyDetector):
+class DeepAntAnomalyDetector(BaseAnomalyDetector):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -64,9 +64,9 @@ class DeepAntAnomalyDetector(AnomalyDetector):
         self.deep_ant_output_dim = int(kwargs.get('output_dim', 1))
         self.deep_ant_hidden_units = int(kwargs.get('hidden_units', 256))
         self.deep_ant_max_epochs = int(kwargs.get('max_epochs', 20))
-        self.datasets_to_create = list(kwargs.get('dataset_to_create', []))
-        self.std_rate = float(kwargs.get('std_rate', 2))
 
+        self.std_rate = float(kwargs.get('std_rate', 2))
+        self.datasets_to_create = list(kwargs.get('dataset_to_create', []))
         self.val_percentage = float(kwargs.get('val_percentage', 0.1))
         self.train_percentage = float(kwargs.get('train_percentage', 0.1))
         self.test_percentage = float(kwargs.get('test_percentage', 0.1))

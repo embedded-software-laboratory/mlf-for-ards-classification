@@ -1,4 +1,4 @@
-from processing.ad_algorithms.AnomalyDetector import AnomalyDetector
+from processing.ad_algorithms.BaseAnomalyDetector import BaseAnomalyDetector
 from processing.ad_algorithms.PhysicalLimitsDetector import PhysicalLimitsDetector
 from processing.ad_algorithms.SW_ABSAD_MOD_Detector import SW_ABSAD_Mod_Detector
 from processing.ad_algorithms.DeepAnt import DeepAntAnomalyDetector

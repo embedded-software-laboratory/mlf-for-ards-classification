@@ -9,12 +9,12 @@ from scipy import stats
 from scipy.spatial import distance
 import json
 
-from processing.ad_algorithms.AnomalyDetector import AnomalyDetector
+from processing.ad_algorithms.BaseAnomalyDetector import BaseAnomalyDetector
 from processing.ad_algorithms.PhysicalLimitsDetector import PhysicalLimitsDetector
 from processing.datasets_metadata import AnomalyDetectionMetaData
 
 
-class SW_ABSAD_Mod_Detector(AnomalyDetector):
+class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

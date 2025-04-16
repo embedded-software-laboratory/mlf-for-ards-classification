@@ -1,10 +1,13 @@
+import logging
+import os
+from datetime import datetime
 from multiprocessing import Pool
 
 import numpy as np
 import pandas as pd
 
 
-from processing.ad_algorithms import DeepAntAnomalyDetector
+from processing.ad_algorithms.pytorch_DeepAnt import DeepAntDetector
 
 def _load_numpy_file(file_path) -> pd.DataFrame:
     data = np.load(file_path, mmap_mode="r+")
@@ -14,9 +17,25 @@ def _load_numpy_file(file_path) -> pd.DataFrame:
     return dataframe
 
 
+LOG_DIR = "../Data/logs"
+os.makedirs(LOG_DIR, exist_ok=True)
+
+log_filename = os.path.join(LOG_DIR, f"run_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
+
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler(log_filename),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+
 dataframe = _load_numpy_file("../Data/uka_data_050623.npy")
 patient_ids = dataframe["patient_id"].unique().tolist()
 
-detector = DeepAntAnomalyDetector(handling_strategy="delete_than_impute", fix_algorithm="interpolate")
+detector = DeepAntDetector(handling_strategy="delete_than_impute", fix_algorithm="interpolate")
 patient_df_list = []
 detector.run(dataframe, 0, 1)

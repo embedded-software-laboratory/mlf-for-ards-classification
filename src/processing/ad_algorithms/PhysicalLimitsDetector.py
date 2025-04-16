@@ -2,10 +2,10 @@ import numpy as np
 import pandas as pd
 from processing.datasets_metadata import AnomalyDetectionMetaData
 
-from processing.ad_algorithms.AnomalyDetector import AnomalyDetector
+from processing.ad_algorithms.BaseAnomalyDetector import BaseAnomalyDetector
 from processing.ad_algorithms.configs import physical_limits_database_dict
 
-class PhysicalLimitsDetector(AnomalyDetector):
+class PhysicalLimitsDetector(BaseAnomalyDetector):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
