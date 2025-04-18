@@ -36,6 +36,13 @@ logger = logging.getLogger(__name__)
 dataframe = _load_numpy_file("../Data/uka_data_050623.npy")
 patient_ids = dataframe["patient_id"].unique().tolist()
 
+#compliance_df = dataframe[["patient_id", "time", "compliance"]]
+#compliance_df.dropna(inplace=True, subset=["compliance"])
+#values_per_patient = compliance_df.groupby("patient_id").size()
+#relevant_patients = values_per_patient[values_per_patient > 10].index.tolist()
+#print(len(relevant_patients))
+patients = len(patient_ids)
+
 detector = DeepAntDetector(handling_strategy="delete_than_impute", fix_algorithm="interpolate")
 patient_df_list = []
 detector.run(dataframe, 0, 1)

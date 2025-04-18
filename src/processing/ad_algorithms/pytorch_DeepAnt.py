@@ -34,7 +34,7 @@ class DeepAntPredictor(nn.Module):
         size_after_pool1 = (size_after_conv1 - 2 - 1) / 2 + 1
         size_after_conv2 = size_after_pool1 - 2
         size_after_pool2 = (size_after_conv2 - 2 -1 ) / 2 + 1
-        self.fc_input_size = math.floor(size_after_pool2) * self.n_filters
+        self.fc_input_size = math.ceil(size_after_pool2) * self.n_filters
 
         self.model = nn.Sequential(
             nn.Conv1d(in_channels=feature_dim, out_channels=self.n_filters, kernel_size=3, padding="valid"),
@@ -50,6 +50,7 @@ class DeepAntPredictor(nn.Module):
             nn.Linear(in_features=hidden_size, out_features=prediction_size)
         )
 
+
         logger.info("DeepAntPredictor initialized.")
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -61,6 +62,7 @@ class DeepAntPredictor(nn.Module):
             Returns:
                 torch.Tensor: Output tensor of shape (batch_size, prediction_size).
         """
+
         return self.model(x)
 
 class AnomalyDetector(pl.LightningModule):
@@ -139,7 +141,7 @@ class AnomalyDetector(pl.LightningModule):
         logger.info(f"Epoch {self.current_epoch} - Validation step {batch_idx} - Loss: {loss.item()}")
         return loss
 
-    def predict_step(self, batch: Any, batch_idx: int, dataloader_idx: int = 0) -> torch.Tensor:
+    def predict_step(self, batch: Any, batch_idx: int) -> torch.Tensor:
         """
             Defines a step for prediction.
 
@@ -249,6 +251,9 @@ class DeepAnt:
                                   batch_size=self.config["batch_size"],
                                   shuffle=True
         )
+        logger.info(f"Training dataset size: {len(self.train_dataset)}")
+        logger.info(f"Training batches: {len(train_loader)}")
+
         val_loader = DataLoader(self.val_dataset,
                                 batch_size=self.config["batch_size"],
                                 shuffle=False
@@ -256,7 +261,7 @@ class DeepAnt:
         logger.info("Starting initial training...")
         self.initial_trainer.fit(self.anomaly_detector, train_loader, val_loader)
 
-        initial_checkpoint_path = os.path.join(self.config["run_dir"], f"initial_model{self.name}.ckpt")
+        initial_checkpoint_path = os.path.join(self.config["run_dir"], f"initial_model_{self.name}.ckpt")
         self.anomaly_detector = AnomalyDetector.load_from_checkpoint(
             checkpoint_path=initial_checkpoint_path,
             model=self.deepant_predictor,
@@ -279,7 +284,7 @@ class DeepAnt:
                                  shuffle=False
         )
         best_model = AnomalyDetector.load_from_checkpoint(checkpoint_path=os.path.join(self.config["run_dir"], f"best_model_{self.name}.ckpt"),
-                                                              map_location=self.device,
+                                                            model=self.deepant_predictor,
                                                               lr=self.config["learning_rate"])
         output = self.trainer.predict(best_model, test_loader)
 
@@ -360,7 +365,7 @@ class DeepAntDetector(BaseAnomalyDetector):
         super(DeepAntDetector, self).__init__(**kwargs)
         self.name = str(kwargs.get("name", "DeepAntDetector"))
         self.type = "DeepAnt"
-        self.model = None
+        self.model = {}
 
         self.datasets_to_create = list(kwargs.get('dataset_to_create', []))
         self.val_percentage = float(kwargs.get('val_percentage', 0.1))
@@ -385,7 +390,7 @@ class DeepAntDetector(BaseAnomalyDetector):
         self.device = check_device()
 
         self.deepant_config = {
-            "window_size" : int(self.window_generator_config.get("input_width", 20)),
+            "window_size" : int(self.window_generator_config.get("input_width", 10)),
             "prediction_size" : int(self.window_generator_config.get("output_width", 1)),
             "hidden_size" : int(self.hidden_size),
             "learning_rate" : float(self.learning_rate),
@@ -456,7 +461,7 @@ class DeepAntDetector(BaseAnomalyDetector):
         val = data["val"]
         test = data["test"]
 
-        relevant_columns = dataset_to_create["labels"] + dataset_to_create["features"] + ["patient_id", "time"]
+        relevant_columns = list(set(dataset_to_create["labels"] + dataset_to_create["features"] + ["patient_id", "time"]))
         relevant_train = train[relevant_columns]
         relevant_train = relevant_train.dropna(how='any', axis=0).reset_index(drop=True)
         relevant_val = val[relevant_columns]
@@ -478,8 +483,10 @@ class DeepAntDetector(BaseAnomalyDetector):
         relevant_train.drop(columns="patient_id", inplace=True)
         relevant_val.drop(columns="patient_id", inplace=True)
         relevant_test.drop(columns="patient_id", inplace=True)
-
-        window_generator = WindowGenerator(**self.window_generator_config)
+        specific_window_generator_config = self.window_generator_config.copy()
+        specific_window_generator_config["feature_columns"] = dataset_to_create["features"]
+        specific_window_generator_config["label_columns"] = dataset_to_create["labels"]
+        window_generator = WindowGenerator(**specific_window_generator_config)
 
         train_dataset, _ = self._create_dataset(relevant_train, patient_divisions_train, window_generator)
         if not train_dataset:
@@ -497,6 +504,7 @@ class DeepAntDetector(BaseAnomalyDetector):
             logger.info(f"Not enough data for testing, skipping {name}...")
             return pd.DataFrame()
         self.deepant_config["name"] = name
+        logger.info(train_dataset.data_x.shape)
         self.model[name] = DeepAnt(self.deepant_config, train_dataset, val_dataset, test_dataset, len(dataset_to_create["features"]), name)
         self.model[name].train()
         anomaly_dict = self.model[name].predict()
@@ -504,9 +512,14 @@ class DeepAntDetector(BaseAnomalyDetector):
     @staticmethod
     def _create_dataset(data: pd.DataFrame, patient_divisions: dict, window_generator: WindowGenerator) -> (DataModule, list):
         patients_to_remove = []
+        counter = 0
         for patient_id, patient_info in patient_divisions.items():
-            data = data[patient_info[0]:patient_info[1]]
-            success = window_generator.split_data(data)
+
+            if counter % 100 == 0:
+                logger.info(f"Processing patient {counter} of {len(patient_divisions)-1}")
+            counter += 1
+            patient_data = data[patient_info[0]:patient_info[1]]
+            success = window_generator.split_data(patient_data)
             if not success:
                 patients_to_remove.append(patient_id)
         dataset = window_generator.generate_dataset()
@@ -527,7 +540,7 @@ class DeepAntDetector(BaseAnomalyDetector):
         test_data = dataframe[dataframe["patient_id"].isin(test_patients)].reset_index()
         result_dict = {"train": train_data, "val": val_data, "test": test_data}
         if not self.datasets_to_create:
-            self.datasets_to_create = [{"name": column, "labels": [column], "features": [column]} for column in
+            self.datasets_to_create = [{"name": column, "labels": [column], "features": [column, "time"]} for column in
                                        dataframe.columns if column not in self.columns_not_to_check]
         return result_dict
 

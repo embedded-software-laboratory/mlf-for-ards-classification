@@ -70,7 +70,7 @@ class WindowGenerator:
         self.input_width = int(kwargs.get("input_width", 10))
         self.output_width = int(kwargs.get("output_width", 1))
         self.label_columns = list(kwargs.get("label_columns", []))
-        self.features = list(kwargs.get("features", []))
+        self.features = list(kwargs.get("feature_columns", []))
         self.device = kwargs.get("device", "cpu")
         self.data_x = []
         self.data_y = []
@@ -92,7 +92,7 @@ class WindowGenerator:
 
         for i in range(self.input_width, len(data.index) - self.output_width, self.output_width):
             x = data[self.features][i - self.input_width: i].to_numpy()
-            y = data[self.label_columns][i+1:i+self.output_width].to_numpy()
+            y = data[self.label_columns][i:i+self.output_width].to_numpy()
 
             self.data_x.append(x)
             self.data_y.append(y)
