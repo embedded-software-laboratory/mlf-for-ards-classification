@@ -75,7 +75,7 @@ class WindowGenerator:
         self.data_x = []
         self.data_y = []
 
-    def split_data(self, data: pd.DataFrame) -> bool:
+    def split_data(self, data: pd.DataFrame) -> Tuple[list[np.ndarray], list[np.ndarray], bool]:
         """
             Splits the data into input and output windows.
 
@@ -85,27 +85,28 @@ class WindowGenerator:
             Returns:
                 Tuple[np.ndarray, np.ndarray]: A tuple containing the input and output windows.
         """
+        data_x = []
+        data_y = []
         if self.input_width + self.output_width > len(data.index):
 
             logger.warning(f"The input and output windows are larger than the data length {len(data.index)}. Skipping...")
-            return False
+            return [], [], False
 
         for i in range(self.input_width, len(data.index) - self.output_width, self.output_width):
             x = data[self.features][i - self.input_width: i].to_numpy()
             y = data[self.label_columns][i:i+self.output_width].to_numpy()
 
-            self.data_x.append(x)
-            self.data_y.append(y)
-        return True
+            data_x.append(x)
+            data_y.append(y)
+        return data_x, data_y, True
 
-    def generate_dataset(self) :
+    def generate_dataset(self) -> DataModule:
         if not self.data_x or not self.data_y:
             return None
-        data_x = np.array(self.data_x, dtype=np.float32)
-        data_y = np.array(self.data_y, dtype=np.float32)
-        dataset = DataModule(data_x=data_x, data_y=data_y, device=self.device)
-        self.data_x = []
-        self.data_y = []
+        np_data_x = np.array(self.data_x, dtype=np.float32)
+        np_data_y = np.array(self.data_y, dtype=np.float32)
+        dataset = DataModule(data_x=np_data_x, data_y=np_data_y, device=self.device)
+
         return dataset
 
 
