@@ -395,7 +395,7 @@ class DeepAntDetector(BaseAnomalyDetector):
         self.hidden_size = int(kwargs.get("hidden_size", 256))
         self.max_epochs = int(kwargs.get("max_epochs", 100))
         self.max_initial_epochs = int(kwargs.get("max_initial_epochs", 10))
-        self.batch_size = int(kwargs.get("batch_size", 32))
+        self.batch_size = int(kwargs.get("batch_size", 128))
         self.patience = int(kwargs.get("patience", 5))
         self.run_dir = str(kwargs.get("run_dir", "../Data/Models/AnomalyDetection/DeepAnt"))
         self.checkpoint_dir = str(kwargs.get("checkpoint_dir", "../Data/Models/AnomalyDetection/DeepAnt"))
@@ -616,7 +616,7 @@ class DeepAntDetector(BaseAnomalyDetector):
         val_dataset = None
 
         model_training = not os.path.exists(os.path.join(self.deepant_config["run_dir"], f"best_model_{self.name}.ckpt")) or retrain_model
-
+        logger.info(f"Model training required: {model_training}")
         if load_data:
 
             if model_training:
