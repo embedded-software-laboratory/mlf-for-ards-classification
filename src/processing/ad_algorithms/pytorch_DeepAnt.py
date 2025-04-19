@@ -197,6 +197,7 @@ class DeepAnt:
         self.test_dataset = test_dataset
         self.feature_dim = feature_dim
         self.name = name
+        self.max_processes = config["max_processes"]
 
 
         self.device = config["device"]
@@ -255,14 +256,16 @@ class DeepAnt:
         """
         train_loader = DataLoader(self.train_dataset,
                                   batch_size=self.config["batch_size"],
-                                  shuffle=True
+                                  shuffle=True,
+                                  num_workers= self.max_processes
         )
         logger.info(f"Training dataset size: {len(self.train_dataset)}")
         logger.info(f"Training batches: {len(train_loader)}")
 
         val_loader = DataLoader(self.val_dataset,
                                 batch_size=self.config["batch_size"],
-                                shuffle=False
+                                shuffle=False,
+                                num_workers= self.max_processes
         )
         logger.info("Starting initial training...")
         self.initial_trainer.fit(self.anomaly_detector, train_loader, val_loader)
@@ -291,7 +294,8 @@ class DeepAnt:
         logger.info("Starting detection of anomalies...")
         test_loader = DataLoader(self.test_dataset,
                                  batch_size=self.config["batch_size"],
-                                 shuffle=False
+                                 shuffle=False,
+                                num_workers=self.max_processes
         )
         best_model = AnomalyDetector.load_from_checkpoint(checkpoint_path=os.path.join(self.config["run_dir"], f"best_model_{self.name}.ckpt"),
                                                             model=self.deepant_predictor,
@@ -418,7 +422,8 @@ class DeepAntDetector(BaseAnomalyDetector):
             "data_dir" : str(self.data_dir),
             "patience": int(self.patience),
             "device" : str(self.device),
-            "batch_size" : int(self.batch_size)
+            "batch_size" : int(self.batch_size),
+            "max_processes" : int(self.max_processes)
         }
 
     @property
