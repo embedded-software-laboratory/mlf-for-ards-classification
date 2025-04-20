@@ -1,5 +1,6 @@
 import math
 import os
+import sys
 from multiprocessing import Pool
 from typing import Any, Tuple
 import pickle
@@ -533,8 +534,12 @@ class DeepAntDetector(BaseAnomalyDetector):
             scaled = scaler.transform(relevant)
             joblib.dump(scaler, os.path.join(self.data_dir + "/" + name + "_scaler.pkl"))
         else:
-            scaler = joblib.load(os.path.join(self.data_dir + "/" + name + "_scaler.pkl"))
-            scaled = scaler.transform(relevant)
+            try:
+                scaler = joblib.load(os.path.join(self.data_dir + "/" + name + "_scaler.pkl"))
+                scaled = scaler.transform(relevant)
+            except FileNotFoundError:
+                logger.error(f"Scaler not found for {name}. Create a new dataset.")
+                sys.exit(1)
         relevant_scaled = pd.DataFrame(scaled, columns=relevant_columns, index=relevant.index)
         relevant_scaled.drop(columns="patient_id", inplace=True)
 
