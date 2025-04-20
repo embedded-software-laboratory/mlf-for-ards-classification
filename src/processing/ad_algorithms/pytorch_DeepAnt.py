@@ -501,7 +501,8 @@ class DeepAntDetector(BaseAnomalyDetector):
                                             )
         return patient_dict
 
-    def _prepare_data_step(self, data: pd.DataFrame, dataset_to_create: dict, save_data: bool, type_of_dataset: str) -> (DataModule, list):
+    def _prepare_data_step(self, data: pd.DataFrame, dataset_to_create: dict, save_data: bool, type_of_dataset: str)\
+            -> (DataModule, list, pd.DataFrame):
         """
             Prepares the data for the anomaly detection step.
 
@@ -523,6 +524,7 @@ class DeepAntDetector(BaseAnomalyDetector):
         relevant = data[relevant_columns]
         relevant = relevant.dropna(how='any', axis=0).reset_index(drop=True)
 
+
         patient_divisions = self._build_patient_dict(relevant)
 
         if type_of_dataset == "train":
@@ -533,8 +535,8 @@ class DeepAntDetector(BaseAnomalyDetector):
         else:
             scaler = joblib.load(os.path.join(self.data_dir + "/" + name + "_scaler.pkl"))
             scaled = scaler.transform(relevant)
-        relevant = pd.DataFrame(scaled, columns=relevant_columns, index=relevant.index)
-        relevant.drop(columns="patient_id", inplace=True)
+        relevant_scaled = pd.DataFrame(scaled, columns=relevant_columns, index=relevant.index)
+        relevant_scaled.drop(columns="patient_id", inplace=True)
 
 
         specific_window_generator_config = self.window_generator_config.copy()
@@ -542,7 +544,8 @@ class DeepAntDetector(BaseAnomalyDetector):
         specific_window_generator_config["label_columns"] = dataset_to_create["labels"]
         window_generator = WindowGenerator(**specific_window_generator_config)
 
-        dataset, patients_to_remove = self._create_dataset(relevant, patient_divisions, window_generator)
+        dataset, patients_to_remove = self._create_dataset(relevant_scaled, patient_divisions, window_generator)
+
 
         if not dataset:
             logger.info(f"Not enough data for {type_of_dataset}, skipping {name}...")
@@ -554,16 +557,21 @@ class DeepAntDetector(BaseAnomalyDetector):
             with open(os.path.join(self.data_dir + "/" + name + "_" + type_of_dataset + "_labels.pkl"), "wb") as f:
                 pickle.dump(dataset.data_y, f)
 
-            if type_of_dataset == "train":
+            if type_of_dataset == "test":
+                relevant = relevant[~relevant["patient_id"].isin(patients_to_remove)].reset_index(drop=True)
+                logger.info(f"Number of entries for {name}: {len(relevant)}")
                 with open(os.path.join(self.data_dir + "/" + name + "_patients_to_remove.pkl"), "wb") as f:
                     pickle.dump(patients_to_remove, f)
+                with open(os.path.join(self.data_dir + "/" + name + "_relevant.pkl"), "wb") as f:
+                    pickle.dump(relevant, f)
+
 
         if type_of_dataset != "test":
-            return dataset, []
+            return dataset, [], pd.DataFrame()
         else:
-            return dataset, patients_to_remove
+            return dataset, patients_to_remove, relevant
 
-    def _load_data(self, name: str, type_of_dataset: str) -> (DataModule, list):
+    def _load_data(self, name: str, type_of_dataset: str) -> (DataModule, list, pd.DataFrame):
         """
             Loads the data from the specified file.
 
@@ -583,14 +591,17 @@ class DeepAntDetector(BaseAnomalyDetector):
             if type_of_dataset == "test":
                 with open(os.path.join(self.data_dir + "/" + name + "_patients_to_remove.pkl"), "rb") as f:
                     patients_to_remove = pickle.load(f)
+                with open(os.path.join(self.data_dir + "/" + name + "_relevant.pkl"), "rb") as f:
+                    relevant_df = pickle.load(f)
             else:
                 patients_to_remove = []
+                relevant_df = pd.DataFrame()
             dataset = DataModule(data_x, data_y, device=self.device)
         except Exception as e:
             logger.error(f"Failed to load data for {name} {type_of_dataset}: {e}")
             dataset = None
             patients_to_remove = []
-        return dataset, patients_to_remove
+        return dataset, patients_to_remove, relevant_df
 
 
 
@@ -631,20 +642,20 @@ class DeepAntDetector(BaseAnomalyDetector):
         if load_data:
 
             if model_training:
-                train_dataset, _ = self._load_data(name, "train")
+                train_dataset, _, _ = self._load_data(name, "train")
                 if not train_dataset:
-                    train_dataset, _ = self._prepare_data_step(train, dataset_to_create, True, "train")
+                    train_dataset, _, _ = self._prepare_data_step(train, dataset_to_create, True, "train")
                     if not train_dataset:
                         return pd.DataFrame()
 
-                val_dataset, _ = self._load_data(name, "val")
+                val_dataset, _, _ = self._load_data(name, "val")
                 if not val_dataset:
-                    val_dataset, _ = self._prepare_data_step(val, dataset_to_create, True, "val")
+                    val_dataset, _, _ = self._prepare_data_step(val, dataset_to_create, True, "val")
                     if not val_dataset:
                         return pd.DataFrame()
-            test_dataset, patients_to_remove = self._load_data(name, "test")
+            test_dataset, patients_to_remove, relevant_df = self._load_data(name, "test")
             if not test_dataset:
-                test_dataset, patients_to_remove = self._prepare_data_step(test, dataset_to_create, True,
+                test_dataset, patients_to_remove, relevant_df = self._prepare_data_step(test, dataset_to_create, True,
                                                                            "test")
                 if not test_dataset:
                     return pd.DataFrame()
@@ -652,14 +663,14 @@ class DeepAntDetector(BaseAnomalyDetector):
         else:
 
             if model_training:
-                train_dataset, _ = self._prepare_data_step(train, dataset_to_create, save_data, "train")
+                train_dataset, _, _ = self._prepare_data_step(train, dataset_to_create, save_data, "train")
                 if not train_dataset:
                     return pd.DataFrame()
 
-                val_dataset, _ = self._prepare_data_step(val, dataset_to_create, save_data, "val")
+                val_dataset, _, _ = self._prepare_data_step(val, dataset_to_create, save_data, "val")
                 if not val_dataset:
                     return pd.DataFrame()
-            test_dataset, patients_to_remove = self._prepare_data_step(test, dataset_to_create, save_data, "test")
+            test_dataset, patients_to_remove, relevant_df = self._prepare_data_step(test, dataset_to_create, save_data, "test")
             if not test_dataset:
                 return pd.DataFrame()
         self.deepant_config["name"] = name
@@ -671,7 +682,7 @@ class DeepAntDetector(BaseAnomalyDetector):
             self.model[name].train()
 
         anomaly_dict = self.model[name].predict()
-        logger.info(type(anomaly_dict))
+
 
 
 
