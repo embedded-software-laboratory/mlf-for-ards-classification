@@ -199,6 +199,7 @@ class DeepAnt:
         self.feature_dim = feature_dim
         self.name = name
         self.max_processes = config["max_processes"]
+        self.n_labels = len(config["labels"])
 
 
         self.device = config["device"]
@@ -339,7 +340,7 @@ class DeepAnt:
 
 
         thresholds = []
-        for feature_idx in range(self.feature_dim):
+        for feature_idx in range(self.n_labels):
             feature_scores = anomaly_scores[:, feature_idx]
             mean = np.mean(feature_scores)
             std = np.std(feature_scores)
@@ -660,6 +661,7 @@ class DeepAntDetector(BaseAnomalyDetector):
             if not test_dataset:
                 return pd.DataFrame()
         self.deepant_config["name"] = name
+        self.deepant_config["labels"] = dataset_to_create["labels"]
         self.model[name] = DeepAnt(self.deepant_config, train_dataset, val_dataset, test_dataset,
                                    len(dataset_to_create["features"]), name)
 
