@@ -601,6 +601,7 @@ class DeepAntDetector(BaseAnomalyDetector):
             logger.error(f"Failed to load data for {name} {type_of_dataset}: {e}")
             dataset = None
             patients_to_remove = []
+            relevant_df = pd.DataFrame()
         return dataset, patients_to_remove, relevant_df
 
 
