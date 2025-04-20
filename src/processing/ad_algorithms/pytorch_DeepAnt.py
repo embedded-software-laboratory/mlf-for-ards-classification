@@ -362,11 +362,13 @@ class DeepAnt:
         """
 
         anomaly_dict = {}
-        for feature_idx in range(self.feature_dim):
+        for feature_idx in range(self.n_labels):
             feature_scores = anomaly_scores[:, feature_idx]
             threshold = thresholds[feature_idx]
             anomalies = np.where(feature_scores > threshold)[0]
+            logger.info(f"Identified {anomalies.shape} anomalies")
             anomaly_dict[f"feature_{feature_idx}"] = anomalies
+        
         return anomaly_dict
 
 
