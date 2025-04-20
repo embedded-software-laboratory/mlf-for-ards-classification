@@ -15,7 +15,7 @@ class BaseAnomalyDetector:
         self.fix_algorithm = None
         self.handling_strategy = None
         self.anomaly_threshold = None
-        self.max_processes = 1
+        self.max_processes = 4
         self.needs_full_data = False
         self.anomaly_counts = None
         # TODO add all static variables here

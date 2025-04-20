@@ -24,6 +24,7 @@ from processing.ad_algorithms.torch_utils import check_device, check_directory, 
 
 logger = logging.getLogger(__name__)
 
+
 class DeepAntPredictor(nn.Module):
 
     def __init__(self, feature_dim: int, window_size: int, prediction_size: int, hidden_size: int = 256):
@@ -245,7 +246,7 @@ class DeepAnt:
             accelerator=self.device,
             devices=1 if self.device == "cuda" else "auto"
         )
-        self.trained = False
+        
         logger.info("DeepAnt initialized.")
 
     def train(self):
@@ -257,7 +258,6 @@ class DeepAnt:
         train_loader = DataLoader(self.train_dataset,
                                   batch_size=self.config["batch_size"],
                                   shuffle=True,
-                                  num_workers= self.max_processes
         )
         logger.info(f"Training dataset size: {len(self.train_dataset)}")
         logger.info(f"Training batches: {len(train_loader)}")
@@ -265,7 +265,7 @@ class DeepAnt:
         val_loader = DataLoader(self.val_dataset,
                                 batch_size=self.config["batch_size"],
                                 shuffle=False,
-                                num_workers= self.max_processes
+                                
         )
         logger.info("Starting initial training...")
         self.initial_trainer.fit(self.anomaly_detector, train_loader, val_loader)
@@ -278,7 +278,7 @@ class DeepAnt:
         )
         logger.info("Initial training completed. Starting main training...")
         self.trainer.fit(self.anomaly_detector, train_loader, val_loader)
-        self.trained = True
+        
         logger.info("Main training completed. Saving the best model...")
 
     def predict(self) -> dict:
@@ -288,19 +288,19 @@ class DeepAnt:
             Returns:
                 dict: Dictionary containing indices of detected anomalies for each feature.
         """
-        if not self.trained:
-            raise RuntimeError("Model must be trained before prediction.")
+        
 
         logger.info("Starting detection of anomalies...")
         test_loader = DataLoader(self.test_dataset,
                                  batch_size=self.config["batch_size"],
                                  shuffle=False,
-                                num_workers=self.max_processes
+                                
         )
         best_model = AnomalyDetector.load_from_checkpoint(checkpoint_path=os.path.join(self.config["run_dir"], f"best_model_{self.name}.ckpt"),
                                                             model=self.deepant_predictor,
                                                               lr=self.config["learning_rate"])
         output = self.trainer.predict(best_model, test_loader)
+        for item  
 
         ground_truth = test_loader.dataset.data_y.squeeze()
         predictions = output[0].numpy().squeeze()
@@ -395,7 +395,7 @@ class DeepAntDetector(BaseAnomalyDetector):
         self.hidden_size = int(kwargs.get("hidden_size", 256))
         self.max_epochs = int(kwargs.get("max_epochs", 100))
         self.max_initial_epochs = int(kwargs.get("max_initial_epochs", 10))
-        self.batch_size = int(kwargs.get("batch_size", 128))
+        self.batch_size = int(kwargs.get("batch_size", 2048))
         self.patience = int(kwargs.get("patience", 5))
         self.run_dir = str(kwargs.get("run_dir", "../Data/Models/AnomalyDetection/DeepAnt"))
         self.checkpoint_dir = str(kwargs.get("checkpoint_dir", "../Data/Models/AnomalyDetection/DeepAnt"))
@@ -614,9 +614,15 @@ class DeepAntDetector(BaseAnomalyDetector):
 
         train_dataset = None
         val_dataset = None
-
-        model_training = not os.path.exists(os.path.join(self.deepant_config["run_dir"], f"best_model_{self.name}.ckpt")) or retrain_model
-        logger.info(f"Model training required: {model_training}")
+        model_location = os.path.join(self.deepant_config["run_dir"], f"best_model_{name}.ckpt")
+        logger.info(f"Check if model exists at location {str(model_location)}")
+        model_exists = os.path.exists(os.path.join(self.deepant_config["run_dir"], f"best_model_{name}.ckpt"))
+        logger.info(f"Model exists: {model_exists}")
+        model_training = (not os.path.exists(model_location)) or retrain_model
+        
+        logger.info(f"Model training requested: {retrain_model}")
+        
+        logger.info(f"Model training : {model_training}")
         if load_data:
 
             if model_training:
@@ -659,6 +665,7 @@ class DeepAntDetector(BaseAnomalyDetector):
             self.model[name].train()
 
         anomaly_dict = self.model[name].predict()
+        logger.info(type(anomaly_dict))
 
 
 
