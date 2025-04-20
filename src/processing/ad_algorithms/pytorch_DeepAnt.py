@@ -299,12 +299,14 @@ class DeepAnt:
         best_model = AnomalyDetector.load_from_checkpoint(checkpoint_path=os.path.join(self.config["run_dir"], f"best_model_{self.name}.ckpt"),
                                                             model=self.deepant_predictor,
                                                               lr=self.config["learning_rate"])
+        all_predictions = []
         output = self.trainer.predict(best_model, test_loader)
-        for item  
+        for item in output:
+            batch_predictions = item.numpy().squeeze()
+            all_predictions.append(batch_predictions)
+        predictions = np.concatenate(all_predictions)
 
         ground_truth = test_loader.dataset.data_y.squeeze()
-        predictions = output[0].numpy().squeeze()
-
         if ground_truth.ndim == 1:
             ground_truth = ground_truth.reshape(-1, 1)
         if predictions.ndim == 1:
