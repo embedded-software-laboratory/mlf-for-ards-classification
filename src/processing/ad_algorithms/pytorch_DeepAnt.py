@@ -578,6 +578,7 @@ class DeepAntDetector(BaseAnomalyDetector):
             return None, []
 
         if save_data:
+            logger.info("Saving data")
             with open(os.path.join(self.windowed_data_dir + "/" + name + "_" + type_of_dataset + "_features.pkl"), "wb") as f:
                 pickle.dump(dataset.data_x, f)
             with open(os.path.join(self.windowed_data_dir + "/" + name + "_" + type_of_dataset + "_labels.pkl"), "wb") as f:

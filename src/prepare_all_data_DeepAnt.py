@@ -32,7 +32,7 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
-dataframe = _load_numpy_file("../Data/uka_data_050623.npy")
+dataframe = _load_numpy_file("/work/rwth1474/Data/time_series/uka_data_050623.npy")
 
 
 
