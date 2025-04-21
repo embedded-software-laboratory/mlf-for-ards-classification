@@ -406,7 +406,7 @@ class DeepAntDetector(BaseAnomalyDetector):
         self.run_dir = str(kwargs.get("run_dir", "../Data/Models/AnomalyDetection/DeepAnt"))
         self.checkpoint_dir = str(kwargs.get("checkpoint_dir", "../Data/Models/AnomalyDetection/DeepAnt"))
         self.windowed_data_dir = str(kwargs.get("data_dir", "/work/rwth1474/Data/AnomalyDetection/windowed_data"))
-        self.anomaly_data_dir = str(kwargs.get("anomaly_data_dir", "../Data/AnomalyDetection/anomaly_data/DeepAnt"))
+        self.anomaly_data_dir = str(kwargs.get("anomaly_data_dir", "/work/rwth1474/Data/AnomalyDetection/anomaly_data/DeepAnt"))
         check_directory(str(self.run_dir))
         check_directory(str(self.checkpoint_dir))
         check_directory(str(self.windowed_data_dir))
@@ -752,6 +752,7 @@ class DeepAntDetector(BaseAnomalyDetector):
             patient_dfs.append(patient_df)
         with Pool(processes=self.max_processes) as pool:
             results = pool.map(window_generator.split_data, patient_dfs)
+        logger.info("Finished multiprocessing")
         for i in range(len(results)):
             if not results[i][2]:
                 patients_to_remove.append(list(patient_divisions.keys())[i])
