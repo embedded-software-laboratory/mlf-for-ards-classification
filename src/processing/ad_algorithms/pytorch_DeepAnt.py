@@ -460,18 +460,22 @@ class DeepAntDetector(BaseAnomalyDetector):
             if name not in self.retrain_models:
                 self.retrain_models[name] = False
 
-    def prepare_full_data_for_storage(self, data: pd.DataFrame) -> None:
+    def prepare_full_data_for_storage(self, data: pd.DataFrame, overwrite_existing: bool) -> None:
         """
-            Prepares the full data for storage.
+            Generates the windowed data for all requested datasets and stores them to the disk.
 
             Args:
                 data (pd.DataFrame): The data to prepare.
+                overwrite_existing (bool): Whether to overwrite existing data or not.
         """
         data = self._prepare_data(data)
         train = data["train"]
         val = data["val"]
         test = data["test"]
         for item in self.datasets_to_create:
+            if os.path.exists(os.path.join(self.windowed_data_dir, item["name"] + "_train_features.pkl")) and not overwrite_existing:
+                logger.info(f"Data for {item['name']} already exists. Skipping...")
+                continue
             logger.info(f"Preparing data for {item['name']}")
             self._prepare_data_step(train, item, True, "train")
             self._prepare_data_step(val, item, True, "val")
@@ -537,6 +541,7 @@ class DeepAntDetector(BaseAnomalyDetector):
             Returns:
                 DataModule: The prepared dataset.
                 list: List of patients to remove (only relevant for test data).
+
         """
 
 
@@ -548,6 +553,9 @@ class DeepAntDetector(BaseAnomalyDetector):
 
 
         patient_divisions = self._build_patient_dict(relevant)
+        if len(relevant.index) == 0:
+            logger.info(f"Not enough data for {type_of_dataset}, skipping {name}...")
+            return None, [], pd.DataFrame()
 
         if type_of_dataset == "train":
             scaler = MinMaxScaler()
@@ -575,7 +583,7 @@ class DeepAntDetector(BaseAnomalyDetector):
 
         if not dataset:
             logger.info(f"Not enough data for {type_of_dataset}, skipping {name}...")
-            return None, []
+            return None, [], pd.DataFrame()
 
         if save_data:
             logger.info("Saving data")
