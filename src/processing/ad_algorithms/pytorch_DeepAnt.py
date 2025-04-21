@@ -389,8 +389,8 @@ class DeepAntDetector(BaseAnomalyDetector):
 
         self._datasets_to_create = list(kwargs.get('dataset_to_create', []))
         self.val_percentage = float(kwargs.get('val_percentage', 0.1))
-        self.train_percentage = float(kwargs.get('train_percentage', 0.1))
-        self.test_percentage = float(kwargs.get('test_percentage', 0.1))
+        self.train_percentage = float(kwargs.get('train_percentage', 0.2))
+        self.test_percentage = 1 - self.val_percentage - self.train_percentage
         self.sk_seed = int(kwargs.get('seed', 42))
         set_seed(self.sk_seed)
         self.needs_full_data = True
@@ -405,10 +405,12 @@ class DeepAntDetector(BaseAnomalyDetector):
         self.patience = int(kwargs.get("patience", 5))
         self.run_dir = str(kwargs.get("run_dir", "../Data/Models/AnomalyDetection/DeepAnt"))
         self.checkpoint_dir = str(kwargs.get("checkpoint_dir", "../Data/Models/AnomalyDetection/DeepAnt"))
-        self.data_dir = str(kwargs.get("data_dir", "../Data/AnomalyDetection/windowed_data"))
+        self.windowed_data_dir = str(kwargs.get("data_dir", "/work/rwth1474/Data/AnomalyDetection/windowed_data"))
+        self.anomaly_data_dir = str(kwargs.get("anomaly_data_dir", "../Data/AnomalyDetection/anomaly_data/DeepAnt"))
         check_directory(str(self.run_dir))
         check_directory(str(self.checkpoint_dir))
-        check_directory(str(self.data_dir))
+        check_directory(str(self.windowed_data_dir))
+        check_directory(str(self.anomaly_data_dir))
         self.device = check_device()
 
         self.load_data =  bool(kwargs.get("load_data", True))
@@ -425,7 +427,7 @@ class DeepAntDetector(BaseAnomalyDetector):
             "max_epochs" : int(self.max_epochs),
             "checkpoint_dir" : str(self.checkpoint_dir),
             "run_dir" : str(self.run_dir),
-            "data_dir" : str(self.data_dir),
+            "data_dir" : str(self.windowed_data_dir),
             "patience": int(self.patience),
             "device" : str(self.device),
             "batch_size" : int(self.batch_size),
@@ -458,6 +460,23 @@ class DeepAntDetector(BaseAnomalyDetector):
             if name not in self.retrain_models:
                 self.retrain_models[name] = False
 
+    def prepare_full_data_for_storage(self, data: pd.DataFrame) -> None:
+        """
+            Prepares the full data for storage.
+
+            Args:
+                data (pd.DataFrame): The data to prepare.
+        """
+        data = self._prepare_data(data)
+        train = data["train"]
+        val = data["val"]
+        test = data["test"]
+        for item in self.datasets_to_create:
+            logger.info(f"Preparing data for {item['name']}")
+            self._prepare_data_step(train, item, True, "train")
+            self._prepare_data_step(val, item, True, "val")
+            self._prepare_data_step(test, item, True, "test")
+
 
 
     def run(self,  dataframe_detection: pd.DataFrame, job_count: int, total_jobs: int) -> pd.DataFrame:
@@ -487,6 +506,8 @@ class DeepAntDetector(BaseAnomalyDetector):
         df_anomaly = df_anomaly.rename(columns=rename_dict)
         relevant_data = prepared_data["test"][df_anomaly.columns.tolist()]
         df_anomaly = df_anomaly.fillna(False)
+        with open(os.path.join(self.anomaly_data_dir, f"anomaly_data_{self.name}.pkl"), "wb") as f:
+            pickle.dump(df_anomaly, f)
         fixed_df = self._handle_anomalies({"results": df_anomaly}, relevant_data, remaining_data)
         return fixed_df
 
@@ -532,10 +553,10 @@ class DeepAntDetector(BaseAnomalyDetector):
             scaler = MinMaxScaler()
             scaler.fit(relevant)
             scaled = scaler.transform(relevant)
-            joblib.dump(scaler, os.path.join(self.data_dir + "/" + name + "_scaler.pkl"))
+            joblib.dump(scaler, os.path.join(self.windowed_data_dir + "/" + name + "_scaler.pkl"))
         else:
             try:
-                scaler = joblib.load(os.path.join(self.data_dir + "/" + name + "_scaler.pkl"))
+                scaler = joblib.load(os.path.join(self.windowed_data_dir + "/" + name + "_scaler.pkl"))
                 scaled = scaler.transform(relevant)
             except FileNotFoundError:
                 logger.error(f"Scaler not found for {name}. Create a new dataset.")
@@ -557,17 +578,17 @@ class DeepAntDetector(BaseAnomalyDetector):
             return None, []
 
         if save_data:
-            with open(os.path.join(self.data_dir + "/" + name + "_" + type_of_dataset + "_features.pkl"), "wb") as f:
+            with open(os.path.join(self.windowed_data_dir + "/" + name + "_" + type_of_dataset + "_features.pkl"), "wb") as f:
                 pickle.dump(dataset.data_x, f)
-            with open(os.path.join(self.data_dir + "/" + name + "_" + type_of_dataset + "_labels.pkl"), "wb") as f:
+            with open(os.path.join(self.windowed_data_dir + "/" + name + "_" + type_of_dataset + "_labels.pkl"), "wb") as f:
                 pickle.dump(dataset.data_y, f)
 
             if type_of_dataset == "test":
                 relevant = relevant[~relevant["patient_id"].isin(patients_to_remove)].reset_index(drop=True)
                 logger.info(f"Number of entries for {name}: {len(relevant)}")
-                with open(os.path.join(self.data_dir + "/" + name + "_patients_to_remove.pkl"), "wb") as f:
+                with open(os.path.join(self.windowed_data_dir + "/" + name + "_patients_to_remove.pkl"), "wb") as f:
                     pickle.dump(patients_to_remove, f)
-                with open(os.path.join(self.data_dir + "/" + name + "_relevant.pkl"), "wb") as f:
+                with open(os.path.join(self.windowed_data_dir + "/" + name + "_relevant.pkl"), "wb") as f:
                     pickle.dump(relevant, f)
 
 
@@ -589,14 +610,14 @@ class DeepAntDetector(BaseAnomalyDetector):
                 list: List of patients to remove (only relevant for test data).
         """
         try:
-            with open(os.path.join(self.data_dir + "/" + name + f"_{type_of_dataset}_features.pkl"), "rb") as f:
+            with open(os.path.join(self.windowed_data_dir + "/" + name + f"_{type_of_dataset}_features.pkl"), "rb") as f:
                 data_x = pickle.load(f)
-            with open(os.path.join(self.data_dir + "/" + name + f"_{type_of_dataset}_labels.pkl"), "rb") as f:
+            with open(os.path.join(self.windowed_data_dir + "/" + name + f"_{type_of_dataset}_labels.pkl"), "rb") as f:
                 data_y = pickle.load(f)
             if type_of_dataset == "test":
-                with open(os.path.join(self.data_dir + "/" + name + "_patients_to_remove.pkl"), "rb") as f:
+                with open(os.path.join(self.windowed_data_dir + "/" + name + "_patients_to_remove.pkl"), "rb") as f:
                     patients_to_remove = pickle.load(f)
-                with open(os.path.join(self.data_dir + "/" + name + "_relevant.pkl"), "rb") as f:
+                with open(os.path.join(self.windowed_data_dir + "/" + name + "_relevant.pkl"), "rb") as f:
                     relevant_df = pickle.load(f)
             else:
                 patients_to_remove = []
@@ -688,6 +709,25 @@ class DeepAntDetector(BaseAnomalyDetector):
             self.model[name].train()
 
         anomaly_dict = self.model[name].predict()
+        label_index_dict = {}
+        for i in range(len(dataset_to_create["labels"])):
+            label_index_dict[i] = dataset_to_create["labels"][i]
+        anomaly_df = relevant_df[["patient_id", "time"]]
+        marked_anomaly_dict = {}
+        for key, value in anomaly_dict.items():
+            index = int(key.replace("feature_", ""))
+            name = label_index_dict[index]
+            anomaly_indices = value.tolist()
+            marked_anomaly_list = [False] * len(relevant_df)
+            for i in anomaly_indices:
+                marked_anomaly_list[i] = True
+            marked_anomaly_dict[name + "_anomaly"] = marked_anomaly_list
+        for key, value in marked_anomaly_dict.items():
+            anomaly_df[key] = value
+        test = test.merge(anomaly_df, how="left", on=["patient_id", "time"]).fillna(False)
+        return test
+
+
 
 
 
