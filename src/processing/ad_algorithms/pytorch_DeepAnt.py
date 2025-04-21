@@ -460,7 +460,7 @@ class DeepAntDetector(BaseAnomalyDetector):
             if name not in self.retrain_models:
                 self.retrain_models[name] = False
 
-    def prepare_full_data_for_storage(self, data: pd.DataFrame, overwrite_existing: bool) -> None:
+    def prepare_full_data_for_storage(self, data: pd.DataFrame, overwrite_existing: bool= False) -> None:
         """
             Generates the windowed data for all requested datasets and stores them to the disk.
 
