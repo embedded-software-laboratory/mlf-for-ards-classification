@@ -1,5 +1,10 @@
 import json
 import argparse
+import logging
+import os
+from datetime import datetime
+from multiprocessing import Pool
+
 import numpy as np
 import pandas as pd
 
@@ -14,8 +19,24 @@ def _load_numpy_file(file_path) -> pd.DataFrame:
     return dataframe
 
 
+
+
 if __name__ == "__main__":
-    data_frame = _load_numpy_file("C:/Users/Haenfry/Documents/Hiwi/MLP-Pipeline/mlp-framework/Data/uka_data_050623.npy")
+    LOG_DIR = "../Data/logs/prepare_all_data_DeepAnt"
+    os.makedirs(LOG_DIR, exist_ok=True)
+
+    log_filename = os.path.join(LOG_DIR, f"run_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.FileHandler(log_filename),
+            logging.StreamHandler()
+        ]
+    )
+    logger = logging.getLogger(__name__)
+    data_frame = _load_numpy_file("../Data/uka_data_050623.npy")
     patient_ids = data_frame["patient_id"].unique().tolist()
 
     parser = argparse.ArgumentParser(description="Test SW_ABSAD_MOD")
@@ -26,11 +47,9 @@ if __name__ == "__main__":
     end_patient_inx = start_patient_inx + 500
     relevant_ids = patient_ids[start_patient_inx:end_patient_inx]
     detector = SW_ABSAD_Mod_Detector(use_cl_modification=True, retrain_after_gap=True, variance_check=False, use_columns="", clean_training_window=True)
-    for patient_id in relevant_ids:
-        print(patient_id)
-        patient_dataframe = data_frame[data_frame["patient_id"] == patient_id]
-        # Assuming detector is defined and has a _predict method
-        detector.run(patient_dataframe, 0, 1)
+    patient_dfs = [data_frame[data_frame["patient_id"] == patient_id] for patient_id in relevant_ids]
+    with Pool(processes=5) as pool:
+        pool.starmap(detector.run, [(patient_dfs[i], i , len(patient_dfs)-1) for i in range(len(patient_dfs))])
 
 
 

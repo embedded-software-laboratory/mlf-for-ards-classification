@@ -1,7 +1,9 @@
 import bisect
 import copy
+import logging
 import math
 from multiprocessing import Pool
+from typing import Optional, Any
 
 import numpy as np
 import pandas as pd
@@ -11,7 +13,10 @@ import json
 
 from processing.ad_algorithms.BaseAnomalyDetector import BaseAnomalyDetector
 from processing.ad_algorithms.PhysicalLimitsDetector import PhysicalLimitsDetector
+from processing.ad_algorithms.torch_utils import check_directory
 from processing.datasets_metadata import AnomalyDetectionMetaData
+
+logger = logging.getLogger(__name__)
 
 
 class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
@@ -21,6 +26,9 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
         self.name = str(kwargs.get('name', "SW_ABSAD_Mod_Detector"))
         self.type = "SW_ABSAD_Mod"
         self.model = None
+        self.anomaly_data_dir = str(
+            kwargs.get("anomaly_data_dir", "/work/rwth1474/Data/AnomalyDetection/anomaly_data/SW_ABSAD_Mod"))
+        check_directory(self.anomaly_data_dir)
         self.process_list = list(kwargs.get('process_list', []))
         self.replace_zeros = bool(kwargs.get('replace_zeros', False))
         self.replace_physical_outliers = bool(kwargs.get('replace_physical_outliers', False))
@@ -59,12 +67,17 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
         return AnomalyDetectionMetaData(**meta_data_dict)
 
     def run(self, dataframe_detection: pd.DataFrame, job_count: int, total_jobs: int) -> pd.DataFrame:
-        print("Patient: ", job_count)
+        logger.info(f"Running job {job_count} of {total_jobs} for {self.name}")
         dataframe_detection = self._prepare_data(dataframe_detection)["dataframe"]
         anomaly_dict = self._predict(dataframe_detection)
 
-
+        patient_ids = dataframe_detection["patient_id"].unique().tolist()
+        first_patient_id = str(patient_ids[0]).replace(".", "_")
+        last_patient_id = str(patient_ids[-1]).replace(".", "_")
         fixed_df = pd.concat(anomaly_dict["fixed_dfs"]).reset_index(drop=True)
+        anomaly_df = pd.concat(anomaly_dict["anomaly_dfs"]).reset_index(drop=True)
+        with open(self.anomaly_data_dir + f"/{self.name}_{first_patient_id}_{last_patient_id}.pkl", "wb") as outfile:
+            pd.to_pickle(anomaly_df, outfile)
         return fixed_df
 
 
@@ -91,69 +104,63 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
         return_dict = {"dataframe": dataframe_detection}
         return return_dict
 
+    @staticmethod
+    def _calculate_anomaly_count(anomaly_count_dict: dict, anomaly_df) -> dict:
+        for column in anomaly_df.columns:
+            if column == "patient_id" or column == "time":
+                continue
+            anomaly_count = anomaly_df[column].sum()
+            if column in anomaly_count_dict.keys():
+                anomaly_count_dict[column] += anomaly_count
+            else:
+                anomaly_count_dict[column] = anomaly_count
+        return anomaly_count_dict
+
     def _predict(self, dataframe: pd.DataFrame, **kwargs) -> dict:
 
         patient_list = dataframe["patient_id"].unique().tolist()
 
         fixed_dfs = []
-        anomaly_count = None
+        anomaly_dfs = []
+        anomaly_count_dict = {}
         for patient_id in patient_list:
             patient_df = dataframe[dataframe["patient_id"] == patient_id]
             if self.columns_to_check[0]!= '':
                 relevant_data = patient_df[self.columns_to_check + ["time", "patient_id"]]
             else:
                 relevant_data = patient_df
-            result_dict = self._predict_patient(relevant_data)
-            if anomaly_count is None:
-                anomaly_count = result_dict["anomaly_count"]
+            result_df = self._predict_patient(relevant_data)
+            if result_df:
+                anomaly_count_dict = self._calculate_anomaly_count(anomaly_count_dict, result_df)
+                anomaly_dfs.append(result_df)
+                fixed_dfs.append(self._handle_anomalies_patient(result_df, relevant_data, patient_df))
             else:
-                for key, value in result_dict["anomaly_count"].items():
-                    if key in anomaly_count.keys():
-                        anomaly_count[key] += value
-                    else:
-                        anomaly_count[key] = value
-
-            fixed_dfs.append(self._handle_anomalies_patient(result_dict["anomaly_dict"], relevant_data, dataframe))
-        return {"fixed_dfs": fixed_dfs,
-                "anomaly_count": anomaly_count}
-
-
-    def _handle_anomalies_patient(self, anomaly_dict: dict, relevant_data: pd.DataFrame, original_data: pd.DataFrame) -> pd.DataFrame:
-        anomaly_df = pd.DataFrame()
-        time_column = None
-        for key, value in anomaly_dict.items():
-            if key in ['outlier_table', 'relevantcol', 'LOS', 'controllimit']:
+                logger.info(f"Patient {patient_id} has not enough data for prediction.")
                 continue
-            if not time_column:
-                time_column = value.keys()
-                anomaly_df["time"] = time_column
-            anomaly_df[key] = value.values()
-
-        anomaly_df.drop(columns=["patient_id"], inplace=True)
-        anomaly_df.replace(1, True, inplace=True)
-        anomaly_df.replace(2, True, inplace=True)
-        anomaly_df.replace(0, False, inplace=True)
-        anomaly_df.replace(-1, False, inplace=True)
-        anomaly_df.replace(-2, False, inplace=True)
 
 
 
+        return {"fixed_dfs": fixed_dfs,
+                "anomaly_count": anomaly_count_dict,
+                "anomaly_dfs": anomaly_dfs}
 
+
+    def _handle_anomalies_patient(self, anomaly_df: pd.DataFrame, relevant_data: pd.DataFrame, original_data: pd.DataFrame) -> pd.DataFrame:
+
+
+        anomaly_df = self._fix_anomaly_df(anomaly_df, relevant_data)
         if self.handling_strategy == "delete_value":
-            anomaly_df = self._fix_anomaly_df(anomaly_df, original_data)
-            fixed_df = self._delete_value(anomaly_df, original_data)
+            fixed_df = self._delete_value(anomaly_df, relevant_data)
+        elif self.handling_strategy == "delete_than_impute":
+            fixed_df = self._delete_than_impute(anomaly_df, relevant_data)
+        elif self.handling_strategy == "delete_row_if_any_anomaly":
+            fixed_df = self._delete_row_if_any_anomaly(anomaly_df, relevant_data)
+        elif self.handling_strategy == "delete_row_if_many_anomalies":
+            fixed_df = self._delete_row_if_many_anomalies(anomaly_df, relevant_data)
+        elif self.handling_strategy == "use_prediction":
+            raise ValueError("Fixing strategy 'use_prediction' is not implemented for SW_ABSAD_Mod_Detector")
         else:
-            anomaly_df = self._fix_anomaly_df(anomaly_df, relevant_data)
-            if self.handling_strategy == "delete_than_impute":
-                fixed_df = self._delete_than_impute(anomaly_df, relevant_data)
-            elif self.handling_strategy == "delete_row_if_any_anomaly":
-                fixed_df = self._delete_row_if_any_anomaly(anomaly_df, relevant_data)
-            elif self.handling_strategy == "delete_row_if_many_anomalies":
-                fixed_df = self._delete_row_if_many_anomalies(anomaly_df, relevant_data)
-            elif self.handling_strategy == "use_prediction":
-                raise ValueError("Fixing strategy 'use_prediction' is not implemented for PhysicalLimitsDetector")
-            else:
-                raise ValueError(f"Unknown fixing strategy {self.handling_strategy}")
+            raise ValueError(f"Unknown fixing strategy {self.handling_strategy}")
         finished_df = original_data
         finished_df.update(fixed_df)
         return finished_df
@@ -169,7 +176,7 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
         return anomaly_df_fixed
 
 
-    def _predict_patient(self, patient_df: pd.DataFrame) -> dict:
+    def _predict_patient(self, patient_df: pd.DataFrame) -> Optional[pd.DataFrame]:
 
         timestamp_column = "time"
         df_with_nan = patient_df.copy(deep=True)
@@ -183,7 +190,7 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
         sorted_interval = sorted(((interval.count(e), e) for e in set(interval)), reverse=True)
         count, default_time_interval = sorted_interval[0]
         if self.window_length >= len(df):
-            return {}
+            return None
 
 
         # Dimensionen jedes Datenpunktes in samples_normalized
@@ -681,10 +688,23 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
                         outlier_for_column[index] = 0
             result[column_name] = outlier_for_column
 
-        # self.signal_add_plot("LOSVar", df[df.columns[0]], df['LOS'], df.columns[0], "LOS/Variance")
-        # for column_number in range(self.num_data_dimensions):
-        #    self.signal_add_line(df.columns[column_number+1], "Variance", df[df.columns[0]], variance_table[column_number].tolist())
-        # self.signal_add_line("LOSVar", "Variance", df[df.columns[0]],variance_table[column_number].tolist())
+        result_df = pd.DataFrame.from_dict(result, orient='index').T
+        result_df.drop(columns=['outlier_table', 'relevantcol', 'LOS', 'controllimit'], inplace=True)
+        result_df["time"] = df["time"]
+        result_df["patient_id"] = df["patient_id"]
+        static_colums = self.columns_not_to_check
+        static_colums.remove("time")
+        static_colums.remove("patient_id")
+        static_colums = [x for x in static_colums if x in result_df.columns]
+        result_df.drop(columns=static_colums, inplace=True)
+        result_df.replace(0, False, inplace=True)
+        result_df.replace(1, True, inplace=True)
+        result_df.replace(-1, True, inplace=True)
+        result_df.replace(-2, False, inplace=True)
+        result_df.replace(2, False, inplace=True)
+
+
+
 
         return result
 
@@ -792,7 +812,7 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
                 CL = CL + 0.001 * math.pow(1.1, no_change_counter)
                 no_change_counter = no_change_counter + 1
                 if no_change_counter == 100:
-                    print("Failed to calculate CL")
+                    logger.info("Failed to calculate CL")
                     return CL
             else:
                 CL = CL + 0.001
