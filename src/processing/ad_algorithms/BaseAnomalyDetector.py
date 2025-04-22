@@ -28,46 +28,57 @@ class BaseAnomalyDetector:
     def run_handler(self, process_pool_data_list: list[pd.DataFrame], n_jobs: int, patients_per_process: int):
 
         if not self.needs_full_data:
+            anomaly_counts = {}
             with Pool(processes=self.max_processes) as pool:
-                anomaly_counts = None
+
                 process_pool_data_list, anomaly_count_list = pool.starmap(self.run,
                                                       [(process_pool_data_list[i], i, n_jobs) for i in range(n_jobs)])
-                for anomaly_count in anomaly_count_list:
-                    if anomaly_counts is None:
-                        for key, value in anomaly_count.items():
-                            total_anomalies_name = key + "_total_anomalies"
-                            percentage_anomalies_name = key + "_percentage_anomalies"
-                            anomaly_counts = {total_anomalies_name: value,
-                                              percentage_anomalies_name: None}
+            for anomaly_count in anomaly_count_list:
+                if not anomaly_counts :
+                    for key, value in anomaly_count.items():
+                        total_anomalies_name = key + "_total_anomalies"
+                        total_data_name = key + "_total_data"
+                        percentage_anomalies_name = key + "_percentage_anomalies"
+                        anomaly_counts = {
+                            key: {
+                                total_anomalies_name: value["anomaly_count"],
+                                total_data_name: value["total_data"],
+                                percentage_anomalies_name: value["anomaly_count"] / value["total_data"]
+                                }
+                            }
+                else:
+                    for key, value in anomaly_count.items:
 
-                    else:
-                        for key in anomaly_count.keys():
-                            total_anomalies_name = key + "_total_anomalies"
-                            percentage_anomalies_name = key + "_percentage_anomalies"
-                            if total_anomalies_name in anomaly_counts.keys():
-                                anomaly_counts[total_anomalies_name] += anomaly_count[key]
-                            else:
-                                anomaly_counts[total_anomalies_name] = anomaly_count[key]
-                            if not percentage_anomalies_name in anomaly_counts.keys():
-                                anomaly_counts[percentage_anomalies_name] = None
+                        data = anomaly_counts[key]
+                        total_anomalies_name = key + "_total_anomalies"
+
+
+                        total_data_name = key + "_total_data"
+                        percentage_anomalies_name = key + "_percentage_anomalies"
+                        if key in anomaly_counts.keys():
+                            anomaly_counts[key] = {
+                                total_anomalies_name: data[total_anomalies_name] + value["anomaly_count"],
+                                total_data_name: data[total_data_name] + value["total_data"],
+                                percentage_anomalies_name: (data[total_anomalies_name] + value["anomaly_count"]) /
+                                    (data[total_data_name] + value["total_data"])
+                            }
+                        else:
+                            anomaly_counts[key] = {
+                                total_anomalies_name: value["anomaly_count"],
+                                total_data_name: value["total_data"],
+                                percentage_anomalies_name: value["anomaly_count"] / value["total_data"]
+                            }
+
         else:
             dataframe = pd.concat(process_pool_data_list, ignore_index=True).reset_index(drop=True)
             fixed_df, anomaly_counts = self.run(dataframe, 0, 1)
             process_pool_data_list, n_jobs = prepare_multiprocessing(fixed_df, patients_per_process)
         dataframe = pd.concat(process_pool_data_list, ignore_index=True).reset_index(drop=True)
-        for key in anomaly_counts.keys():
-            if key in dataframe.columns:
-                total_anomalies_name = key + "_total_anomalies"
-                if total_anomalies_name in anomaly_counts.keys():
-                    percentage_anomalies_name = key + "_percentage_anomalies"
-                    present_anomalies = dataframe[key].sum()
-                    percentage = present_anomalies / len(dataframe)
-                    anomaly_counts[percentage_anomalies_name] = percentage
         self.anomaly_counts = anomaly_counts
 
         return process_pool_data_list, n_jobs, dataframe
 
-    def run(self,  dataframe_detection: pd.DataFrame, job_count: int, total_jobs: int) -> pd.DataFrame:
+    def run(self,  dataframe_detection: pd.DataFrame, job_count: int, total_jobs: int) -> (pd.DataFrame, dict[str, dict[str, int]]):
         """
             Runs the anomaly detection process from start to finish.
 
@@ -78,6 +89,7 @@ class BaseAnomalyDetector:
 
             Returns:
                 pd.DataFrame: The processed DataFrame with anomalies handled.
+                dict: A dictionary containing the anomaly counts for each column as well as the total amount of data present for each column.
 
         """
         raise NotImplementedError()
