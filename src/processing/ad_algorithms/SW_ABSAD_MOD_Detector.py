@@ -66,7 +66,7 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
             meta_data_dict["algorithm_specific_settings"]["variance_window_length"] = self.variance_window_length
         return AnomalyDetectionMetaData(**meta_data_dict)
 
-    def run(self, dataframe_detection: pd.DataFrame, job_count: int, total_jobs: int) -> pd.DataFrame:
+    def run(self, dataframe_detection: pd.DataFrame, job_count: int, total_jobs: int) -> (pd.DataFrame, dict[str, dict[str, int]]):
         logger.info(f"Running job {job_count} of {total_jobs} for {self.name}")
         dataframe_detection = self._prepare_data(dataframe_detection)["dataframe"]
         anomaly_dict = self._predict(dataframe_detection)
@@ -78,7 +78,7 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
         anomaly_df = pd.concat(anomaly_dict["anomaly_dfs"]).reset_index(drop=True)
         with open(self.anomaly_data_dir + f"/{self.name}_{first_patient_id}_{last_patient_id}.pkl", "wb") as outfile:
             pd.to_pickle(anomaly_df, outfile)
-        return fixed_df
+        return fixed_df, anomaly_dict["anomaly_count"]
 
 
     def _prepare_data(self, dataframe_detection: pd.DataFrame) -> dict[str, pd.DataFrame]:
@@ -96,7 +96,7 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
         if self.replace_physical_outliers:
 
             physicalADDetector = PhysicalLimitsDetector(name="PhysicalLimitsDetectorSWABSABMOD", columns_to_check=self.columns_to_check, database=self.database, handling_strategy="delete_value")
-            dataframe_detection = physicalADDetector.run(dataframe_training=None, dataframe_detection=dataframe_detection, job_count=-1, total_jobs=-1)
+            dataframe_detection = physicalADDetector.run(dataframe_detection=dataframe_detection, job_count=-1, total_jobs=-1)
 
         if self.replace_zeros:
             dataframe_detection = dataframe_detection.replace(0, np.nan)
@@ -105,15 +105,21 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
         return return_dict
 
     @staticmethod
-    def _calculate_anomaly_count(anomaly_count_dict: dict, anomaly_df) -> dict:
+    def _calculate_anomaly_count(anomaly_count_dict: dict, anomaly_df: pd.DataFrame, patient_df: pd.DataFrame) -> dict:
+
         for column in anomaly_df.columns:
+            value_count = patient_df[column].count()
             if column == "patient_id" or column == "time":
                 continue
             anomaly_count = anomaly_df[column].sum()
             if column in anomaly_count_dict.keys():
-                anomaly_count_dict[column] += anomaly_count
+                new_anomaly_count = anomaly_count_dict[column]["anomaly_count"] + anomaly_count
+                new_value_count = anomaly_count_dict[column]["total_data"] + value_count
+                anomaly_count_dict[column] = {"total_data": new_value_count,
+                                              "anomaly_count": new_anomaly_count}
             else:
-                anomaly_count_dict[column] = anomaly_count
+                anomaly_count_dict[column] = {"total_data": value_count,
+                                              "anomaly_count": anomaly_count}
         return anomaly_count_dict
 
     def _predict(self, dataframe: pd.DataFrame, **kwargs) -> dict:
@@ -125,25 +131,26 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
         anomaly_count_dict = {}
         logger.info(patient_list)
         for patient_id in patient_list:
+            logger.info(f"Running job for patient {patient_id}...")
             patient_df = dataframe[dataframe["patient_id"] == patient_id]
             if self.columns_to_check[0]!= '':
                 relevant_data = patient_df[self.columns_to_check + ["time", "patient_id"]]
             else:
                 relevant_data = patient_df
             result_df = self._predict_patient(relevant_data)
-            logger.info(f"Type of return: {type(result_df)}")
-            logger.info(f"patient: {patient_id}")
+
             if not result_df.empty:
-                logger.info(f"patient in if: {patient_id}")
+
                 anomaly_count_dict = self._calculate_anomaly_count(anomaly_count_dict, result_df)
                 anomaly_dfs.append(result_df)
                 fixed_dfs.append(self._handle_anomalies_patient(result_df, relevant_data, patient_df))
+                logger.info(f"Finished for patient {patient_id}!")
             else:
                 logger.info(f"Patient {patient_id} has not enough data for prediction.")
                 continue
 
 
-        loger.info(f"Finished for patients: {patient_list}")
+        logger.info(f"Finished for patients: {patient_list}")
         return {"fixed_dfs": fixed_dfs,
                 "anomaly_count": anomaly_count_dict,
                 "anomaly_dfs": anomaly_dfs}
@@ -177,6 +184,7 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
                     anomaly_df_fixed.append(row["time"])
         anomaly_df_fixed = anomaly_df_fixed.sort_values(by=["time"], ascending=True).reset_index(drop=True)
         anomaly_df_fixed.replace(np.nan, True, inplace=True)
+        anomaly_df_fixed.drop(columns=["patient_id", "time"], inplace=True)
         return anomaly_df_fixed
 
 
@@ -694,11 +702,8 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
 
         result_df = pd.DataFrame.from_dict(result, orient='index').T
         result_df.drop(columns=['outlier_table', 'relevantcol', 'LOS', 'controllimit'], inplace=True)
-        result_df["time"] = df["time"]
-        result_df["patient_id"] = df["patient_id"]
+
         static_colums = self.columns_not_to_check
-        static_colums.remove("time")
-        static_colums.remove("patient_id")
         static_colums = [x for x in static_colums if x in result_df.columns]
         result_df.drop(columns=static_colums, inplace=True)
         result_df.replace(0, False, inplace=True)
@@ -706,7 +711,8 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
         result_df.replace(-1, True, inplace=True)
         result_df.replace(-2, False, inplace=True)
         result_df.replace(2, False, inplace=True)
-
+        result_df["time"] = df["time"]
+        result_df["patient_id"] = df["patient_id"]
 
 
 
