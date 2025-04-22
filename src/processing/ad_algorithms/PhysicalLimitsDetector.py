@@ -1,5 +1,10 @@
+import os
+import pickle
+
 import numpy as np
 import pandas as pd
+
+from processing.ad_algorithms.torch_utils import check_directory
 from processing.datasets_metadata import AnomalyDetectionMetaData
 
 from processing.ad_algorithms.BaseAnomalyDetector import BaseAnomalyDetector
@@ -9,6 +14,8 @@ class PhysicalLimitsDetector(BaseAnomalyDetector):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.anomaly_data_dir = kwargs.get("anomaly_data_dir", "../Data/AnomalyData/PhysicalLimits/")
+        check_directory(self.anomaly_data_dir)
         self.type = "PhysicalLimits"
         self.model = None
         self.physical_limits_dict = None
@@ -19,19 +26,22 @@ class PhysicalLimitsDetector(BaseAnomalyDetector):
                 setattr(self, key, value)
         self.physical_limits_dict = physical_limits_database_dict[self.database]
 
-    def run(self, dataframe_detection: pd.DataFrame, job_count: int, total_jobs: int):
+    def run(self, dataframe_detection: pd.DataFrame, job_count: int, total_jobs: int) -> tuple[pd.DataFrame, dict[str, dict[str, int]]]:
 
         relevant_data = self._prepare_data(dataframe_detection)["dataframe"]
         anomaly_dict = self._predict(relevant_data)
+        anomaly_df =  pd.DataFrame.from_dict(anomaly_dict)
+        with open(os.path.join(self.anomaly_data_dir, f"anomaly_data_{self.name}.pkl"), "wb") as f:
+            pickle.dump(anomaly_df, f)
 
         fixed_df = self.handle_anomalies(anomaly_dict, relevant_data, dataframe_detection)
-        return fixed_df
+        return fixed_df, anomaly_dict["anomaly_count"]
 
 
     def handle_anomalies(self, anomaly_dict: dict, relevant_data: pd.DataFrame, original_data: pd.DataFrame):
         anomaly_df = pd.DataFrame.from_dict(anomaly_dict["anomaly_dict"])
         if self.handling_strategy == "delete_value":
-            fixed_df = self._delete_value(anomaly_df, original_data)
+            fixed_df = self._delete_value(anomaly_df, relevant_data)
         elif self.handling_strategy == "delete_than_impute":
             fixed_df = self._delete_than_impute(anomaly_df, relevant_data)
         elif self.handling_strategy == "delete_row_if_any_anomaly":
@@ -70,7 +80,11 @@ class PhysicalLimitsDetector(BaseAnomalyDetector):
                         anomaly_dict[column].append(False)
         anomaly_count = {}
         for column in anomaly_dict.keys():
-            anomaly_count[column] = sum(anomaly_dict[column])
+            total_data = dataframe[column].count()
+            anomaly_count[column] = {
+                "anomaly_count": sum(anomaly_dict[column]),
+                "total_data": total_data
+            }
         predicted_dict = {"anomaly_dict": anomaly_dict, "anomaly_count": anomaly_count}
         return predicted_dict
 
