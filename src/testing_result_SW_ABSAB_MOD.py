@@ -36,7 +36,7 @@ if __name__ == "__main__":
         ]
     )
     logger = logging.getLogger(__name__)
-    data_frame = _load_numpy_file("../Data/uka_data_050623.npy")
+    data_frame = _load_numpy_file("/work/rwth1474/Data/time_series/uka_data_050623.npy")
     patient_ids = data_frame["patient_id"].unique().tolist()
 
     parser = argparse.ArgumentParser(description="Test SW_ABSAD_MOD")
@@ -46,10 +46,12 @@ if __name__ == "__main__":
     start_patient_inx = job_id * 500
     end_patient_inx = start_patient_inx + 500
     relevant_ids = patient_ids[start_patient_inx:end_patient_inx]
-    detector = SW_ABSAD_Mod_Detector(use_cl_modification=True, retrain_after_gap=True, variance_check=False, use_columns="", clean_training_window=True)
+    detector = SW_ABSAD_Mod_Detector(use_cl_modification=True, retrain_after_gap=True, variance_check=False, use_columns="", clean_training_window=True, handling_strategy="delete_than_impute", fix_algorithm="interpolate")
     patient_dfs = [data_frame[data_frame["patient_id"] == patient_id] for patient_id in relevant_ids]
-    with Pool(processes=5) as pool:
-        pool.starmap(detector.run, [(patient_dfs[i], i , len(patient_dfs)-1) for i in range(len(patient_dfs))])
+    for i in range(len(patient_dfs)):
+        detector.run(patient_dfs[i], i+1, len(patient_dfs))
+    #with Pool(processes=3) as pool:
+    #    pool.starmap(detector.run, [(patient_dfs[i], i , len(patient_dfs)-1) for i in range(len(patient_dfs))])
 
 
 
