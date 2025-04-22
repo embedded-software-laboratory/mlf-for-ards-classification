@@ -123,6 +123,7 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
         fixed_dfs = []
         anomaly_dfs = []
         anomaly_count_dict = {}
+        logger.info(patient_list)
         for patient_id in patient_list:
             patient_df = dataframe[dataframe["patient_id"] == patient_id]
             if self.columns_to_check[0]!= '':
@@ -130,7 +131,10 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
             else:
                 relevant_data = patient_df
             result_df = self._predict_patient(relevant_data)
-            if result_df:
+            logger.info(f"Type of return: {type(result_df)}")
+            logger.info(f"patient: {patient_id}")
+            if not result_df.empty:
+                logger.info(f"patient in if: {patient_id}")
                 anomaly_count_dict = self._calculate_anomaly_count(anomaly_count_dict, result_df)
                 anomaly_dfs.append(result_df)
                 fixed_dfs.append(self._handle_anomalies_patient(result_df, relevant_data, patient_df))
@@ -139,7 +143,7 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
                 continue
 
 
-
+        loger.info(f"Finished for patients: {patient_list}")
         return {"fixed_dfs": fixed_dfs,
                 "anomaly_count": anomaly_count_dict,
                 "anomaly_dfs": anomaly_dfs}
@@ -190,7 +194,7 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
         sorted_interval = sorted(((interval.count(e), e) for e in set(interval)), reverse=True)
         count, default_time_interval = sorted_interval[0]
         if self.window_length >= len(df):
-            return None
+            return pd.DataFrame()
 
 
         # Dimensionen jedes Datenpunktes in samples_normalized
