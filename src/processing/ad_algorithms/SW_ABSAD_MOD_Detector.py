@@ -706,7 +706,7 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
 
 
 
-        return result
+        return result_df
 
     @staticmethod
     def get_cosine_similarity(x, y):
