@@ -483,7 +483,7 @@ class DeepAntDetector(BaseAnomalyDetector):
 
 
 
-    def run(self,  dataframe_detection: pd.DataFrame, job_count: int, total_jobs: int) -> pd.DataFrame:
+    def run(self,  dataframe_detection: pd.DataFrame, job_count: int, total_jobs: int) -> (pd.DataFrame, dict[str, dict[str, int]]):
 
         prepared_data = self._prepare_data(dataframe_detection)
         existing_labels = []
@@ -503,17 +503,18 @@ class DeepAntDetector(BaseAnomalyDetector):
         df_anomaly = pd.DataFrame()
         for item in results:
             if not item.empty:
-                df_anomaly.merge(item, how="outer", left_index=True, right_index=True)
+                df_anomaly.merge(item, how="outer", on=["patient_id", "time"])
+        df_anomaly.fillna(False, inplace=True)
         anomaly_columns = df_anomaly.columns.tolist()
         rename_dict = {column: column + "_anomaly" for column in anomaly_columns}
         remaining_data = prepared_data["test"]
         df_anomaly = df_anomaly.rename(columns=rename_dict)
         relevant_data = prepared_data["test"][df_anomaly.columns.tolist()]
-        df_anomaly = df_anomaly.fillna(False)
+        anomaly_dict = self._build_anomaly_dict(df_anomaly, relevant_data)
         with open(os.path.join(self.anomaly_data_dir, f"anomaly_data_{self.name}.pkl"), "wb") as f:
             pickle.dump(df_anomaly, f)
         fixed_df = self._handle_anomalies({"results": df_anomaly}, relevant_data, remaining_data)
-        return fixed_df
+        return fixed_df, anomaly_dict
 
     @staticmethod
     def _build_patient_dict(dataframe: pd.DataFrame) -> dict:
@@ -733,8 +734,8 @@ class DeepAntDetector(BaseAnomalyDetector):
             marked_anomaly_dict[name + "_anomaly"] = marked_anomaly_list
         for key, value in marked_anomaly_dict.items():
             anomaly_df[key] = value
-        test = test.merge(anomaly_df, how="left", on=["patient_id", "time"]).fillna(False)
-        return test
+
+        return anomaly_df
 
 
 
@@ -795,6 +796,18 @@ class DeepAntDetector(BaseAnomalyDetector):
 
     def _handle_anomalies(self, anomalies: dict, anomalous_data : pd.DataFrame, original_data: pd.DataFrame) -> pd.DataFrame:
         raise NotImplementedError
+
+    def _build_anomaly_dict(self, df_anomaly: pd.DataFrame, relevant_data: pd.DataFrame) -> dict[str, dict[str, int]]:
+        anomaly_count_dict = {}
+        for column in df_anomaly.columns:
+            if column in relevant_data.columns:
+                total_value = df_anomaly[column].count()
+                anomaly_count_dict[column] = {
+                    "anomaly_count": df_anomaly[column].sum(),
+                    "total_data": total_value
+                }
+
+        return anomaly_count_dict
 
 
 
