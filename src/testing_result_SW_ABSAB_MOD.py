@@ -4,7 +4,7 @@ import logging
 import os
 from datetime import datetime
 from multiprocessing import Pool
-
+import re
 import numpy as np
 import pandas as pd
 
@@ -39,7 +39,7 @@ if __name__ == "__main__":
         ]
     )
     logger = logging.getLogger(__name__)
-    data_frame = _load_numpy_file("/work/rwth1474/Data/time_series/uka_data_050623.npy")
+    data_frame = _load_numpy_file("../Data/uka_data_050623.npy")
     patient_ids = data_frame["patient_id"].unique().tolist()
 
     parser = argparse.ArgumentParser(description="Test SW_ABSAD_MOD")
@@ -50,7 +50,20 @@ if __name__ == "__main__":
     #end_patient_inx = start_patient_inx + 500
     #relevant_ids = patient_ids[start_patient_inx:end_patient_inx]
     detector = SW_ABSAD_Mod_Detector(use_cl_modification=True, retrain_after_gap=True, variance_check=False, use_columns="", clean_training_window=True, handling_strategy="delete_than_impute", fix_algorithm="interpolate")
+    anomaly_data_dir = detector.anomaly_data_dir
+    files = os.listdir(anomaly_data_dir)
+    existing_patients = []
+    for file in files:
+        if file.endswith(".pkl"):
+            temp = file.replace("SW_ABSAD_Mod_Detector_", "")
+            temp = re.sub('_[0-9]_[0-9].pkl', '', temp)
+            temp = temp.replace("_", ".")
+            patient_id = float(temp)
+            existing_patients.append(patient_id)
+
     logger.info("Before patient_df")
+    patient_ids = [patient_id for patient_id in patient_ids if patient_id not in existing_patients]
+    logger.info(f"Running {len(patient_ids)} patients!")
     patient_dfs = []
     with Pool(processes=20) as pool:
         patient_dfs = pool.starmap(divide_patients, [(data_frame, patient_id) for patient_id in patient_ids])
