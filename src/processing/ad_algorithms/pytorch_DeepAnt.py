@@ -547,6 +547,7 @@ class DeepAntDetector(BaseAnomalyDetector):
 
 
         name = dataset_to_create["name"]
+        contained_patients = data["patient_id"].unique().tolist()
         relevant_columns = list(
             set(dataset_to_create["labels"] + dataset_to_create["features"] + ["patient_id", "time"]))
         relevant = data[relevant_columns]
@@ -580,6 +581,7 @@ class DeepAntDetector(BaseAnomalyDetector):
         window_generator = WindowGenerator(**specific_window_generator_config)
 
         dataset, patients_to_remove = self._create_dataset(relevant_scaled, patient_divisions, window_generator)
+        contained_patients = [patient_id for patient_id in contained_patients if patient_id not in patients_to_remove]
 
 
         if not dataset:
@@ -592,6 +594,8 @@ class DeepAntDetector(BaseAnomalyDetector):
                 pickle.dump(dataset.data_x, f)
             with open(os.path.join(self.windowed_data_dir + "/" + name + "_" + type_of_dataset + "_labels.pkl"), "wb") as f:
                 pickle.dump(dataset.data_y, f)
+            with open(os.path.join(self.windowed_data_dir + "/" + name + "_" + type_of_dataset + "_contained_patients.pkl"), "wb") as f:
+                pickle.dump(contained_patients, f)
 
             if type_of_dataset == "test":
                 relevant = relevant[~relevant["patient_id"].isin(patients_to_remove)].reset_index(drop=True)
