@@ -19,7 +19,10 @@ def _load_numpy_file(file_path) -> pd.DataFrame:
     return dataframe
 
 
-
+def divide_patients(dataframe, patient_id):
+    logger.info(patient_id)
+    patient_df = data_frame[data_frame["patient_id"] == patient_id]
+    return patient_df
 
 if __name__ == "__main__":
     LOG_DIR = "../Data/logs/prepare_all_data_DeepAnt"
@@ -43,15 +46,20 @@ if __name__ == "__main__":
     parser.add_argument("--job_id", type=int, help="Job ID, used to identify which patients to test")
     args = parser.parse_args()
     job_id = args.job_id
-    start_patient_inx = job_id * 500
-    end_patient_inx = start_patient_inx + 500
-    relevant_ids = patient_ids[start_patient_inx:end_patient_inx]
+    #start_patient_inx = job_id * 500
+    #end_patient_inx = start_patient_inx + 500
+    #relevant_ids = patient_ids[start_patient_inx:end_patient_inx]
     detector = SW_ABSAD_Mod_Detector(use_cl_modification=True, retrain_after_gap=True, variance_check=False, use_columns="", clean_training_window=True, handling_strategy="delete_than_impute", fix_algorithm="interpolate")
-    patient_dfs = [data_frame[data_frame["patient_id"] == patient_id] for patient_id in relevant_ids]
-    for i in range(len(patient_dfs)):
-        detector.run(patient_dfs[i], i+1, len(patient_dfs))
-    #with Pool(processes=3) as pool:
-    #    pool.starmap(detector.run, [(patient_dfs[i], i , len(patient_dfs)-1) for i in range(len(patient_dfs))])
+    logger.info("Before patient_df")
+    patient_dfs = []
+    with Pool(processes=20) as pool:
+        patient_dfs = pool.starmap(divide_patients, [(data_frame, patient_id) for patient_id in patient_ids])
+    #patient_dfs = [data_frame[data_frame["patient_id"] == patient_id] for patient_id in patient_ids]
+    logger.info("After patient_df")
+    #for i in range(len(patient_dfs)):
+    #    detector.run(patient_dfs[i], i+1, len(patient_dfs))
+    with Pool(processes=20) as pool:
+        pool.starmap(detector.run, [(patient_dfs[i], i , len(patient_dfs)-1) for i in range(len(patient_dfs))])
 
 
 

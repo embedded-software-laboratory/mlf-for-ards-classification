@@ -78,6 +78,7 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
         anomaly_df = pd.concat(anomaly_dict["anomaly_dfs"]).reset_index(drop=True)
         with open(self.anomaly_data_dir + f"/{self.name}_{first_patient_id}_{last_patient_id}.pkl", "wb") as outfile:
             pd.to_pickle(anomaly_df, outfile)
+        logger.info("Saved data")
         return fixed_df, anomaly_dict["anomaly_count"]
 
 
@@ -141,7 +142,7 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
 
             if not result_df.empty:
 
-                anomaly_count_dict = self._calculate_anomaly_count(anomaly_count_dict, result_df)
+                anomaly_count_dict = self._calculate_anomaly_count(anomaly_count_dict, result_df, patient_df)
                 anomaly_dfs.append(result_df)
                 fixed_dfs.append(self._handle_anomalies_patient(result_df, relevant_data, patient_df))
                 logger.info(f"Finished for patient {patient_id}!")
