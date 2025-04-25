@@ -29,7 +29,7 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
         self.anomaly_data_dir = str(
             kwargs.get("anomaly_data_dir", "/work/rwth1474/Data/AnomalyDetection/anomaly_data/SW_ABSAD_Mod"))
         check_directory(self.anomaly_data_dir)
-        self.process_list = list(kwargs.get('process_list', []))
+
         self.replace_zeros = bool(kwargs.get('replace_zeros', False))
         self.replace_physical_outliers = bool(kwargs.get('replace_physical_outliers', False))
         self.use_cl_modification = bool(kwargs.get('use_cl_modification', True))
@@ -45,6 +45,7 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
         self.k = int(kwargs.get('k', 20))
         self.s = int(kwargs.get('s', 20))
         self.needs_full_data = False
+        self.patient_level_anomaly_detection = True
 
     def create_meta_data(self):
         meta_data_dict = super().create_meta_data()
@@ -71,13 +72,10 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
         dataframe_detection = self._prepare_data(dataframe_detection)["dataframe"]
         anomaly_dict = self._predict(dataframe_detection)
 
-        patient_ids = dataframe_detection["patient_id"].unique().tolist()
-        first_patient_id = str(patient_ids[0]).replace(".", "_")
-        last_patient_id = str(patient_ids[-1]).replace(".", "_")
+
         fixed_df = pd.concat(anomaly_dict["fixed_dfs"]).reset_index(drop=True)
         anomaly_df = pd.concat(anomaly_dict["anomaly_dfs"]).reset_index(drop=True)
-        with open(self.anomaly_data_dir + f"/{self.name}_{first_patient_id}_{last_patient_id}.pkl", "wb") as outfile:
-            pd.to_pickle(anomaly_df, outfile)
+        self._save_anomaly_df(anomaly_df)
         logger.info("Saved data")
         return fixed_df, anomaly_dict["anomaly_count"]
 
@@ -95,7 +93,7 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
             dataframe_detection = dataframe_detection.replace(0, np.nan)
 
         if self.replace_physical_outliers:
-
+            # TODO handle metadata from PhysicalLimitsDetector
             physicalADDetector = PhysicalLimitsDetector(name="PhysicalLimitsDetectorSWABSABMOD", columns_to_check=self.columns_to_check, database=self.database, handling_strategy="delete_value")
             dataframe_detection = physicalADDetector.run(dataframe_detection=dataframe_detection, job_count=-1, total_jobs=-1)
 
@@ -105,23 +103,8 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
         return_dict = {"dataframe": dataframe_detection}
         return return_dict
 
-    @staticmethod
-    def _calculate_anomaly_count(anomaly_count_dict: dict, anomaly_df: pd.DataFrame, patient_df: pd.DataFrame) -> dict:
 
-        for column in anomaly_df.columns:
-            value_count = patient_df[column].count()
-            if column == "patient_id" or column == "time":
-                continue
-            anomaly_count = anomaly_df[column].sum()
-            if column in anomaly_count_dict.keys():
-                new_anomaly_count = anomaly_count_dict[column]["anomaly_count"] + anomaly_count
-                new_value_count = anomaly_count_dict[column]["total_data"] + value_count
-                anomaly_count_dict[column] = {"total_data": new_value_count,
-                                              "anomaly_count": new_anomaly_count}
-            else:
-                anomaly_count_dict[column] = {"total_data": value_count,
-                                              "anomaly_count": anomaly_count}
-        return anomaly_count_dict
+
 
     def _predict(self, dataframe: pd.DataFrame, **kwargs) -> dict:
 
@@ -142,7 +125,7 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
 
             if not result_df.empty:
 
-                anomaly_count_dict = self._calculate_anomaly_count(anomaly_count_dict, result_df, patient_df)
+                anomaly_count_dict = self._calculate_anomaly_count(result_df, patient_df, anomaly_count_dict)
                 anomaly_dfs.append(result_df)
                 fixed_dfs.append(self._handle_anomalies_patient(result_df, relevant_data, patient_df))
                 logger.info(f"Finished for patient {patient_id}!")
@@ -176,17 +159,6 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
         finished_df = original_data
         finished_df.update(fixed_df)
         return finished_df
-
-    def _fix_anomaly_df(self, anomaly_df: pd.DataFrame, starting_data: pd.DataFrame) -> pd.DataFrame:
-        anomaly_df_fixed = anomaly_df.copy(deep=True)
-        if len(anomaly_df_fixed.index) != len(starting_data.index):
-            for index, row in starting_data.iterrows():
-                if row["time"] not in anomaly_df_fixed["time"].values:
-                    anomaly_df_fixed.append(row["time"])
-        anomaly_df_fixed = anomaly_df_fixed.sort_values(by=["time"], ascending=True).reset_index(drop=True)
-        anomaly_df_fixed.replace(np.nan, True, inplace=True)
-        anomaly_df_fixed.drop(columns=["patient_id", "time"], inplace=True)
-        return anomaly_df_fixed
 
 
     def _predict_patient(self, patient_df: pd.DataFrame) -> Optional[pd.DataFrame]:
