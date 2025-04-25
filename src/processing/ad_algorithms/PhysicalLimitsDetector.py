@@ -1,7 +1,3 @@
-import os
-import pickle
-
-import numpy as np
 import pandas as pd
 
 from processing.ad_algorithms.torch_utils import check_directory
@@ -30,31 +26,15 @@ class PhysicalLimitsDetector(BaseAnomalyDetector):
 
         relevant_data = self._prepare_data(dataframe_detection)["dataframe"]
         anomaly_dict = self._predict(relevant_data)
-        anomaly_df =  pd.DataFrame.from_dict(anomaly_dict)
-        with open(os.path.join(self.anomaly_data_dir, f"anomaly_data_{self.name}.pkl"), "wb") as f:
-            pickle.dump(anomaly_df, f)
+        anomaly_df =  anomaly_dict["anomaly_df"]
+        self._save_anomaly_df(anomaly_df)
 
-        fixed_df = self.handle_anomalies(anomaly_dict, relevant_data, dataframe_detection)
+
+        fixed_df = self._handle_anomalies(anomaly_df, dataframe_detection)
         return fixed_df, anomaly_dict["anomaly_count"]
 
 
-    def handle_anomalies(self, anomaly_dict: dict, relevant_data: pd.DataFrame, original_data: pd.DataFrame):
-        anomaly_df = pd.DataFrame.from_dict(anomaly_dict["anomaly_dict"])
-        if self.handling_strategy == "delete_value":
-            fixed_df = self._delete_value(anomaly_df, relevant_data)
-        elif self.handling_strategy == "delete_than_impute":
-            fixed_df = self._delete_than_impute(anomaly_df, relevant_data)
-        elif self.handling_strategy == "delete_row_if_any_anomaly":
-            fixed_df = self._delete_row_if_any_anomaly(anomaly_df, relevant_data)
-        elif self.handling_strategy == "delete_row_if_many_anomalies":
-            fixed_df = self._delete_row_if_many_anomalies(anomaly_df, relevant_data)
-        elif self.handling_strategy == "use_prediction":
-            raise ValueError("Fixing strategy 'use_prediction' is not implemented for PhysicalLimitsDetector")
-        else:
-            raise ValueError("Unknown fixing strategy")
-        finished_df = original_data
-        finished_df.update(fixed_df)
-        return finished_df
+
 
 
     def _prepare_data(self, dataframe: pd.DataFrame) -> dict:
@@ -78,15 +58,16 @@ class PhysicalLimitsDetector(BaseAnomalyDetector):
                         anomaly_dict[column].append(True)
                     else:
                         anomaly_dict[column].append(False)
-        anomaly_count = {}
-        for column in anomaly_dict.keys():
-            total_data = dataframe[column].count()
-            anomaly_count[column] = {
-                "anomaly_count": sum(anomaly_dict[column]),
-                "total_data": total_data
-            }
-        predicted_dict = {"anomaly_dict": anomaly_dict, "anomaly_count": anomaly_count}
-        return predicted_dict
+        anomaly_df = pd.DataFrame.from_dict(anomaly_dict)
+        anomaly_df["patient_id"] = dataframe["patient_id"]
+        anomaly_df["timestamp"] = dataframe["timestamp"]
+        anomaly_count_dict = self._calculate_anomaly_count(anomaly_df, dataframe)
+        result_dict = {
+            "anomaly_df": anomaly_df,
+            "anomaly_count": anomaly_count_dict}
+        return result_dict
+
+
 
     def create_meta_data(self):
         meta_data_dict = super().create_meta_data()
