@@ -2,6 +2,8 @@
 import logging
 import os
 import random
+
+import pandas as pd
 import torch
 
 logger = logging.getLogger(__name__)
@@ -36,3 +38,9 @@ def check_directory(directory: str):
         logger.info(f"Directory {directory} created.")
     else:
         logger.info(f"Directory {directory} already exists.")
+
+def split_patients(dataframe: pd.DataFrame, anomaly_df: pd.DataFrame, patient_id: float) -> (pd.DataFrame, pd.DataFrame):
+
+    patient_df = dataframe[dataframe["patient_id"] == patient_id].reset_index(drop=True)
+    anomaly_df = anomaly_df[anomaly_df["patient_id"] == patient_id].reset_index(drop=True)
+    return patient_df, anomaly_df

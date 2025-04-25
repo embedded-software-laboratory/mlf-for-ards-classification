@@ -1,4 +1,8 @@
 from multiprocessing import Pool
+
+import numpy as np
+
+from processing.ad_algorithms.torch_utils import split_patients
 from processing.processing_utils import prepare_multiprocessing
 
 import pandas as pd
@@ -7,6 +11,7 @@ import pandas as pd
 class BaseAnomalyDetector:
 
     def __init__(self, **kwargs):
+        self.can_predict = False
         self.name = None
         self.type = None
         self.model = None
@@ -93,6 +98,63 @@ class BaseAnomalyDetector:
 
         """
         raise NotImplementedError()
+
+    def fix_anomaly_data(self, data_to_fix: pd.DataFrame, detected_anomalies_file: str, detected_anomalies_meta_data_file: str) -> pd.DataFrame:
+        """
+            Fixes anonmalies in the given Dataframe by utilizing already detected anomalies that have been saved on the disk.
+
+            Returns:
+                pd.DataFrame: The processed DataFrame with anomalies handled.
+        """
+        detected_anomalies_df = pd.read_pickle(detected_anomalies_file)
+        meta_data = pd.read_pickle(detected_anomalies_meta_data_file)
+        relevant_data_to_fix = data_to_fix[data_to_fix["patient_id"].isin(meta_data["contained_patients"])]
+
+
+        with Pool(processes=self.max_processes) as pool:
+            df_list = pool.starmap(split_patients, [(relevant_data_to_fix, patient_id) for patient_id in meta_data["contained_patients"]])
+        # TODO check if the arguments passed are correct
+        with Pool(processes=self.max_processes) as pool:
+            fixed_patients = pool.starmap(self._handle_anomalies_patient, [(detected_anomalies_df[1], patient_df[0], patient_df[0]) for patient_df in df_list])
+        fixed_df = pd.concat(fixed_patients, ignore_index=True).reset_index(drop=True)
+
+
+        return fixed_df
+
+
+    def _handle_anomalies_patient(self, anomaly_df: pd.DataFrame, relevant_data: pd.DataFrame, original_data: pd.DataFrame) -> pd.DataFrame:
+
+
+        anomaly_df = self._fix_anomaly_df(anomaly_df, relevant_data)
+        if self.handling_strategy == "delete_value":
+            fixed_df = self._delete_value(anomaly_df, relevant_data)
+        elif self.handling_strategy == "delete_than_impute":
+            fixed_df = self._delete_than_impute(anomaly_df, relevant_data)
+        elif self.handling_strategy == "delete_row_if_any_anomaly":
+            fixed_df = self._delete_row_if_any_anomaly(anomaly_df, relevant_data)
+        elif self.handling_strategy == "delete_row_if_many_anomalies":
+            fixed_df = self._delete_row_if_many_anomalies(anomaly_df, relevant_data)
+        elif self.handling_strategy == "use_prediction" and self.can_predict:
+            fixed_df = self._use_prediction(anomaly_df, relevant_data)
+        elif self.handling_strategy == "use_prediction" and not self.can_predict:
+            raise NotImplementedError(f"Algorithm {self.type} does not support prediction as a handling strategy for anomalies.")
+        else:
+            raise ValueError(f"Unknown fixing strategy {self.handling_strategy}")
+        finished_df = original_data
+        finished_df.update(fixed_df)
+        return finished_df
+
+    def _fix_anomaly_df(self, anomaly_df: pd.DataFrame, starting_data: pd.DataFrame) -> pd.DataFrame:
+        anomaly_df_fixed = anomaly_df.copy(deep=True)
+        if len(anomaly_df_fixed.index) != len(starting_data.index):
+            for index, row in starting_data.iterrows():
+                if row["time"] not in anomaly_df_fixed["time"].values:
+                    anomaly_df_fixed.append(row["time"])
+        anomaly_df_fixed = anomaly_df_fixed.sort_values(by=["time"], ascending=True).reset_index(drop=True)
+        anomaly_df_fixed.replace(np.nan, True, inplace=True)
+        anomaly_df_fixed.drop(columns=["patient_id", "time"], inplace=True)
+        return anomaly_df_fixed
+
 
     def _train_ad_model(self, data_training, data_validation, **kwargs):
 
