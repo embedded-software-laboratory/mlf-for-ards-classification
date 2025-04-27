@@ -2,7 +2,7 @@ import math
 import os
 import sys
 from multiprocessing import Pool
-from typing import Any, Tuple
+from typing import Any, Tuple, Optional
 import pickle
 import numpy as np
 import pandas as pd
@@ -22,6 +22,7 @@ from sklearn.model_selection import train_test_split
 from processing.ad_algorithms.BaseAnomalyDetector import BaseAnomalyDetector
 from processing.ad_algorithms.torchWindowGenerator import WindowGenerator, DataModule
 from processing.ad_algorithms.torch_utils import check_device, check_directory, set_seed
+from processing.datasets_metadata import AnomalyDetectionMetaData
 
 logger = logging.getLogger(__name__)
 
@@ -145,7 +146,7 @@ class AnomalyDetector(pl.LightningModule):
         logger.info(f"Epoch {self.current_epoch} - Validation step {batch_idx} - Loss: {loss.item()}")
         return loss
 
-    def predict_step(self, batch: Any, batch_idx: int) -> torch.Tensor:
+    def predict_step(self, batch: Any, batch_idx: int, **kwargs) -> torch.Tensor:
         """
             Defines a step for prediction.
 
@@ -257,6 +258,12 @@ class DeepAnt:
             1. Initial short training
             2. Main training, with early stopping based on validation loss.
         """
+        if self.train_dataset is None:
+            logger.error("Training dataset is None. Cannot train the model.")
+            return
+        if self.val_dataset is None:
+            logger.error("Validation dataset is None. Cannot train the model.")
+            return
         train_loader = DataLoader(self.train_dataset,
                                   batch_size=self.config["batch_size"],
                                   shuffle=True,
@@ -283,7 +290,7 @@ class DeepAnt:
         
         logger.info("Main training completed. Saving the best model...")
 
-    def predict(self) -> dict:
+    def predict(self, test_dataset: DataModule = None) -> dict:
         """
             Detects anomalies in the test dataset using the trained DeepAnt model.
 
@@ -291,9 +298,15 @@ class DeepAnt:
                 dict: Dictionary containing indices of detected anomalies for each feature.
         """
         
-
+        if self.test_dataset is None and test_dataset is None:
+            logger.error("Test dataset is None. Cannot detect anomalies.")
+            return {}
+        if test_dataset is not None:
+            dataset_to_use = test_dataset
+        else:
+            dataset_to_use = self.test_dataset
         logger.info("Starting detection of anomalies...")
-        test_loader = DataLoader(self.test_dataset,
+        test_loader = DataLoader(dataset_to_use,
                                  batch_size=self.config["batch_size"],
                                  shuffle=False,
                                 
@@ -383,6 +396,8 @@ class DeepAntDetector(BaseAnomalyDetector):
                 kwargs: Configuration dictionary containing model parameters.
         """
         super(DeepAntDetector, self).__init__(**kwargs)
+        self.windowed_data_disk_interaction = False
+        self.loaded_data = False
         self.name = str(kwargs.get("name", "DeepAntDetector"))
         self.type = "DeepAnt"
         self.model = {}
@@ -482,6 +497,25 @@ class DeepAntDetector(BaseAnomalyDetector):
             self._prepare_data_step(test, item, True, "test")
 
 
+    def create_meta_data(self):
+        meta_data_dict = super().create_meta_data()
+        meta_data_dict["anomaly_detection_algorithm"] = self.type
+        meta_data_dict["algorithm_specific_settings"] = {
+            "train_percentage": self.train_percentage,
+            "val_percentage": self.val_percentage,
+            "test_percentage": self.test_percentage,
+            "datasets": self.datasets_to_create,
+            "seed": self.sk_seed,
+            "checkpoint_dir": self.checkpoint_dir,
+            "DeepAnt_config": self.deepant_config,
+            "window_generator_config": self.window_generator_config,}
+
+        if self.windowed_data_disk_interaction:
+            meta_data_dict["algorithm_specific_settings"]["windowed_data_dir"] = self.windowed_data_dir
+
+
+        return AnomalyDetectionMetaData(**meta_data_dict)
+
 
     def run(self,  dataframe_detection: pd.DataFrame, job_count: int, total_jobs: int) -> (pd.DataFrame, dict[str, dict[str, int]]):
 
@@ -507,13 +541,11 @@ class DeepAntDetector(BaseAnomalyDetector):
         df_anomaly.fillna(False, inplace=True)
         anomaly_columns = df_anomaly.columns.tolist()
         rename_dict = {column: column + "_anomaly" for column in anomaly_columns}
-        remaining_data = prepared_data["test"]
         df_anomaly = df_anomaly.rename(columns=rename_dict)
-        relevant_data = prepared_data["test"][df_anomaly.columns.tolist()]
-        anomaly_dict = self._build_anomaly_dict(df_anomaly, relevant_data)
-        with open(os.path.join(self.anomaly_data_dir, f"anomaly_data_{self.name}.pkl"), "wb") as f:
-            pickle.dump(df_anomaly, f)
-        fixed_df = self._handle_anomalies({"results": df_anomaly}, relevant_data, remaining_data)
+
+        self._save_anomaly_df(df_anomaly)
+        anomaly_dict = self._calculate_anomaly_count(df_anomaly, prepared_data["test"])
+        fixed_df = self._handle_anomalies(df_anomaly, prepared_data["test"])
         return fixed_df, anomaly_dict
 
     @staticmethod
@@ -527,6 +559,20 @@ class DeepAntDetector(BaseAnomalyDetector):
                                             int(patient_max_time_df.iloc[i])
                                             )
         return patient_dict
+
+    def _handle_data_step(self, data: pd.DataFrame, dataset_to_create: dict, save_data: bool, load_data: bool, type_of_dataset: str) \
+        -> (DataModule, list, pd.DataFrame):
+
+        dataset = None
+        patients_to_remove = []
+        relevant = pd.DataFrame()
+        if load_data:
+            dataset, patients_to_remove, relevant = self._load_data(dataset_to_create["name"], type_of_dataset)
+        if dataset is None:
+            dataset, patients_to_remove, relevant = self._prepare_data_step(data, dataset_to_create, save_data, type_of_dataset)
+
+
+        return  dataset, patients_to_remove, relevant
 
     def _prepare_data_step(self, data: pd.DataFrame, dataset_to_create: dict, save_data: bool, type_of_dataset: str)\
             -> (DataModule, list, pd.DataFrame):
@@ -589,6 +635,7 @@ class DeepAntDetector(BaseAnomalyDetector):
             return None, [], pd.DataFrame()
 
         if save_data:
+            self.windowed_data_disk_interaction = True
             logger.info("Saving data")
             with open(os.path.join(self.windowed_data_dir + "/" + name + "_" + type_of_dataset + "_features.pkl"), "wb") as f:
                 pickle.dump(dataset.data_x, f)
@@ -623,6 +670,7 @@ class DeepAntDetector(BaseAnomalyDetector):
                 DataModule: The loaded dataset.
                 list: List of patients to remove (only relevant for test data).
         """
+
         try:
             with open(os.path.join(self.windowed_data_dir + "/" + name + f"_{type_of_dataset}_features.pkl"), "rb") as f:
                 data_x = pickle.load(f)
@@ -637,6 +685,7 @@ class DeepAntDetector(BaseAnomalyDetector):
                 patients_to_remove = []
                 relevant_df = pd.DataFrame()
             dataset = DataModule(data_x, data_y, device=self.device)
+            self.windowed_data_disk_interaction = True
         except Exception as e:
             logger.error(f"Failed to load data for {name} {type_of_dataset}: {e}")
             dataset = None
@@ -661,63 +710,35 @@ class DeepAntDetector(BaseAnomalyDetector):
             Returns:
                 pd.DataFrame: The processed DataFrame after anomaly detection.
         """
+
         name = dataset_to_create["name"]
         train = data["train"]
         val = data["val"]
         test = data["test"]
 
 
-
-
-        train_dataset = None
-        val_dataset = None
         model_location = os.path.join(self.deepant_config["run_dir"], f"best_model_{name}.ckpt")
         logger.info(f"Check if model exists at location {str(model_location)}")
         model_exists = os.path.exists(os.path.join(self.deepant_config["run_dir"], f"best_model_{name}.ckpt"))
         logger.info(f"Model exists: {model_exists}")
         model_training = (not os.path.exists(model_location)) or retrain_model
-        
         logger.info(f"Model training requested: {retrain_model}")
-        
         logger.info(f"Model training : {model_training}")
-        if load_data:
 
-            if model_training:
-                train_dataset, _, _ = self._load_data(name, "train")
-                if not train_dataset:
-                    train_dataset, _, _ = self._prepare_data_step(train, dataset_to_create, True, "train")
-                    if not train_dataset:
-                        return pd.DataFrame()
+        stages = []
+        if model_training:
+            stages.append("train")
+            stages.append("val")
+        stages.append("test")
 
-                val_dataset, _, _ = self._load_data(name, "val")
-                if not val_dataset:
-                    val_dataset, _, _ = self._prepare_data_step(val, dataset_to_create, True, "val")
-                    if not val_dataset:
-                        return pd.DataFrame()
-            test_dataset, patients_to_remove, relevant_df = self._load_data(name, "test")
-            if not test_dataset:
-                test_dataset, patients_to_remove, relevant_df = self._prepare_data_step(test, dataset_to_create, True,
-                                                                           "test")
-                if not test_dataset:
-                    return pd.DataFrame()
 
-        else:
+        status, _, _, relevant_df =self.setup_deep_ant(dataset_to_create, stages, train, val, test, load_data, save_data)
 
-            if model_training:
-                train_dataset, _, _ = self._prepare_data_step(train, dataset_to_create, save_data, "train")
-                if not train_dataset:
-                    return pd.DataFrame()
+        if (status == -1 and model_training) or status == -2:
+            return pd.DataFrame()
 
-                val_dataset, _, _ = self._prepare_data_step(val, dataset_to_create, save_data, "val")
-                if not val_dataset:
-                    return pd.DataFrame()
-            test_dataset, patients_to_remove, relevant_df = self._prepare_data_step(test, dataset_to_create, save_data, "test")
-            if not test_dataset:
-                return pd.DataFrame()
-        self.deepant_config["name"] = name
-        self.deepant_config["labels"] = dataset_to_create["labels"]
-        self.model[name] = DeepAnt(self.deepant_config, train_dataset, val_dataset, test_dataset,
-                                   len(dataset_to_create["features"]), name)
+
+
 
         if model_training:
             self.model[name].train()
@@ -736,20 +757,20 @@ class DeepAntDetector(BaseAnomalyDetector):
             for i in anomaly_indices:
                 marked_anomaly_list[i] = True
             marked_anomaly_dict[name + "_anomaly"] = marked_anomaly_list
-        for key, value in marked_anomaly_dict.items():
-            anomaly_df[key] = value
+
 
         return anomaly_df
 
 
-
-
+    def _predict(self, dataframe: pd.DataFrame, **kwargs ) -> pd.DataFrame:
+        #TODO: Check that correct window for model is generated
+        pass
+    
 
 
     def _create_dataset(self, data: pd.DataFrame, patient_divisions: dict, window_generator: WindowGenerator) -> (DataModule, list):
         # TODO add metadata
         patients_to_remove = []
-        counter = 0
         results = []
         patient_dfs = []
         for patient_id, patient_info in patient_divisions.items():
@@ -798,20 +819,52 @@ class DeepAntDetector(BaseAnomalyDetector):
                                        dataframe.columns if column not in self.columns_not_to_check]
         return result_dict
 
-    def _handle_anomalies(self, anomalies: dict, anomalous_data : pd.DataFrame, original_data: pd.DataFrame) -> pd.DataFrame:
-        raise NotImplementedError
 
-    def _build_anomaly_dict(self, df_anomaly: pd.DataFrame, relevant_data: pd.DataFrame) -> dict[str, dict[str, int]]:
-        anomaly_count_dict = {}
-        for column in df_anomaly.columns:
-            if column in relevant_data.columns:
-                total_value = df_anomaly[column].count()
-                anomaly_count_dict[column] = {
-                    "anomaly_count": df_anomaly[column].sum(),
-                    "total_data": total_value
-                }
 
-        return anomaly_count_dict
+
+    def setup_deep_ant(self, dataset_to_create: dict, stages: list[str],  data_train: pd.DataFrame, data_val: pd.DataFrame,
+                       data_test: pd.DataFrame, load_data: bool = False, save_data: bool = True) -> (int, Optional[DataModule], list, pd.DataFrame):
+
+
+        train_dataset = None
+        val_dataset = None
+        test_dataset = None
+
+        patients_to_remove = []
+        relevant_data = pd.DataFrame()
+
+
+        for stage in stages:
+            if stage == "train":
+                train_dataset, _, _ = self._handle_data_step(data_train, dataset_to_create["name"], save_data, load_data, stage)
+                if not train_dataset:
+                    logger.info(f"Not enough data for {stage}, skipping {dataset_to_create['name']}...")
+                    return -1, None, [], pd.DataFrame()
+            elif stage == "val":
+                val_dataset, _, _ = self._handle_data_step(data_val, dataset_to_create["name"], save_data, load_data, stage)
+                if not val_dataset:
+                    logger.info(f"Not enough data for {stage}, skipping {dataset_to_create['name']}...")
+                    return -1, None, [], pd.DataFrame()
+            elif stage == "test":
+                test_dataset, patients_to_remove, relevant_data = self._handle_data_step(data_test, dataset_to_create["name"], save_data, load_data, stage)
+                if not test_dataset:
+                    logger.info(f"Not enough data for {stage}, skipping {dataset_to_create['name']}...")
+                    return -2, None, [], pd.DataFrame()
+        name = dataset_to_create["name"]
+        self.deepant_config["name"] = name
+        self.deepant_config["labels"] = dataset_to_create["labels"]
+        self.model[name] = DeepAnt(self.deepant_config, train_dataset, val_dataset, test_dataset,
+                                   len(dataset_to_create["features"]), name)
+        return 0, patients_to_remove, relevant_data
+
+
+
+    def _train_ad_model(self, data_training, data_validation, **kwargs):
+
+        dataset_to_create = kwargs.get("dataset_to_create", {})
+        name = dataset_to_create["name"]
+        self.model[name].train()
+
 
 
 
