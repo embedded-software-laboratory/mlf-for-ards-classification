@@ -6,3 +6,4 @@ Runscripts
 .tmp
 .idea
 *.ipynb_checkpoints/
+src/Testing/*
