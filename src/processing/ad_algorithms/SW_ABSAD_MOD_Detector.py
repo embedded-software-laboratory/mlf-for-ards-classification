@@ -80,7 +80,7 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
         return fixed_df, anomaly_dict["anomaly_count"]
 
 
-    def _prepare_data(self, dataframe_detection: pd.DataFrame) -> dict[str, pd.DataFrame]:
+    def _prepare_data(self, dataframe_detection: pd.DataFrame, save_data: bool =False, overwrite: bool = True) -> dict[str, pd.DataFrame]:
         if self.columns_to_check[0]!= '':
             dataframe_detection = dataframe_detection[self.columns_to_check + ["time", "patient_id"]]
         else:
@@ -101,6 +101,10 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
             dataframe_detection = dataframe_detection.replace(0, np.nan)
 
         return_dict = {"dataframe": dataframe_detection}
+        if save_data:
+            first_patient, last_patient = self._get_first_and_last_patient_id_for_name(dataframe)
+            save_path = f"{self.prepared_data_dir}/patient_{first_patient}_to_{last_patient}.pkl"
+            self._save_file(return_dict, save_path, overwrite)
         return return_dict
 
 

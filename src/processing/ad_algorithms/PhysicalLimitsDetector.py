@@ -1,3 +1,5 @@
+import logging
+
 import pandas as pd
 
 from processing.ad_algorithms.torch_utils import check_directory
@@ -6,6 +8,8 @@ from processing.datasets_metadata import AnomalyDetectionMetaData
 from processing.ad_algorithms.BaseAnomalyDetector import BaseAnomalyDetector
 from processing.ad_algorithms.configs import physical_limits_database_dict
 
+
+logger = logging.getLogger(__name__)
 class PhysicalLimitsDetector(BaseAnomalyDetector):
 
     def __init__(self, **kwargs):
@@ -37,9 +41,13 @@ class PhysicalLimitsDetector(BaseAnomalyDetector):
 
 
 
-    def _prepare_data(self, dataframe: pd.DataFrame) -> dict:
+    def _prepare_data(self, dataframe: pd.DataFrame, save_data: bool =False, overwrite: bool = True) -> dict:
         dataframe = dataframe[self.columns_to_check]
         return_dict = {"dataframe": dataframe}
+        if save_data:
+            first_patient, last_patient = self._get_first_and_last_patient_id_for_name(dataframe)
+            save_path = f"{self.prepared_data_dir}/patient_{first_patient}_to_{last_patient}.pkl"
+            self._save_file(return_dict, save_path, overwrite)
         return return_dict
 
     def _predict(self, dataframe: pd.DataFrame, **kwargs) -> dict:

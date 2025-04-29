@@ -308,22 +308,6 @@ class DeepAntAnomalyDetector(BaseAnomalyDetector):
 
 
 
-    def _handle_anomalies(self, anomalies: dict, anomalous_data : pd.DataFrame, original_data: pd.DataFrame) -> pd.DataFrame:
-        anomaly_df = anomalies["results"]
-        if self.handling_strategy == "delete_value":
-            fixed_df = self._delete_value(anomaly_df, original_data)
-        elif self.handling_strategy == "delete_than_impute":
-            fixed_df = self._delete_than_impute(anomaly_df, anomalous_data)
-        elif self.handling_strategy == "delete_row_if_any_anomaly":
-            fixed_df = self._delete_row_if_any_anomaly(anomaly_df, anomalous_data)
-        elif self.handling_strategy == "delete_row_if_many_anomalies":
-            fixed_df = self._delete_row_if_many_anomalies(anomaly_df, anomalous_data)
-        elif self.handling_strategy == "use_prediction":
-            raise ValueError("Fixing strategy 'use_prediction' is not implemented for PhysicalLimitsDetector")
-        else:
-            raise ValueError("Unknown fixing strategy")
-        finished_df = original_data
-        finished_df.update(fixed_df)
-        return finished_df
+
 
 

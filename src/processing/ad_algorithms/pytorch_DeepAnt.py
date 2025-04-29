@@ -420,11 +420,11 @@ class DeepAntDetector(BaseAnomalyDetector):
         self.patience = int(kwargs.get("patience", 5))
         self.run_dir = str(kwargs.get("run_dir", "../Data/Models/AnomalyDetection/DeepAnt"))
         self.checkpoint_dir = str(kwargs.get("checkpoint_dir", "../Data/Models/AnomalyDetection/DeepAnt"))
-        self.windowed_data_dir = str(kwargs.get("data_dir", "/work/rwth1474/Data/AnomalyDetection/windowed_data"))
+        self.prepared_data_dir = str(kwargs.get("prepared_data_dir", "/work/rwth1474/Data/AnomalyDetection/windowed_data"))
         self.anomaly_data_dir = str(kwargs.get("anomaly_data_dir", "/work/rwth1474/Data/AnomalyDetection/anomaly_data/DeepAnt"))
         check_directory(str(self.run_dir))
         check_directory(str(self.checkpoint_dir))
-        check_directory(str(self.windowed_data_dir))
+        check_directory(str(self.prepared_data_dir))
         check_directory(str(self.anomaly_data_dir))
         self.device = check_device()
 
@@ -442,7 +442,7 @@ class DeepAntDetector(BaseAnomalyDetector):
             "max_epochs" : int(self.max_epochs),
             "checkpoint_dir" : str(self.checkpoint_dir),
             "run_dir" : str(self.run_dir),
-            "data_dir" : str(self.windowed_data_dir),
+            "data_dir" : str(self.prepared_data_dir),
             "patience": int(self.patience),
             "device" : str(self.device),
             "batch_size" : int(self.batch_size),
@@ -488,7 +488,7 @@ class DeepAntDetector(BaseAnomalyDetector):
         val = data["val"]
         test = data["test"]
         for item in self.datasets_to_create:
-            if os.path.exists(os.path.join(self.windowed_data_dir, item["name"] + "_train_features.pkl")) and not overwrite_existing:
+            if os.path.exists(os.path.join(self.prepared_data_dir, item["name"] + "_train_features.pkl")) and not overwrite_existing:
                 logger.info(f"Data for {item['name']} already exists. Skipping...")
                 continue
             logger.info(f"Preparing data for {item['name']}")
@@ -511,7 +511,7 @@ class DeepAntDetector(BaseAnomalyDetector):
             "window_generator_config": self.window_generator_config,}
 
         if self.windowed_data_disk_interaction:
-            meta_data_dict["algorithm_specific_settings"]["windowed_data_dir"] = self.windowed_data_dir
+            meta_data_dict["algorithm_specific_settings"]["windowed_data_dir"] = self.prepared_data_dir
 
 
         return AnomalyDetectionMetaData(**meta_data_dict)
@@ -609,10 +609,10 @@ class DeepAntDetector(BaseAnomalyDetector):
             scaler = MinMaxScaler()
             scaler.fit(relevant)
             scaled = scaler.transform(relevant)
-            joblib.dump(scaler, os.path.join(self.windowed_data_dir + "/" + name + "_scaler.pkl"))
+            joblib.dump(scaler, os.path.join(self.prepared_data_dir + "/" + name + "_scaler.pkl"))
         else:
             try:
-                scaler = joblib.load(os.path.join(self.windowed_data_dir + "/" + name + "_scaler.pkl"))
+                scaler = joblib.load(os.path.join(self.prepared_data_dir + "/" + name + "_scaler.pkl"))
                 scaled = scaler.transform(relevant)
             except FileNotFoundError:
                 logger.error(f"Scaler not found for {name}. Create a new dataset.")
@@ -637,19 +637,19 @@ class DeepAntDetector(BaseAnomalyDetector):
         if save_data:
             self.windowed_data_disk_interaction = True
             logger.info("Saving data")
-            with open(os.path.join(self.windowed_data_dir + "/" + name + "_" + type_of_dataset + "_features.pkl"), "wb") as f:
+            with open(os.path.join(self.prepared_data_dir + "/" + name + "_" + type_of_dataset + "_features.pkl"), "wb") as f:
                 pickle.dump(dataset.data_x, f)
-            with open(os.path.join(self.windowed_data_dir + "/" + name + "_" + type_of_dataset + "_labels.pkl"), "wb") as f:
+            with open(os.path.join(self.prepared_data_dir + "/" + name + "_" + type_of_dataset + "_labels.pkl"), "wb") as f:
                 pickle.dump(dataset.data_y, f)
-            with open(os.path.join(self.windowed_data_dir + "/" + name + "_" + type_of_dataset + "_contained_patients.pkl"), "wb") as f:
+            with open(os.path.join(self.prepared_data_dir + "/" + name + "_" + type_of_dataset + "_contained_patients.pkl"), "wb") as f:
                 pickle.dump(contained_patients, f)
 
             if type_of_dataset == "test":
                 relevant = relevant[~relevant["patient_id"].isin(patients_to_remove)].reset_index(drop=True)
                 logger.info(f"Number of entries for {name}: {len(relevant)}")
-                with open(os.path.join(self.windowed_data_dir + "/" + name + "_patients_to_remove.pkl"), "wb") as f:
+                with open(os.path.join(self.prepared_data_dir + "/" + name + "_patients_to_remove.pkl"), "wb") as f:
                     pickle.dump(patients_to_remove, f)
-                with open(os.path.join(self.windowed_data_dir + "/" + name + "_relevant.pkl"), "wb") as f:
+                with open(os.path.join(self.prepared_data_dir + "/" + name + "_relevant.pkl"), "wb") as f:
                     pickle.dump(relevant, f)
 
 
@@ -672,14 +672,14 @@ class DeepAntDetector(BaseAnomalyDetector):
         """
 
         try:
-            with open(os.path.join(self.windowed_data_dir + "/" + name + f"_{type_of_dataset}_features.pkl"), "rb") as f:
+            with open(os.path.join(self.prepared_data_dir + "/" + name + f"_{type_of_dataset}_features.pkl"), "rb") as f:
                 data_x = pickle.load(f)
-            with open(os.path.join(self.windowed_data_dir + "/" + name + f"_{type_of_dataset}_labels.pkl"), "rb") as f:
+            with open(os.path.join(self.prepared_data_dir + "/" + name + f"_{type_of_dataset}_labels.pkl"), "rb") as f:
                 data_y = pickle.load(f)
             if type_of_dataset == "test":
-                with open(os.path.join(self.windowed_data_dir + "/" + name + "_patients_to_remove.pkl"), "rb") as f:
+                with open(os.path.join(self.prepared_data_dir + "/" + name + "_patients_to_remove.pkl"), "rb") as f:
                     patients_to_remove = pickle.load(f)
-                with open(os.path.join(self.windowed_data_dir + "/" + name + "_relevant.pkl"), "rb") as f:
+                with open(os.path.join(self.prepared_data_dir + "/" + name + "_relevant.pkl"), "rb") as f:
                     relevant_df = pickle.load(f)
             else:
                 patients_to_remove = []
@@ -794,8 +794,7 @@ class DeepAntDetector(BaseAnomalyDetector):
 
 
 
-
-    def _prepare_data(self, dataframe: pd.DataFrame) -> dict:
+    def _prepare_data(self, dataframe: pd.DataFrame, save_data: bool = True, overwrite: bool = False ) -> dict:
         # TODO add which patients are in which set
 
 
@@ -817,7 +816,46 @@ class DeepAntDetector(BaseAnomalyDetector):
         if not self.datasets_to_create:
             self.datasets_to_create = [{"name": column, "labels": [column], "features": [column, "time"]} for column in
                                        dataframe.columns if column not in self.columns_not_to_check]
-        return result_dict
+        train_info = []
+        val_info = []
+        test_info = []
+        for item in self.datasets_to_create:
+            path_train_features = os.path.join(self.prepared_data_dir, item["name"] + "_train_features.pkl")
+            path_train_labels = os.path.join(self.prepared_data_dir, item["name"] + "_train_labels.pkl")
+
+            path_val_features = os.path.join(self.prepared_data_dir, item["name"] + "_val_features.pkl")
+            path_val_labels = os.path.join(self.prepared_data_dir, item["name"] + "_val_labels.pkl")
+
+            path_test_features = os.path.join(self.prepared_data_dir, item["name"] + "_test_features.pkl")
+            path_test_labels = os.path.join(self.prepared_data_dir, item["name"] + "_test_labels.pkl")
+
+            if os.path.exists(path_train_features) and os.path.exists(path_test_features) and os.path.exists(path_val_features) and not overwrite:
+                logger.info(f"Data for {item['name']} already exists. Skipping...")
+                continue
+            datatypes_to_prepare = []
+            if "prepare" in self.active_stages:
+                datatypes_to_prepare = ["train", "val", "test"]
+                train_info.append((path_train_features, path_train_labels))
+                val_info.append((path_val_features, path_val_labels))
+                test_info.append((path_test_features, path_test_labels))
+            elif "train" in self.active_stages:
+                datatypes_to_prepare.append("train")
+                datatypes_to_prepare.append("val")
+                train_info.append((path_train_features, path_train_labels))
+                val_info.append((path_val_features, path_val_labels))
+
+            elif "predict" in self.active_stages:
+                datatypes_to_prepare.append("test")
+                test_info.append((path_test_features, path_test_labels))
+
+            for datatype in datatypes_to_prepare:
+                preparation_necessary = overwrite or not os.path.exists()
+
+            logger.info(f"Preparing data for {item['name']}")
+            self._prepare_data_step(train_data, item, True, "train")
+            self._prepare_data_step(val_data, item, True, "val")
+            self._prepare_data_step(test_data, item, True, "test")
+        return {"train_info": train_info, "val_info": val_info, "test_info": test_info, "train": train_data, "val": val_data, "test": test_data}
 
 
 

@@ -1,6 +1,7 @@
 process:
   load_models: False
   load_timeseries_data: True
+  perform_anomaly_detection: False
   perform_imputation: True
   perform_unit_conversion: True
   calculate_missing_params: True
@@ -177,6 +178,15 @@ preprocessing:
       fix_algorithm: ""
       handling_strategy: ""
       anomaly_threshold: 0.5
+      supported_stages:
+        - "prepare"
+        - "detect"
+        - "fix"
+      active_stages:
+        - "detect"
+        - "fix"
+      anomaly_data_dir: "/work/rwth1474/Data/AnomalyDetection/anomaly_data/SW_ABSAD_MOD"
+      prepared_data_dir: "/work/rwth1474/Data/AnomalyDetection/prepared_data/SW_ABSAD_MOD"
       replace_zeros: False
       replace_physical_outliers: True
       use_cl_modification: False
@@ -196,6 +206,53 @@ preprocessing:
       fix_algorithm: ""
       handling_strategy: ""
       anomaly_threshold: 0.5
+      supported_stages:
+        - "prepare"
+        - "detect"
+        - "fix"
+      active_stages:
+        - "detect"
+        - "fix"
+      anomaly_data_dir: "/work/rwth1474/Data/AnomalyDetection/anomaly_data/Physical_Outliers"
+      prepared_data_dir: "/work/rwth1474/Data/AnomalyDetection/prepared_data/Physical_Outliers"
+
+    DeepAnt:
+      active: True
+      name: "DeepAnt"
+      columns_to_check: []
+      fix_algorithm: ""
+      handling_strategy: ""
+      anomaly_threshold: 0.5
+      supported_stages:
+        - "prepare"
+        - "train"
+        - "detect"
+        - "fix"
+      active_stages:
+        - "detect"
+        - "fix"
+      anomaly_data_dir: "/work/rwth1474/Data/AnomalyDetection/anomaly_data/DeepAnt"
+      prepared_data_dir: "/work/rwth1474/Data/AnomalyDetection/windowed_data"
+      window_generator_config:
+        input_width: 10
+        output_width: 10
+      val_percentage: 0.1
+      train_percentage: 0.2
+      seed: 42
+      learning_rate: 0.001
+      hidden_size: 256
+      max_epochs: 100
+      max_initial_epochs: 10
+      batch_size: 2048
+      patience: 5
+      run_dir: "../Data/Models/AnomalyDetection/DeepAnt"
+      checkpoint_dir: "../Data/Models/AnomalyDetection/DeepAnt/checkpoints"
+
+      load_data: True
+      save_data: True
+      retrain_models: {}
+
+
 
   filtering:
     filter:

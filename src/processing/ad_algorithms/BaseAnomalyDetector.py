@@ -1,5 +1,9 @@
+import logging
+import os
 import pickle
+import sys
 from multiprocessing import Pool
+from typing import Union
 
 import numpy as np
 
@@ -8,9 +12,9 @@ from processing.processing_utils import prepare_multiprocessing
 
 import pandas as pd
 
-
+logger = logging.getLogger(__name__)
 class BaseAnomalyDetector:
-    # TODO: Make sure anomaly df is saved as one file
+
 
     def __init__(self, **kwargs):
         self.saved_anomaly_data = False
@@ -28,74 +32,20 @@ class BaseAnomalyDetector:
         self.max_processes = 16
         self.needs_full_data = False
         self.anomaly_counts = None
+        self.prepared_data_dir = None
+        self.anomaly_data_dir = None
+        self.supported_stages = []
+        self.active_stages = []
         self.columns_not_to_check = ["patient_id", "time", "ards", "chest-injury", "sepsis", "xray", "pneumonia", "pulmonary-edema", "hypervolemia", "heart-failure"]
         for key, value in kwargs.items():
             if key in self.__dict__.keys():
                 setattr(self, key, value)
+        for stage in self.active_stages:
+            if stage not in self.supported_stages:
+                logger.info(f"Stage {stage} is not supported by the algorithm {self.name}. Supported stages are: {self.supported_stages}. Removing stage {stage} from the active stages.")
+                self.active_stages.remove(stage)
+
         self.meta_data = None
-
-    def run_handler(self, process_pool_data_list: list[pd.DataFrame], n_jobs: int, patients_per_process: int):
-
-        if not self.needs_full_data:
-            anomaly_counts = {}
-            with Pool(processes=self.max_processes) as pool:
-
-                process_pool_data_list, anomaly_count_list = pool.starmap(self.run,
-                                                      [(process_pool_data_list[i], i, n_jobs) for i in range(n_jobs)])
-            for anomaly_count in anomaly_count_list:
-                if not anomaly_counts :
-                    for key, value in anomaly_count.items():
-                        total_anomalies_name = key + "_total_anomalies"
-                        total_data_name = key + "_total_data"
-                        percentage_anomalies_name = key + "_percentage_anomalies"
-                        anomaly_counts = {
-                            key: {
-                                total_anomalies_name: value["anomaly_count"],
-                                total_data_name: value["total_data"],
-                                percentage_anomalies_name: value["anomaly_count"] / value["total_data"]
-                                }
-                            }
-                else:
-                    for key, value in anomaly_count.items:
-
-                        data = anomaly_counts[key]
-                        total_anomalies_name = key + "_total_anomalies"
-
-
-                        total_data_name = key + "_total_data"
-                        percentage_anomalies_name = key + "_percentage_anomalies"
-                        if key in anomaly_counts.keys():
-                            anomaly_counts[key] = {
-                                total_anomalies_name: data[total_anomalies_name] + value["anomaly_count"],
-                                total_data_name: data[total_data_name] + value["total_data"],
-                                percentage_anomalies_name: (data[total_anomalies_name] + value["anomaly_count"]) /
-                                    (data[total_data_name] + value["total_data"])
-                            }
-                        else:
-                            anomaly_counts[key] = {
-                                total_anomalies_name: value["anomaly_count"],
-                                total_data_name: value["total_data"],
-                                percentage_anomalies_name: value["anomaly_count"] / value["total_data"]
-                            }
-
-        else:
-            dataframe = pd.concat(process_pool_data_list, ignore_index=True).reset_index(drop=True)
-            fixed_df, anomaly_counts = self.run(dataframe, 0, 1)
-            finished_anomaly_count_dict = {}
-            for key, value in anomaly_counts.items():
-                total_anomalies_name = key + "_total_anomalies"
-                total_data_name = key + "_total_data"
-                percentage_anomalies_name = key + "_percentage_anomalies"
-                finished_anomaly_count_dict[key] = {
-                    total_anomalies_name: value["anomaly_count"],
-                    total_data_name: value["total_data"],
-                    percentage_anomalies_name: value["anomaly_count"] / value["total_data"]
-                }
-            process_pool_data_list, n_jobs = prepare_multiprocessing(fixed_df, patients_per_process)
-        dataframe = pd.concat(process_pool_data_list, ignore_index=True).reset_index(drop=True)
-        self.anomaly_counts = anomaly_counts
-
-        return process_pool_data_list, n_jobs, dataframe
 
     def run(self,  dataframe_detection: pd.DataFrame, job_count: int, total_jobs: int) -> (pd.DataFrame, dict[str, dict[str, int]]):
         """
@@ -113,36 +63,214 @@ class BaseAnomalyDetector:
         """
         raise NotImplementedError()
 
-    def fix_anomaly_data(self, data_to_fix: pd.DataFrame, detected_anomalies_file: str, detected_anomalies_meta_data_file: str) -> pd.DataFrame:
+    @staticmethod
+    def _calculate_anomaly_count_full(anomaly_df: pd.DataFrame, relevant_data: pd.DataFrame,
+                                      relevant_columns: list[str]) \
+            -> dict[str, dict[str, int]]:
+        anomaly_count_dict = {}
+
+        for column in relevant_columns:
+            if column in relevant_data.columns:
+                total_value = relevant_data[column].count()
+                anomaly_count_dict[column] = {
+                    "anomaly_count": anomaly_df[column].sum(),
+                    "total_data": total_value
+                }
+
+        return anomaly_count_dict
+    @staticmethod
+    def _save_file(obj_to_save, file_path: str, overwrite: bool = False) -> None:
+        """
+            Saves the object to a .pkl file.
+
+            Args:
+                obj_to_save (object): The object to be saved.
+                file_path (str): The path where the object will be saved.
+                overwrite (bool): Whether to overwrite the file if it already exists.
+
+            Returns:
+                None
+        """
+        if os.path.exists(file_path) and not overwrite:
+            logger.info(f"File {file_path} already exists. Skipping.")
+            return
+        elif os.path.exists(file_path) and overwrite:
+            logger.info(f"File {file_path} already exists. Overwriting.")
+        with open(file_path, "wb") as f:
+            pickle.dump(obj_to_save, f)
+
+    @staticmethod
+    def _get_first_and_last_patient_id_for_name( dataframe: pd.DataFrame) -> (str, str):
+        patient_ids = dataframe["patient_id"].unique().tolist()
+        first_patient_id = str(patient_ids[0]).replace(".", "_")
+        last_patient_id = str(patient_ids[-1]).replace(".", "_")
+        return first_patient_id, last_patient_id
+
+    def _save_anomaly_df(self, anomaly_df: pd.DataFrame) -> str:
+
+        """
+            Saves the anomaly DataFrame to a file.
+
+            Args:
+                anomaly_df (pd.DataFrame): The DataFrame containing the detected anomalies.
+
+            Returns:
+                str: The file path where the anomaly DataFrame is saved.
+        """
+        self.saved_anomaly_data = True
+
+        first_patient_id, last_patient_id = self._get_first_and_last_patient_id_for_name(anomaly_df)
+        anomaly_df_path = f"{self.anomaly_data_dir}/anomaly_data_{self.name}_{first_patient_id}_{last_patient_id}.pkl"
+        with open(anomaly_df_path, "wb") as f:
+            pickle.dump(anomaly_df, f)
+        return anomaly_df_path
+
+    def _train_ad_model(self, data_training, data_validation, **kwargs):
+
+        raise NotImplementedError()
+
+    def _predict(self, dataframe: pd.DataFrame, **kwargs) -> dict:
+        raise NotImplementedError()
+
+    def _predict_proba(self):
+        raise NotImplementedError()
+
+    def _prepare_data(self, dataframe: pd.DataFrame, save_data: bool = False, overwrite_existing: bool = False) -> dict:
+        raise NotImplementedError()
+
+    def _use_prediction(self, prediction: pd.DataFrame, dataframe: pd.DataFrame) -> pd.DataFrame:
+        raise NotImplementedError()
+
+
+    def run_handler(self, process_pool_data_list: list[pd.DataFrame], n_jobs: int, patients_per_process: int):
+        if self.supported_stages == self.active_stages:
+            process_pool_data_list, anomaly_counts, dataframe = self.run_full(process_pool_data_list, n_jobs, patients_per_process)
+        else:
+            for stage in self.active_stages:
+                if stage == "prepare":
+                    pass
+                elif stage == "train":
+                    pass
+                elif stage == "fix":
+                    pass
+            if not "fix" in self.active_stages:
+                logger.info("No fixing stage in the active stages. No data can be passed to the next module. Exiting...")
+                sys.exit(0)
+        return process_pool_data_list, anomaly_counts, dataframe
+
+    def prepare_handler(self, dataframe: pd.DataFrame):
+
+    def run_full(self, process_pool_data_list: list[pd.DataFrame], n_jobs: int, patients_per_process: int)\
+        -> (list[pd.DataFrame], dict[str, dict[str, Union[int, float]]], pd.DataFrame):
+
+        if not self.needs_full_data:
+            process_pool_data_list, anomaly_counts, dataframe = self.run_multiprocessing(process_pool_data_list, n_jobs)
+
+        else:
+            process_pool_data_list, anomaly_counts, dataframe = self.run_single(process_pool_data_list,
+                                                                                patients_per_process)
+
+        self.anomaly_counts = anomaly_counts
+
+        return process_pool_data_list, n_jobs, dataframe
+
+
+    def run_multiprocessing(self,  process_pool_data_list: list[pd.DataFrame], n_jobs: int) -> (list[pd.DataFrame], dict[str, dict[str, Union[int, float]]], pd.DataFrame):
+        with Pool(processes=self.max_processes) as pool:
+            process_pool_data_list, anomaly_count_list = pool.starmap(self.run,
+                                                                      [(process_pool_data_list[i], i, n_jobs) for i in
+                                                                       range(n_jobs)])
+        anomaly_counts = self.finalize_anomaly_counts_multiprocessing(anomaly_count_list)
+        fixed_df = pd.concat(process_pool_data_list, ignore_index=True).reset_index(drop=True)
+        return process_pool_data_list,  anomaly_counts, fixed_df
+
+    @staticmethod
+    def finalize_anomaly_counts_multiprocessing(anomaly_count_list: list) -> dict[str, dict[str, Union[int, float]]]:
+        anomaly_counts = {}
+        for anomaly_count in anomaly_count_list:
+            if not anomaly_counts:
+                for key, value in anomaly_count.items():
+                    total_anomalies_name = key + "_total_anomalies"
+                    total_data_name = key + "_total_data"
+                    percentage_anomalies_name = key + "_percentage_anomalies"
+                    anomaly_counts = {
+                        key: {
+                            total_anomalies_name: value["anomaly_count"],
+                            total_data_name: value["total_data"],
+                            percentage_anomalies_name: value["anomaly_count"] / value["total_data"]
+                        }
+                    }
+            else:
+                for key, value in anomaly_count.items:
+
+                    data = anomaly_counts[key]
+                    total_anomalies_name = key + "_total_anomalies"
+
+                    total_data_name = key + "_total_data"
+                    percentage_anomalies_name = key + "_percentage_anomalies"
+                    if key in anomaly_counts.keys():
+                        anomaly_counts[key] = {
+                            total_anomalies_name: data[total_anomalies_name] + value["anomaly_count"],
+                            total_data_name: data[total_data_name] + value["total_data"],
+                            percentage_anomalies_name: (data[total_anomalies_name] + value["anomaly_count"]) /
+                                                       (data[total_data_name] + value["total_data"])
+                        }
+                    else:
+                        anomaly_counts[key] = {
+                            total_anomalies_name: value["anomaly_count"],
+                            total_data_name: value["total_data"],
+                            percentage_anomalies_name: value["anomaly_count"] / value["total_data"]
+                        }
+        return anomaly_counts
+
+    def run_single(self, process_pool_data_list: list[pd.DataFrame], patients_per_process: int) -> (list[pd.DataFrame], dict[str, dict[str, Union[int, float]]], pd.DataFrame):
+        dataframe = pd.concat(process_pool_data_list, ignore_index=True).reset_index(drop=True)
+        fixed_df, anomaly_counts = self.run(dataframe, 0, 1)
+        anomaly_counts = self.finalize_anomaly_counts_single(anomaly_counts)
+        process_pool_data_list, n_jobs = prepare_multiprocessing(fixed_df, patients_per_process)
+        return process_pool_data_list, anomaly_counts, fixed_df
+
+    @staticmethod
+    def finalize_anomaly_counts_single(anomaly_counts: dict[str, dict[str, Union[int, float]]]) -> dict[str, dict[str, Union[int, float]]]:
+        finished_anomaly_count_dict = {}
+        for key, value in anomaly_counts.items():
+            total_anomalies_name = key + "_total_anomalies"
+            total_data_name = key + "_total_data"
+            percentage_anomalies_name = key + "_percentage_anomalies"
+            finished_anomaly_count_dict[key] = {
+                total_anomalies_name: value["anomaly_count"],
+                total_data_name: value["total_data"],
+                percentage_anomalies_name: value["anomaly_count"] / value["total_data"]
+            }
+        return finished_anomaly_count_dict
+
+
+
+    def fix_anomaly_data_with_stored_anomalies(self, data_to_fix: pd.DataFrame, detected_anomalies_path: str, detected_anomalies_meta_data_file: str, save_data: bool = False) -> pd.DataFrame:
         """
             Fixes anomalies in the given Dataframe by utilizing already detected anomalies that have been saved on the disk.
 
             Args:
                 data_to_fix (pd.DataFrame): The input DataFrame containing the data with anomalies.
-                detected_anomalies_file (str): The file path to the file which contains the detected anomalies as well as patient ids and timestamps.
+                detected_anomalies_path (str): The file path to the file which contains the detected anomalies as well as patient ids and timestamps.
                 detected_anomalies_meta_data_file (str): The file path to the file which contains the meta data of the detected anomalies.
 
 
             Returns:
                 pd.DataFrame: The processed DataFrame with anomalies handled.
         """
-        # TODO read all files in the directory and merge them
-        detected_anomalies_df = pd.read_pickle(detected_anomalies_file)
+        detected_anomalies_df_list = []
+        existing_files = [f for f in os.listdir(detected_anomalies_path) if f.endswith(".pkl")]
+        for file in existing_files:
+            full_path = os.path.join(detected_anomalies_path, file)
+            detected_anomalies_df_list.append(pd.read_pickle(full_path))
+        detected_anomalies_df = pd.concat(detected_anomalies_df_list, ignore_index=True).reset_index(drop=True)
         with open(detected_anomalies_meta_data_file, "rb") as f:
             meta_data = pickle.load(f)
 
 
         relevant_data_to_fix = data_to_fix[data_to_fix["patient_id"].isin(meta_data["contained_patients"])]
-
-
-        with Pool(processes=self.max_processes) as pool:
-            df_list = pool.starmap(split_patients, [(relevant_data_to_fix, detected_anomalies_df,  patient_id) for patient_id in meta_data["contained_patients"]])
-
-        with Pool(processes=self.max_processes) as pool:
-            fixed_patients = pool.starmap(self._handle_anomalies_patient, [(patient_df[1], patient_df[0][detected_anomalies_df.columns], patient_df[0]) for patient_df in df_list])
-        fixed_df = pd.concat(fixed_patients, ignore_index=True).reset_index(drop=True)
-
-
+        fixed_df = self._handle_anomalies(detected_anomalies_df, relevant_data_to_fix, save_data, detected_anomalies_path)
         return fixed_df
 
 
@@ -172,6 +300,8 @@ class BaseAnomalyDetector:
             fixed_df = self._use_prediction(anomaly_df, relevant_data)
         elif self.handling_strategy == "use_prediction" and not self.can_predict_value:
             raise NotImplementedError(f"Algorithm {self.type} does not support prediction as a handling strategy for anomalies.")
+        elif self.handling_strategy == "use_prediction" and self.can_predict_value:
+            pass
         else:
             raise ValueError(f"Unknown fixing strategy {self.handling_strategy}")
         finished_df = original_data
@@ -245,56 +375,11 @@ class BaseAnomalyDetector:
         return anomaly_count_dict
 
 
-    @staticmethod
-    def _calculate_anomaly_count_full(anomaly_df: pd.DataFrame, relevant_data: pd.DataFrame, relevant_columns: list[str])\
-            -> dict[str, dict[str, int]]:
-        anomaly_count_dict = {}
-
-        for column in relevant_columns:
-            if column in relevant_data.columns:
-                total_value = relevant_data[column].count()
-                anomaly_count_dict[column] = {
-                    "anomaly_count": anomaly_df[column].sum(),
-                    "total_data": total_value
-                }
-
-        return anomaly_count_dict
-
-    def _save_anomaly_df(self, anomaly_df: pd.DataFrame) -> str:
-
-        """
-            Saves the anomaly DataFrame to a file.
-
-            Args:
-                anomaly_df (pd.DataFrame): The DataFrame containing the detected anomalies.
-
-            Returns:
-                str: The file path where the anomaly DataFrame is saved.
-        """
-        self.saved_anomaly_data = True
-        patient_ids = anomaly_df["patient_id"].unique().tolist()
-        first_patient_id = str(patient_ids[0]).replace(".", "_")
-        last_patient_id = str(patient_ids[-1]).replace(".", "_")
-        anomaly_df_path = f"{self.anomaly_data_dir}/anomaly_data_{self.name}_{first_patient_id}_{last_patient_id}.pkl"
-        with open(anomaly_df_path, "wb") as f:
-            pickle.dump(anomaly_df, f)
-        return anomaly_df_path
 
 
-    def _train_ad_model(self, data_training, data_validation, **kwargs):
-
-        raise NotImplementedError()
-
-    def _predict(self, dataframe: pd.DataFrame, **kwargs) -> dict:
-        raise NotImplementedError()
-
-    def _predict_proba(self):
-        raise NotImplementedError()
-
-    def _prepare_data(self, dataframe: pd.DataFrame) -> dict:
-        raise NotImplementedError()
-
-    def _handle_anomalies(self, detected_anomalies_df : pd.DataFrame, original_data: pd.DataFrame) -> pd.DataFrame:
+    def _handle_anomalies(self, detected_anomalies_df : pd.DataFrame, original_data: pd.DataFrame, save_data: bool =True, save_path: str = None) -> pd.DataFrame:
+        if not save_path:
+            save_path = self.anomaly_data_dir
         if self.needs_full_data:
             max_processes = self.max_processes
         else:
@@ -308,6 +393,10 @@ class BaseAnomalyDetector:
             fixed_dfs = pool.starmap(self._handle_anomalies_patient, [(patient_df[1], patient_df[0][detected_anomalies_df.columns], patient_df[0]) for patient_df in patient_dfs])
 
         fixed_df = pd.concat(fixed_dfs, ignore_index=True).reset_index(drop=True)
+        if save_data:
+            fixed_data_path = os.path.join(save_path, f"fixed_data_{self.name}_{self.handling_strategy}_{self.fix_algorithm}.pkl")
+            with open(fixed_data_path, "wb") as f:
+                pickle.dump(fixed_df, f)
         return fixed_df
 
     @staticmethod
@@ -407,10 +496,6 @@ class BaseAnomalyDetector:
         else:
             raise ValueError("Invalid fix_algorithm for Anomaly detection")
         return dataframe
-
-    def _use_prediction(self, prediction: pd.DataFrame, dataframe: pd.DataFrame) -> pd.DataFrame:
-        raise NotImplementedError()
-
 
 
     def create_meta_data(self) -> dict:
