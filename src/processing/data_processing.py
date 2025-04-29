@@ -32,7 +32,7 @@ class DataProcessor:
         for key, value in config.items():
             if value["active"]:
                 value["database"] = database_name
-                value = value.remove("active")
+                del value["active"]
                 value["max_processes"] = self.max_processes
                 if key == "Physical_Outliers":
                     return PhysicalLimitsDetector(**value)
