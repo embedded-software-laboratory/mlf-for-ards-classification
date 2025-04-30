@@ -14,8 +14,12 @@ class PhysicalLimitsDetector(BaseAnomalyDetector):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.anomaly_data_dir = kwargs.get("anomaly_data_dir", "../Data/AnomalyData/PhysicalLimits/")
+        self.anomaly_data_dir =self.anomaly_data_dir = str(
+            kwargs.get("anomaly_data_dir", f"/work/rwth1474/Data/AnomalyDetection/anomaly_data/SW_ABSAD_Mod/{self.name}"))
+        self.prepared_data_dir = str(
+            kwargs.get("prepared_data_dir", "/work/rwth1474/Data/AnomalyDetection/windowed_data"))
         check_directory(self.anomaly_data_dir)
+        check_directory(self.prepared_data_dir)
         self.type = "PhysicalLimits"
         self.model = None
         self.physical_limits_dict = None
@@ -32,18 +36,13 @@ class PhysicalLimitsDetector(BaseAnomalyDetector):
         anomaly_dict = self._predict(relevant_data)
         anomaly_df =  anomaly_dict["anomaly_df"]
         self._save_anomaly_df(anomaly_df)
-
-
         fixed_df = self._handle_anomalies(anomaly_df, dataframe_detection)
         return fixed_df, anomaly_dict["anomaly_count"]
 
 
-
-
-
     def _prepare_data(self, dataframe: pd.DataFrame, save_data: bool =False, overwrite: bool = True) -> dict:
         dataframe = dataframe[self.columns_to_check]
-        return_dict = {"dataframe": dataframe}
+        return_dict = {"test": dataframe}
         if save_data:
             first_patient, last_patient = self._get_first_and_last_patient_id_for_name(dataframe)
             save_path = f"{self.prepared_data_dir}/patient_{first_patient}_to_{last_patient}.pkl"

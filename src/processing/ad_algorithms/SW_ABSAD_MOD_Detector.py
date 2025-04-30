@@ -27,8 +27,11 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
         self.type = "SW_ABSAD_Mod"
         self.model = None
         self.anomaly_data_dir = str(
-            kwargs.get("anomaly_data_dir", "/work/rwth1474/Data/AnomalyDetection/anomaly_data/SW_ABSAD_Mod"))
+            kwargs.get("anomaly_data_dir", f"/work/rwth1474/Data/AnomalyDetection/anomaly_data/SW_ABSAD_Mod/{self.name}"))
+        self.prepared_data_dir = str(
+            kwargs.get("prepared_data_dir", "/work/rwth1474/Data/AnomalyDetection/windowed_data"))
         check_directory(self.anomaly_data_dir)
+        check_directory(self.prepared_data_dir)
 
         self.replace_zeros = bool(kwargs.get('replace_zeros', False))
         self.replace_physical_outliers = bool(kwargs.get('replace_physical_outliers', False))
@@ -100,9 +103,9 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
         if self.replace_zeros:
             dataframe_detection = dataframe_detection.replace(0, np.nan)
 
-        return_dict = {"dataframe": dataframe_detection}
+        return_dict = {"test": dataframe_detection}
         if save_data:
-            first_patient, last_patient = self._get_first_and_last_patient_id_for_name(dataframe)
+            first_patient, last_patient = self._get_first_and_last_patient_id_for_name(dataframe_detection)
             save_path = f"{self.prepared_data_dir}/patient_{first_patient}_to_{last_patient}.pkl"
             self._save_file(return_dict, save_path, overwrite)
         return return_dict
@@ -113,10 +116,9 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
     def _predict(self, dataframe: pd.DataFrame, **kwargs) -> dict:
 
         patient_list = dataframe["patient_id"].unique().tolist()
-
-        fixed_dfs = []
         anomaly_dfs = []
         anomaly_count_dict = {}
+
         logger.info(patient_list)
         for patient_id in patient_list:
             logger.info(f"Running job for patient {patient_id}...")
@@ -128,41 +130,20 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
             result_df = self._predict_patient(relevant_data)
 
             if not result_df.empty:
-
                 anomaly_count_dict = self._calculate_anomaly_count(result_df, patient_df, anomaly_count_dict)
                 anomaly_dfs.append(result_df)
-                fixed_dfs.append(self._handle_anomalies_patient(result_df, relevant_data, patient_df))
-                logger.info(f"Finished for patient {patient_id}!")
+
             else:
                 logger.info(f"Patient {patient_id} has not enough data for prediction.")
                 continue
 
-
+        anomaly_df = pd.concat(anomaly_dfs).reset_index(drop=True)
+        self._save_anomaly_df(anomaly_df)
         logger.info(f"Finished for patients: {patient_list}")
-        return {"fixed_dfs": fixed_dfs,
+        return {
                 "anomaly_count": anomaly_count_dict,
-                "anomaly_dfs": anomaly_dfs}
+                "anomaly_df": anomaly_df}
 
-
-    def _handle_anomalies_patient(self, anomaly_df: pd.DataFrame, relevant_data: pd.DataFrame, original_data: pd.DataFrame) -> pd.DataFrame:
-
-
-        anomaly_df = self._fix_anomaly_df(anomaly_df, relevant_data)
-        if self.handling_strategy == "delete_value":
-            fixed_df = self._delete_value(anomaly_df, relevant_data)
-        elif self.handling_strategy == "delete_than_impute":
-            fixed_df = self._delete_than_impute(anomaly_df, relevant_data)
-        elif self.handling_strategy == "delete_row_if_any_anomaly":
-            fixed_df = self._delete_row_if_any_anomaly(anomaly_df, relevant_data)
-        elif self.handling_strategy == "delete_row_if_many_anomalies":
-            fixed_df = self._delete_row_if_many_anomalies(anomaly_df, relevant_data)
-        elif self.handling_strategy == "use_prediction":
-            raise ValueError("Fixing strategy 'use_prediction' is not implemented for SW_ABSAD_Mod_Detector")
-        else:
-            raise ValueError(f"Unknown fixing strategy {self.handling_strategy}")
-        finished_df = original_data
-        finished_df.update(fixed_df)
-        return finished_df
 
 
     def _predict_patient(self, patient_df: pd.DataFrame) -> Optional[pd.DataFrame]:

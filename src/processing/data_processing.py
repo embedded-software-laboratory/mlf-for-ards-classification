@@ -48,7 +48,7 @@ class DataProcessor:
 
         print("Start data preprocessing...")
         if self.process["perform_anomaly_detection"]:
-            process_pool_data_list,  n_jobs, dataframe = self.anomaly_detector.run_handler(process_pool_data_list, n_jobs, self.patients_per_process)
+            process_pool_data_list,  n_jobs, dataframe = self.anomaly_detector.execute_handler(process_pool_data_list, n_jobs, self.patients_per_process)
             self.anomaly_detector.create_meta_data()
 
 
