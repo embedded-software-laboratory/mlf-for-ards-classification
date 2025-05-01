@@ -150,8 +150,10 @@ class BaseAnomalyDetector:
 
     def execute_handler(self, process_pool_data_list: list[pd.DataFrame], n_jobs: int, patients_per_process: int):
         if self.needs_full_data:
+            logger.info("Starting single execution")
             process_pool_data_list,  fixed_df = self.execute_single(self.active_stages, process_pool_data_list, patients_per_process)
         else:
+            logger.info("Starting multiprocessed execution")
             process_pool_data_list, fixed_df = self.execute_multiprocessing(self.active_stages, process_pool_data_list)
 
         return process_pool_data_list, fixed_df
@@ -161,6 +163,7 @@ class BaseAnomalyDetector:
         dataframe = pd.concat(process_pool_data_list, ignore_index=True).reset_index(drop=True)
         prepared_dict = {"train": None, "val": None, "test": None}
         anomaly_result_dict = {"anomaly_df": None, "anomaly_count": {}}
+        logger.info(f"Executing stages {stages}")
         for stage in stages:
             if stage == "prepare":
                 prepared_dict = self._prepare_data(dataframe, save_data=True, overwrite_existing=False)

@@ -1,20 +1,20 @@
 process:
   load_models: False
   load_timeseries_data: True
-  perform_anomaly_detection: False
-  perform_imputation: True
-  perform_unit_conversion: True
-  calculate_missing_params: True
-  perform_ards_onset_detection: True
-  perform_filtering: True
-  perform_feature_selection: True
-  perform_data_segregation: True 
-  perform_timeseries_training: True
-  perform_timeseries_classification: True
-  perform_threshold_optimization: True
-  calculate_evaluation_metrics: True
-  perform_cross_validation: True
-  save_models: True
+  perform_anomaly_detection: True
+  perform_imputation: False
+  perform_unit_conversion: False
+  calculate_missing_params: False
+  perform_ards_onset_detection: False
+  perform_filtering: False
+  perform_feature_selection: False
+  perform_data_segregation: False 
+  perform_timeseries_training: False
+  perform_timeseries_classification: False
+  perform_threshold_optimization: False
+  calculate_evaluation_metrics: False
+  perform_cross_validation: False
+  save_models: False
 
   load_image_data: False
   train_image_models: False
@@ -24,8 +24,8 @@ models:
     timeseries_models:
         to_train:
           AdaBoost:
-            Names: [ "Test"]
-            Configs: [ "test.yaml"]
+            Names: [ "Default"]
+            Configs: [ "default"]
             Active: True
           #BayesianNetwork:
           #  Names: [ ]
@@ -40,21 +40,21 @@ models:
             Configs: []
             Active: False
           RandomForest:
-            Names: [ ]
-            Configs: []
-            Active: False
+            Names: [ "Default"]
+            Configs: [ "default"]
+            Active: True
           SupportVectorMachine:
             Names: [ ]
             Configs: []
             Active: False
           XGBoost:
-            Names: [ ]
-            Configs: []
-            Active: False
+            Names: [ "Default"]
+            Configs: [ "default"]
+            Active: True
 
         to_execute:
           AdaBoost:
-            Names: ["Default", "Test"]
+            Names: ["Default"]
             Active: True
           #BayesianNetwork:
           #  Names: []
@@ -66,18 +66,18 @@ models:
             Names: []
             Active: False
           RandomForest:
-            Names: []
-            Active: False
+            Names: ["Default"]
+            Active: True
           SupportVectorMachine:
             Names: []
             Active: False
           XGBoost:
-            Names: []
-            Active: False
+            Names: ["Default"]
+            Active: True
 
         to_evaluate:
           AdaBoost:
-            Names: ["Default", "Test"]
+            Names: ["Default"]
             Active: True
           #BayesianNetwork:
           #  Names: []
@@ -89,7 +89,7 @@ models:
             Names: []
             Active: False
           RandomForest:
-            Names: []
+            Names: ["Default"]
             Active: False
           SupportVectorMachine:
             Names: []
@@ -159,7 +159,7 @@ storage_path: "src/Save/ExperimentResult"
 
 
 data:
-  timeseries_file_path: "Data/uka_data_050623.npy"
+  timeseries_file_path: "/work/rwth1474/Data/time_series/uka_data_050623.npy"
   database: "UKA"
   #image_file_path: "Data/Image_data"
   pneumonia_dataset: "balanced"
@@ -172,7 +172,7 @@ preprocessing:
 
   anomaly_detection:
     SW_ABSAD_MOD:
-      active: True
+      active: False
       name: "SW_ABSAD_MOD"
       columns_to_check: []
       fix_algorithm: ""
@@ -200,7 +200,7 @@ preprocessing:
       k: 5
       s: 5
     Physical_Outliers:
-      active: True
+      active: False
       name: "Physical_Outliers"
       columns_to_check: [ ]
       fix_algorithm: ""
@@ -229,8 +229,7 @@ preprocessing:
         - "detect"
         - "fix"
       active_stages:
-        - "detect"
-        - "fix"
+        - "prepare"
       anomaly_data_dir: "/work/rwth1474/Data/AnomalyDetection/anomaly_data/DeepAnt"
       prepared_data_dir: "/work/rwth1474/Data/AnomalyDetection/windowed_data"
       window_generator_config:
