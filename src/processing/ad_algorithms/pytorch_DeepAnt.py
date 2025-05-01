@@ -587,7 +587,7 @@ class DeepAntDetector(BaseAnomalyDetector):
             set(dataset_to_create["labels"] + dataset_to_create["features"] + ["patient_id", "time"]))
         relevant = data[relevant_columns]
         relevant = relevant.dropna(how='any', axis=0).reset_index(drop=True)
-        relevant["time"] = relevant["time"].diff()
+
 
 
         patient_divisions = self._build_patient_dict(relevant)
@@ -595,19 +595,21 @@ class DeepAntDetector(BaseAnomalyDetector):
             logger.info(f"Not enough data for {type_of_dataset}, skipping {name}...")
             return None, [], pd.DataFrame()
 
+        to_scale = relevant.copy(deep=True)
+        to_scale["time"] = to_scale.groupby("patient_id")["time"].diff().fillna(0)
         if type_of_dataset == "train":
             scaler = MinMaxScaler()
-            scaler.fit(relevant)
-            scaled = scaler.transform(relevant)
+            scaler.fit(to_scale)
+            scaled = scaler.transform(to_scale)
             joblib.dump(scaler, os.path.join(self.prepared_data_dir + "/" + name + "_scaler.pkl"))
         else:
             try:
                 scaler = joblib.load(os.path.join(self.prepared_data_dir + "/" + name + "_scaler.pkl"))
-                scaled = scaler.transform(relevant)
+                scaled = scaler.transform(to_scale)
             except FileNotFoundError:
                 logger.error(f"Scaler not found for {name}. Create a new dataset.")
                 sys.exit(1)
-        relevant_scaled = pd.DataFrame(scaled, columns=relevant_columns, index=relevant.index)
+        relevant_scaled = pd.DataFrame(scaled, columns=relevant_columns, index=to_scale.index)
         relevant_scaled.drop(columns="patient_id", inplace=True)
 
 
