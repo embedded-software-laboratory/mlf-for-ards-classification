@@ -581,6 +581,7 @@ class DeepAntDetector(BaseAnomalyDetector):
 
 
         name = dataset_to_create["name"]
+        logger.info(f"Preparing data for {name}...")
         contained_patients = data["patient_id"].unique().tolist()
         relevant_columns = list(
             set(dataset_to_create["labels"] + dataset_to_create["features"] + ["patient_id", "time"]))
