@@ -820,9 +820,10 @@ class DeepAntDetector(BaseAnomalyDetector):
             return {}
 
 
-
-        with Pool(processes=self.max_processes) as pool:
-            pool.starmap(self._prepare_data_multi , [(datatypes_to_prepare, data_dict, item, overwrite) for item in self.datasets_to_create])
+        for item in self.datasets_to_create:
+            self._prepare_data_multi(datatypes_to_prepare, data_dict, item, overwrite)
+        #with Pool(processes=self.max_processes) as pool:
+        #    pool.starmap(self._prepare_data_multi , [(datatypes_to_prepare, data_dict, item, overwrite) for item in self.datasets_to_create])
 
 
         return data_dict
