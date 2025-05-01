@@ -92,13 +92,13 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
             df_columns.remove("patient_id")
             self.columns_to_check = df_columns
 
-        if self.replace_zeros:
-            dataframe_detection = dataframe_detection.replace(0, np.nan)
+
 
         if self.replace_physical_outliers:
             # TODO handle metadata from PhysicalLimitsDetector
-            physicalADDetector = PhysicalLimitsDetector(name="PhysicalLimitsDetectorSWABSABMOD", columns_to_check=self.columns_to_check, database=self.database, handling_strategy="delete_value")
-            dataframe_detection = physicalADDetector.run(dataframe_detection=dataframe_detection, job_count=-1, total_jobs=-1)
+            physicalADDetector = PhysicalLimitsDetector(name="PhysicalLimitsDetectorSWABSABMOD", columns_to_check=self.columns_to_check, database=self.database, handling_strategy="delete_value", max_processes=1,
+                                                        anomaly_data_dir=self.anomaly_data_dir + "/PhysicalLimitsDetector", prepared_data_dir=self.prepared_data_dir + "/PhysicalLimitsDetector", active_stages=self.active_stages)
+            dataframe_detection = physicalADDetector.execute_handler([dataframe_detection], 1, 1)
 
         if self.replace_zeros:
             dataframe_detection = dataframe_detection.replace(0, np.nan)
@@ -109,6 +109,18 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
             save_path = f"{self.prepared_data_dir}/patient_{first_patient}_to_{last_patient}.pkl"
             self._save_file(return_dict, save_path, overwrite)
         return return_dict
+
+    def _create_meta_data_preparation(self, test_data: pd.DataFrame) -> dict:
+        contained_patients = test_data["patient_id"].unique().tolist()
+        meta_data_dict = {
+            "algorithm_specific_settings": {
+                "replace_physical_outliers": self.replace_physical_outliers,
+                "replace_zeros": self.replace_zeros,
+            },
+            "datasets": self.columns_to_check,
+            "contained_patients": contained_patients,
+        }
+        return meta_data_dict
 
 
 

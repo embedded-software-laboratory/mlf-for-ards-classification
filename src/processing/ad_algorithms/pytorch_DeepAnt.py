@@ -827,6 +827,22 @@ class DeepAntDetector(BaseAnomalyDetector):
 
         return data_dict
 
+    def _create_meta_data_preparation(self, test_data: pd.DataFrame) -> dict:
+        contained_patients = test_data["patient_id"].unique().tolist()
+        meta_data_dict = {
+            "algorithm_specific_settings": {
+                "window_generator_config": self.window_generator_config,
+                "train_percentage": self.train_percentage,
+                "val_percentage": self.val_percentage,
+                "test_percentage": 1 - self.val_percentage - self.train_percentage,
+                "seed": self.sk_seed
+            },
+            "datasets": self.datasets_to_create,
+            "contained_patients": contained_patients,
+        }
+        return meta_data_dict
+
+
     def _prepare_data_multi(self, datatypes_to_prepare, data_dict: dict, item,  overwrite: bool = False) -> None:
 
         for dataset_type in datatypes_to_prepare:

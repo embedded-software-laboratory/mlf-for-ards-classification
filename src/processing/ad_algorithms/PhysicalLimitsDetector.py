@@ -49,6 +49,15 @@ class PhysicalLimitsDetector(BaseAnomalyDetector):
             self._save_file(return_dict, save_path, overwrite)
         return return_dict
 
+    def _create_meta_data_preparation(self, test_data: pd.DataFrame) -> dict:
+        contained_patients = test_data["patient_id"].unique().tolist()
+        meta_data_dict = {
+            "algorithm_specific_settings": None,
+            "datasets": self.columns_to_check,
+            "contained_patients": contained_patients,
+        }
+        return meta_data_dict
+
     def _predict(self, dataframe: pd.DataFrame, **kwargs) -> dict:
         anomaly_dict = {}
         for column in dataframe.columns:
@@ -69,6 +78,7 @@ class PhysicalLimitsDetector(BaseAnomalyDetector):
         anomaly_df["patient_id"] = dataframe["patient_id"]
         anomaly_df["timestamp"] = dataframe["timestamp"]
         anomaly_count_dict = self._calculate_anomaly_count(anomaly_df, dataframe)
+        self._save_anomaly_df(anomaly_df)
         result_dict = {
             "anomaly_df": anomaly_df,
             "anomaly_count": anomaly_count_dict}

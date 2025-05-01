@@ -124,8 +124,8 @@ class BaseAnomalyDetector:
 
         first_patient_id, last_patient_id = self._get_first_and_last_patient_id_for_name(anomaly_df)
         anomaly_df_path = f"{self.anomaly_data_dir}/anomaly_data_{self.name}_{first_patient_id}_{last_patient_id}.pkl"
-        with open(anomaly_df_path, "wb") as f:
-            pickle.dump(anomaly_df, f)
+        self._save_file(anomaly_df, anomaly_df_path)
+
         return anomaly_df_path
 
     def _train_ad_model(self, data_training, data_validation, **kwargs):
@@ -142,6 +142,9 @@ class BaseAnomalyDetector:
         raise NotImplementedError()
 
     def _use_prediction(self, prediction: pd.DataFrame, dataframe: pd.DataFrame) -> pd.DataFrame:
+        raise NotImplementedError()
+
+    def _create_meta_data_preparation(self, test_data: pd.DataFrame) -> dict:
         raise NotImplementedError()
 
 
@@ -161,6 +164,8 @@ class BaseAnomalyDetector:
         for stage in stages:
             if stage == "prepare":
                 prepared_dict = self._prepare_data(dataframe, save_data=True, overwrite_existing=False)
+                meta_data_preparation = self._create_meta_data_preparation(prepared_dict["test"])
+                self._save_file(meta_data_preparation, self.prepared_data_dir+"/meta_data_preparation.json", True)
 
             elif stage == "train" and self.trainable:
                 self._train_ad_model(prepared_dict["train"], prepared_dict["val"])
@@ -168,6 +173,10 @@ class BaseAnomalyDetector:
             elif stage == "predict":
                 anomaly_result_dict = self._predict(prepared_dict["test"])
                 anomaly_counts = self.finalize_anomaly_counts_single(anomaly_result_dict)
+                anomaly_df_meta_data = {
+                    "contained_patients": anomaly_result_dict["anomaly_df"]["patient_id"].unique().tolist(),
+                }
+                self._save_file(anomaly_df_meta_data, self.anomaly_data_dir+"/meta_data_anomaly_df.json", True)
                 self.anomaly_counts = anomaly_counts
 
             elif stage == "fix":
@@ -185,6 +194,11 @@ class BaseAnomalyDetector:
             if stage == "prepare":
                 with Pool(processes=self.max_processes) as pool:
                     process_pool_data_list = pool.starmap(self._prepare_data, [(dataframe, True, False) for dataframe in process_pool_data_list])
+                    test_dfs = [result_dict["test"] for result_dict in process_pool_data_list]
+                    test_df = pd.concat(test_dfs, ignore_index=True).reset_index(drop=True)
+                    meta_data_preparation = self._create_meta_data_preparation(test_df)
+                    self._save_file(meta_data_preparation, self.prepared_data_dir+"/meta_data_preparation.json", True)
+
 
 
             elif stage == "train" and self.trainable:
@@ -198,6 +212,14 @@ class BaseAnomalyDetector:
                     predict_data_list = [result_dict["test"] for result_dict in process_pool_data_list]
                     anomaly_result_list = pool.starmap(self._predict, [(dataframe) for dataframe in predict_data_list])
                 anomaly_count_list = [anomaly_result["anomaly_count"] for anomaly_result in anomaly_result_list]
+                contained_patients = [anomaly_result["anomaly_df"]["patient_id"].unique().to_list() for anomaly_result in anomaly_result_list]
+                contained_patients = [item for sublist in contained_patients for item in sublist]
+                meta_data_anomaly_df = {
+                    "contained_patients": contained_patients,
+                }
+                self._save_file(meta_data_anomaly_df, self.anomaly_data_dir+"/meta_data_anomaly_df.json", True)
+
+
                 anomaly_count = self.finalize_anomaly_counts_multiprocessing(anomaly_count_list)
                 self.anomaly_counts = anomaly_count
 
