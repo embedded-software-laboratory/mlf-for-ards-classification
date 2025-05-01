@@ -45,7 +45,7 @@ class BaseAnomalyDetector:
             if stage not in self.supported_stages:
                 logger.info(f"Stage {stage} is not supported by the algorithm {self.name}. Supported stages are: {self.supported_stages}. Removing stage {stage} from the active stages.")
                 self.active_stages.remove(stage)
-
+        logger.info(f"Using up to {self.max_processes} processes for the algorithm {self.name}.")
         self.meta_data = None
 
 
