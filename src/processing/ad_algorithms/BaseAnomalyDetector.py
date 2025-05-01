@@ -138,7 +138,7 @@ class BaseAnomalyDetector:
     def _predict_proba(self):
         raise NotImplementedError()
 
-    def _prepare_data(self, dataframe: pd.DataFrame, save_data: bool = False, overwrite_existing: bool = False) -> dict:
+    def _prepare_data(self, dataframe: pd.DataFrame, save_data: bool = False, overwrite: bool = False) -> dict:
         raise NotImplementedError()
 
     def _use_prediction(self, prediction: pd.DataFrame, dataframe: pd.DataFrame) -> pd.DataFrame:
@@ -166,7 +166,7 @@ class BaseAnomalyDetector:
         logger.info(f"Executing stages {stages}")
         for stage in stages:
             if stage == "prepare":
-                prepared_dict = self._prepare_data(dataframe, save_data=True, overwrite_existing=False)
+                prepared_dict = self._prepare_data(dataframe, save_data=True, overwrite=False)
                 meta_data_preparation = self._create_meta_data_preparation(prepared_dict["test"])
                 self._save_file(meta_data_preparation, self.prepared_data_dir+"/meta_data_preparation.json", True)
 
