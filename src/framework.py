@@ -91,7 +91,7 @@ class Framework:
             self.dataProcessor.database_name = dataset_metadata.datasource
 
         dataframe = self.dataProcessor.process_data(dataframe, dataset_metadata)
-        processing_meta_data = self.dataProcessor.get_processing_meta_data()
+        processing_meta_data = self.dataProcessor.processing_meta_data()
 
         if self.process["perform_feature_selection"]:
             dataframe = self.feature_selector.perform_feature_selection(dataframe)
