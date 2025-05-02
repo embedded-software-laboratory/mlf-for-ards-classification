@@ -37,7 +37,7 @@ class BaseAnomalyDetector:
         self.anomaly_data_dir = None
         self.supported_stages = []
         self.active_stages = []
-        self.columns_not_to_check = ["patient_id", "time", "ards", "chest-injury", "sepsis", "xray", "pneumonia", "pulmonary-edema", "hypervolemia", "heart-failure"]
+        self.columns_not_to_check = ["patient_id", "time", "ards", "chest-injury", "sepsis", "xray", "pneumonia", "pulmonary-edema", "hypervolemia", "heart-failure", "mech-vent"]
         for key, value in kwargs.items():
             if key in self.__dict__.keys():
                 setattr(self, key, value)
