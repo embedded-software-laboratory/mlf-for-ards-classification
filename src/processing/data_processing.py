@@ -88,7 +88,7 @@ class DataProcessor:
                 process_pool_data_list = pool.starmap(self.param_calculator.calculate_missing_params,
                                                       [(process_pool_data_list[i], i, n_jobs) for i in range(n_jobs)])
             dataframe = pd.concat(process_pool_data_list).reset_index(drop=True)
-            self.param_calculator.create_metadata()
+            self.param_calculator.create_meta_data()
             print("Calculated missing params.")
 
 
@@ -120,7 +120,7 @@ class DataProcessor:
             "imputation": self.data_imputator,
             "param_calculation": self.param_calculator,
             "onset_determination": self.onset_determiner,
-            "anomaly_detection": self.anomaly_detector
+            #"anomaly_detection": self.anomaly_detector
         }
         meta_data_dict = get_processing_meta_data(self.database_name, processing_step_dict)
         return meta_data_dict

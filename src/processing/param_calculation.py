@@ -42,7 +42,7 @@ class ParamCalculator:
         print("Finished unit conversion for job " + str(job_number) + f" of {total_job_count} jobs...")
         return dataframe
 
-    def create_metadata(self):
+    def create_meta_data(self):
         if len(list(self.calculated_params)) > 0:
             self.meta_data = ParamCalculationMetaData(calculated_parameters=list(self.calculated_params))
 

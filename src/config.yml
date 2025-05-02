@@ -1,19 +1,19 @@
 process:
   load_models: False
   load_timeseries_data: True
-  perform_anomaly_detection: True
-  perform_imputation: False
-  perform_unit_conversion: False
-  calculate_missing_params: False
-  perform_ards_onset_detection: False
+  perform_anomaly_detection: False
+  perform_imputation: True
+  perform_unit_conversion: True
+  calculate_missing_params: True
+  perform_ards_onset_detection: True
   perform_filtering: False
   perform_feature_selection: False
-  perform_data_segregation: False 
-  perform_timeseries_training: False
-  perform_timeseries_classification: False
-  perform_threshold_optimization: False
-  calculate_evaluation_metrics: False
-  perform_cross_validation: False
+  perform_data_segregation: True
+  perform_timeseries_training: True
+  perform_timeseries_classification: True
+  perform_threshold_optimization: True
+  calculate_evaluation_metrics: True
+  perform_cross_validation: True
   save_models: False
 
   load_image_data: False
@@ -90,18 +90,18 @@ models:
             Active: False
           RandomForest:
             Names: ["Default"]
-            Active: False
+            Active: True
           SupportVectorMachine:
             Names: []
             Active: False
           XGBoost:
-            Names: []
-            Active: False
+            Names: ["Default"]
+            Active: True
 
         to_cross_validate:
           AdaBoost:
-            Names: ["Default", "Test"]
-            Configs: ["default", "test.yaml"]
+            Names: ["Default"]
+            Configs: ["default"]
             Active: True
           ##BayesianNetwork:
           ##  Names: [ ]
@@ -116,17 +116,17 @@ models:
             Configs: [ ]
             Active: False
           RandomForest:
-            Names: [ ]
-            Configs: [ ]
-            Active: False
+            Names: ["Default" ]
+            Configs: [ "default"]
+            Active: True
           SupportVectorMachine:
             Names: [ ]
             Configs: [ ]
             Active: False
           XGBoost:
-            Names: [ ]
-            Configs: [ ]
-            Active: False
+            Names: ["Default" ]
+            Configs: ["Default" ]
+            Active: True
         base_path_config:
           to_train: "Data/Models/TimeSeriesModels/Config/Training/"
           to_cross_validate: "Data/Models/TimeSeriesModels/Config/CrossValidation/"
@@ -159,7 +159,7 @@ storage_path: "src/Save/ExperimentResult"
 
 
 data:
-  timeseries_file_path: "/work/rwth1474/Data/time_series/uka_data_050623.npy"
+  timeseries_file_path: "/work/rwth1474/Data/time_series/uka_data_050623_testing_patients.npy"
   database: "UKA"
   #image_file_path: "Data/Image_data"
   pneumonia_dataset: "balanced"
@@ -167,7 +167,7 @@ data:
 
 preprocessing:
   patients_per_process: 500
-  max_processes: 6
+  max_processes: 20
 
 
   anomaly_detection:
@@ -289,12 +289,12 @@ data_segregation:
 
 evaluation:
   cross_validation:
-    n_splits: 4
+    n_splits: 5
     shuffle: True
     random_state: 42
   threshold_optimization_algorithms: ["Standard", "MaxTPR", "MaxTPRMinFPR", "GeometricRoot"]
   evaluation_metrics: ["AUC", "Accuracy", "F1Score", "FPR", "MCC", "OptimalProbability", "Sensitivity", "Specificity", "TPR"]
-  evaluation_name: "Evaluation X"
+  evaluation_name: "Evaluation None No AD"
 
 #image_model_parameters:
 #  method: last_block
