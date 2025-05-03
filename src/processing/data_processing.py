@@ -5,7 +5,7 @@ from processing.data_imputator import DataImputator
 from processing.param_calculation import ParamCalculator
 from processing.onset_determiner import OnsetDeterminer
 from processing.datasets_metadata import TimeseriesMetaData
-from processing.ad_algorithms import PhysicalLimitsDetector, SW_ABSAD_Mod_Detector, DeepAntDetector
+from processing.ad_algorithms import PhysicalLimitsDetector, SW_ABSAD_Mod_Detector, DeepAntDetector, BaseAnomalyDetector
 from processing.processing_utils import prepare_multiprocessing, get_processing_meta_data
 
 import pandas as pd
@@ -40,6 +40,7 @@ class DataProcessor:
                     return SW_ABSAD_Mod_Detector(**value)
                 if key == "DeepAnt":
                     return DeepAntDetector(**value)
+        return BaseAnomalyDetector()
 
     def process_data(self, dataframe: pd.DataFrame, dataset_metadata: TimeseriesMetaData):
 
@@ -120,7 +121,7 @@ class DataProcessor:
             "imputation": self.data_imputator,
             "param_calculation": self.param_calculator,
             "onset_determination": self.onset_determiner,
-            #"anomaly_detection": self.anomaly_detector
+            "anomaly_detection": self.anomaly_detector
         }
         meta_data_dict = get_processing_meta_data(self.database_name, processing_step_dict)
         return meta_data_dict

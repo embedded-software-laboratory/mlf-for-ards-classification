@@ -150,10 +150,10 @@ class TimeSeriesMetaDataManagement:
                                                dataset_location=path,
                                                dataset_type=dataset_type,
                                                additional_information=additional_information,
-                                               imputation=processing_meta_data["imputator"],
-                                               unit_conversion=processing_meta_data["unit_converter"],
-                                               parameter_calculation=processing_meta_data["param_calculator"],
-                                               onset_detection=processing_meta_data["onset_determiner"],
+                                               imputation=processing_meta_data["imputation"],
+                                               unit_conversion=processing_meta_data["unit_conversion"],
+                                               parameter_calculation=processing_meta_data["param_calculation"],
+                                               onset_detection=processing_meta_data["onset_determination"],
                                                filtering=processing_meta_data["filtering"],
                                                feature_selection=processing_meta_data["feature_selection"],
                                                percentage_of_ards=percentage_ards,
@@ -205,10 +205,10 @@ class TimeSeriesMetaDataManagement:
     @staticmethod
     def extract_procesing_meta_data(meta_data_dataset: TimeseriesMetaData) -> dict:
         processing_meta_data = {"database_name": meta_data_dataset.datasource,
-                                "imputator": meta_data_dataset.imputation,
-                                "unit_converter": meta_data_dataset.unit_conversion,
-                                "param_calculator": meta_data_dataset.parameter_calculation,
-                                "onset_determiner": meta_data_dataset.onset_detection,
+                                "imputation": meta_data_dataset.imputation,
+                                "unit_conversion": meta_data_dataset.unit_conversion,
+                                "param_calculation": meta_data_dataset.parameter_calculation,
+                                "onset_determination": meta_data_dataset.onset_detection,
                                 "filtering": meta_data_dataset.filtering,
                                 "feature_selection": meta_data_dataset.feature_selection}
         return processing_meta_data

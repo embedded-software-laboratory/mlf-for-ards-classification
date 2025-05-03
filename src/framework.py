@@ -85,6 +85,7 @@ class Framework:
 
 
     def load_timeseries_data(self):
+        logger.info(f"Loading timeseries data from {self.timeseries_file_path}")
         dataframe, dataset_metadata = self.loader.load_file(self.timeseries_file_path)
 
         if dataset_metadata:
@@ -101,11 +102,11 @@ class Framework:
         if not os.path.isdir(self.outdir):
             os.makedirs(self.outdir, exist_ok=True)
 
-        print("Finished preprocessing and saved result to file!")
+        logger.info("Finished preprocessing and saved result to file!")
         if self.process["perform_data_segregation"]:
             training_data, test_data = self.segregator.segregate_data(dataframe)
         else:
-            print("Warning: Training and Test data are the same!")
+            logger.info("Warning: Training and Test data are the same!")
             training_data = test_data = dataframe
 
 
@@ -203,19 +204,22 @@ class Framework:
     def handle_timeseries_results(self):
 
         # TODO make plots
-
-        result_location = self.outdir + 'results.json'
+        eval_name = self.config['evaluation']['evaluation_name']
+        eval_name = eval_name.replace(" ", "_")
+        result_location = self.outdir + f'{eval_name}_results.json'
 
         if self.timeseries_cross_validation_result and self.timeseries_evaluations_result:
-            eval_name = self.config['evaluation']['evaluation_name']
+
             cv_result = self.timeseries_cross_validation_result
             eval_result = self.timeseries_evaluations_result
+
 
             content = {"eval_name": eval_name, "storage_location": result_location, "CV": cv_result, "Eval": eval_result}
             final_result = ResultManagement().merge(content, "CV_EVAL")
 
         elif self.timeseries_cross_validation_result:
             final_result = self.timeseries_cross_validation_result
+            eval_name = self.config['evaluation']['evaluation_name']
 
         elif self.timeseries_evaluations_result:
             final_result = self.timeseries_evaluations_result
@@ -224,7 +228,7 @@ class Framework:
             print("This should never happen")
             return
 
-        print(f"Save results to {self.outdir + 'results.json'}")
+        print(f"Save results to {result_location}")
         with open(result_location, 'w', encoding='utf-8') as f:
             f.write(final_result.model_dump_json(indent=4))
 

@@ -30,7 +30,7 @@ class BaseAnomalyDetector:
         self.fix_algorithm = None
         self.handling_strategy = None
         self.anomaly_threshold = None
-        self.max_processes = 16
+        self.max_processes = None
         self.needs_full_data = False
         self.anomaly_counts = None
         self.prepared_data_dir = None
@@ -379,7 +379,8 @@ class BaseAnomalyDetector:
             Returns:
                 pd.DataFrame: The complete DataFrame for a patient with anomalies handled.
         """
-
+        if anomaly_df.empty or original_data.empty:
+            return pd.DataFrame(columns=original_data.columns)
         anomaly_df = self._fix_anomaly_df(anomaly_df, relevant_data)
         if self.handling_strategy == "delete_value":
             fixed_df = self._delete_value(anomaly_df, relevant_data)
@@ -394,7 +395,7 @@ class BaseAnomalyDetector:
         elif self.handling_strategy == "use_prediction" and not self.can_predict_value:
             raise NotImplementedError(f"Algorithm {self.type} does not support prediction as a handling strategy for anomalies.")
         elif self.handling_strategy == "use_prediction" and self.can_predict_value:
-            pass
+            raise NotImplementedError()
         else:
             raise ValueError(f"Unknown fixing strategy {self.handling_strategy}")
         finished_df = original_data

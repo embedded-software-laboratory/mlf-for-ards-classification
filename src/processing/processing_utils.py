@@ -37,9 +37,6 @@ def get_processing_meta_data(database_name: str, processing_step_dict: dict) -> 
     }
     for key, value in processing_step_dict.items():
         
-        if key == "unit_conversion":
-            meta_data_dict["unit_conversion"] = value.create_meta_data(database_name)
-        else:
-            meta_data_dict[key] = value.create_meta_data()
+        meta_data_dict[key] = value.meta_data
     return meta_data_dict
 
