@@ -342,12 +342,16 @@ class BaseAnomalyDetector:
 
     @staticmethod
     def _load_stored_anomalies(detected_anomalies_path: str, data_to_fix: pd.DataFrame) -> (pd.DataFrame, pd.DataFrame):
+        logger.info(f"Path to load from {detected_anomalies_path}")
         detected_anomalies_df_list = []
         existing_anomaly_files = [f for f in os.listdir(detected_anomalies_path) if f.endswith(".pkl")]
         existing_meta_data_files = [f for f in os.listdir(detected_anomalies_path) if f.endswith(".json")]
+        logger.info(existing_anomaly_files)
         for file in existing_anomaly_files:
             full_path = os.path.join(detected_anomalies_path, file)
+            logger.info(full_path)
             detected_anomalies_df_list.append(pd.read_pickle(full_path))
+        logger.info(len(detected_anomalies_df_list))
         detected_anomalies_df = pd.concat(detected_anomalies_df_list, ignore_index=True).reset_index(drop=True)
         meta_data_list = []
         for file in existing_meta_data_files:
@@ -364,9 +368,13 @@ class BaseAnomalyDetector:
         if detected_anomalies_df.empty or detected_anomalies_df is None:
             logger.info(f"Can not find any anomalies in the file {detected_anomalies_path}.")
             sys.exit(0)
-
-        relevant_data_to_fix = data_to_fix[data_to_fix["patient_id"].isin(meta_data["contained_patients"])].reset_index(drop=True)
-        relevant_anomalies_df = detected_anomalies_df[detected_anomalies_df["patient_id"].isin(relevant_data_to_fix["patient_id"].unique().tolist())].reset_index(drop=True)
+        
+        anomalies_patients = detected_anomalies_df["patient_id"].unique().tolist() if not meta_data["contained_patients"] else meta_data["contained_patients"]
+        
+        logger.info(meta_data["contained_patients"])
+        relevant_data_to_fix = data_to_fix[data_to_fix["patient_id"].isin(anomalies_patients)].reset_index(drop=True)
+        patients_to_fix = relevant_data_to_fix["patient_id"].unique().tolist()
+        relevant_anomalies_df = detected_anomalies_df[detected_anomalies_df["patient_id"].isin(patients_to_fix)].reset_index(drop=True)
         if relevant_anomalies_df.empty or relevant_anomalies_df is None:
             logger.info(f"No overlapping patients found between stored anomalies and data to fix..")
             sys.exit(0)
