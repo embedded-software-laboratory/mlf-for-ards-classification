@@ -245,7 +245,12 @@ class BaseAnomalyDetector:
                 if not anomaly_result_list:
                     anomaly_result, patient_df_to_fix = self._load_stored_anomalies(self.anomaly_data_dir, pd.concat(process_pool_data_list))
                     process_pool_data_list = prepare_multiprocessing(patient_df_to_fix, patients_per_process)
-                    anomaly_result_list = prepare_multiprocessing(anomaly_result_list, patients_per_process)
+                    anomaly_result_list = prepare_multiprocessing(anomaly_result, patients_per_process)
+                    process_pool_data_list = [{"train": None, "val": None, "test": dataframe} for dataframe in process_pool_data_list]
+                    anomaly_result_list = [{"anomaly_df": anomaly_result, "anomaly_count": {}} for anomaly_result in anomaly_result_list]
+                    logger.info(anomaly_result_list)
+                    logger.info(process_pool_data_list)
+                logger.info("Starting handling")
                 with Pool(processes=self.max_processes) as pool:
                     fixed_df_list = pool.starmap(self._handle_anomalies, [(anomaly_result["anomaly_df"], result_dict["test"]) for anomaly_result, result_dict in zip(anomaly_result_list, process_pool_data_list)])
                 fixed_df = pd.concat(fixed_df_list, ignore_index=True).reset_index(drop=True)
@@ -495,6 +500,8 @@ class BaseAnomalyDetector:
 
 
     def _handle_anomalies(self, detected_anomalies_df : pd.DataFrame, original_data: pd.DataFrame, save_data: bool =True, save_path: str = None) -> pd.DataFrame:
+        logger.info(f"Type of orig {type(original_data)}")
+        logger.info(original_data)
         if original_data.empty or original_data is None:
             logger.info("No data to fix. Exiting...")
             sys.exit(0)
