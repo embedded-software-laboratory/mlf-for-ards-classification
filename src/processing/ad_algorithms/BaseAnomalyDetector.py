@@ -244,8 +244,8 @@ class BaseAnomalyDetector:
                 fixed_df_list = []
                 if not anomaly_result_list:
                     anomaly_result, patient_df_to_fix = self._load_stored_anomalies(self.anomaly_data_dir, pd.concat(process_pool_data_list))
-                    process_pool_data_list = prepare_multiprocessing(patient_df_to_fix, patients_per_process)
-                    anomaly_result_list = prepare_multiprocessing(anomaly_result, patients_per_process)
+                    process_pool_data_list, _ = prepare_multiprocessing(patient_df_to_fix, patients_per_process)
+                    anomaly_result_list, _ = prepare_multiprocessing(anomaly_result, patients_per_process)
                     process_pool_data_list = [{"train": None, "val": None, "test": dataframe} for dataframe in process_pool_data_list]
                     anomaly_result_list = [{"anomaly_df": anomaly_result, "anomaly_count": {}} for anomaly_result in anomaly_result_list]
                     logger.info(anomaly_result_list)
