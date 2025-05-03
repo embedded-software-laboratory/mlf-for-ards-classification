@@ -148,13 +148,13 @@ class BaseAnomalyDetector:
         raise NotImplementedError()
 
 
-    def execute_handler(self, process_pool_data_list: list[pd.DataFrame], n_jobs: int, patients_per_process: int):
+    def execute_handler(self, process_pool_data_list: list[pd.DataFrame],  patients_per_process: int):
         if self.needs_full_data:
             logger.info("Starting single execution")
             process_pool_data_list,  fixed_df = self.execute_single(self.active_stages, process_pool_data_list, patients_per_process)
         else:
             logger.info("Starting multiprocessed execution")
-            process_pool_data_list, fixed_df = self.execute_multiprocessing(self.active_stages, process_pool_data_list)
+            process_pool_data_list, fixed_df = self.execute_multiprocessing(self.active_stages, process_pool_data_list, patients_per_process)
 
         return process_pool_data_list, fixed_df
 
@@ -163,6 +163,7 @@ class BaseAnomalyDetector:
         dataframe = pd.concat(process_pool_data_list, ignore_index=True).reset_index(drop=True)
         prepared_dict = {"train": None, "val": None, "test": None}
         anomaly_result_dict = {"anomaly_df": None, "anomaly_count": {}}
+        fixed_df = pd.DataFrame(columns=dataframe.columns)
         logger.info(f"Executing stages {stages}")
         for stage in stages:
             if stage == "prepare":
@@ -183,7 +184,16 @@ class BaseAnomalyDetector:
                 self.anomaly_counts = anomaly_counts
 
             elif stage == "fix":
-                fixed_df = self._handle_anomalies(anomaly_result_dict["anomaly_df"], prepared_dict["test"])
+                if not prepared_dict["train"]:
+                    data_to_fix = dataframe
+                else:
+                    data_to_fix = prepared_dict["train"]
+                if not anomaly_result_dict["anomaly_df"]:
+                    anomalies, data_to_fix = self._load_stored_anomalies(self.anomaly_data_dir, data_to_fix)
+                else:
+                    anomalies = anomaly_result_dict["anomaly_df"]
+
+                fixed_df = self._handle_anomalies(anomalies, data_to_fix)
 
         if not "fix" in self.active_stages:
             logger.info("No fixing stage in the active stages. No data can be passed to the next module. Exiting...")
@@ -192,8 +202,10 @@ class BaseAnomalyDetector:
         process_pool_data_list = prepare_multiprocessing(fixed_df, patients_per_process)
         return process_pool_data_list,  fixed_df
 
-    def execute_multiprocessing(self, stages, process_pool_data_list: list[pd.DataFrame]):
+    def execute_multiprocessing(self, stages, process_pool_data_list: list[pd.DataFrame], patients_per_process: int):
         logger.info(f"Active stages: {stages}")
+        anomaly_result_list = []
+        fixed_df = pd.DataFrame(columns=process_pool_data_list[0].columns)
         for stage in stages:
             if stage == "prepare":
                 with Pool(processes=self.max_processes) as pool:
@@ -211,7 +223,7 @@ class BaseAnomalyDetector:
                     pool.starmap(self._train_ad_model, [(train, val) for train, val in train_data_list])
 
             elif stage == "predict":
-                anomaly_result_list = []
+
                 with Pool(processes=self.max_processes) as pool:
                     predict_data_list = [result_dict["test"] for result_dict in process_pool_data_list]
                     anomaly_result_list = pool.starmap(self._predict, [(dataframe) for dataframe in predict_data_list])
@@ -230,6 +242,10 @@ class BaseAnomalyDetector:
 
             elif stage == "fix":
                 fixed_df_list = []
+                if not anomaly_result_list:
+                    anomaly_result, patient_df_to_fix = self._load_stored_anomalies(self.anomaly_data_dir, pd.concat(process_pool_data_list))
+                    process_pool_data_list = prepare_multiprocessing(patient_df_to_fix, patients_per_process)
+                    anomaly_result_list = prepare_multiprocessing(anomaly_result_list, patients_per_process)
                 with Pool(processes=self.max_processes) as pool:
                     fixed_df_list = pool.starmap(self._handle_anomalies, [(anomaly_result["anomaly_df"], result_dict["test"]) for anomaly_result, result_dict in zip(anomaly_result_list, process_pool_data_list)])
                 fixed_df = pd.concat(fixed_df_list, ignore_index=True).reset_index(drop=True)
@@ -324,21 +340,8 @@ class BaseAnomalyDetector:
             }
         return finished_anomaly_count_dict
 
-
-
-    def _handle_anomalies_with_stored_anomalies(self, data_to_fix: pd.DataFrame, detected_anomalies_path: str, save_data: bool = False) -> pd.DataFrame:
-        """
-            Fixes anomalies in the given Dataframe by utilizing already detected anomalies that have been saved on the disk.
-
-            Args:
-                data_to_fix (pd.DataFrame): The input DataFrame containing the data with anomalies.
-                detected_anomalies_path (str): The file path to the file which contains the detected anomalies as well as patient ids and timestamps.
-                detected_anomalies_meta_data_file (str): The file path to the file which contains the meta data of the detected anomalies.
-
-
-            Returns:
-                pd.DataFrame: The processed DataFrame with anomalies handled.
-        """
+    @staticmethod
+    def _load_stored_anomalies(detected_anomalies_path: str, data_to_fix: pd.DataFrame) -> (pd.DataFrame, pd.DataFrame):
         detected_anomalies_df_list = []
         existing_anomaly_files = [f for f in os.listdir(detected_anomalies_path) if f.endswith(".pkl")]
         existing_meta_data_files = [f for f in os.listdir(detected_anomalies_path) if f.endswith(".json")]
@@ -350,22 +353,28 @@ class BaseAnomalyDetector:
         for file in existing_meta_data_files:
             full_path = os.path.join(detected_anomalies_path, file)
 
-
             with open(full_path, "rb") as f:
                 meta_data_list.append(pickle.load(f))
         meta_data = {"contained_patients": []}
         for meta_data_dataset in meta_data_list:
             if meta_data_dataset["contained_patients"]:
-                new_contained_patients = list(set(meta_data_dataset["contained_patients"] + meta_data["contained_patients"]))
+                new_contained_patients = list(
+                    set(meta_data_dataset["contained_patients"] + meta_data["contained_patients"]))
                 meta_data["contained_patients"] = new_contained_patients
         if detected_anomalies_df.empty or detected_anomalies_df is None:
             logger.info(f"Can not find any anomalies in the file {detected_anomalies_path}.")
             sys.exit(0)
 
+        relevant_data_to_fix = data_to_fix[data_to_fix["patient_id"].isin(meta_data["contained_patients"])].reset_index(drop=True)
+        relevant_anomalies_df = detected_anomalies_df[detected_anomalies_df["patient_id"].isin(relevant_data_to_fix["patient_id"].unique().tolist())].reset_index(drop=True)
+        if relevant_anomalies_df.empty or relevant_anomalies_df is None:
+            logger.info(f"No overlapping patients found between stored anomalies and data to fix..")
+            sys.exit(0)
+        if relevant_data_to_fix.empty or relevant_data_to_fix is None:
+            logger.info(f"No overlapping patients found between stored anomalies and data to fix.")
+            sys.exit(0)
+        return relevant_anomalies_df, relevant_data_to_fix
 
-        relevant_data_to_fix = data_to_fix[data_to_fix["patient_id"].isin(meta_data["contained_patients"])]
-        fixed_df = self._handle_anomalies(detected_anomalies_df, relevant_data_to_fix, save_data, detected_anomalies_path)
-        return fixed_df
 
 
     def _handle_anomalies_patient(self, anomaly_df: pd.DataFrame, relevant_data: pd.DataFrame, original_data: pd.DataFrame) -> pd.DataFrame:
@@ -477,10 +486,6 @@ class BaseAnomalyDetector:
             logger.info("No data to fix. Exiting...")
             sys.exit(0)
 
-        if detected_anomalies_df is None or detected_anomalies_df.empty:
-            anomaly_path =  self.anomaly_data_dir
-
-            return self._handle_anomalies_with_stored_anomalies(original_data, anomaly_path, save_data)
         if not save_path:
             save_path = self.anomaly_data_dir
         if self.needs_full_data:
