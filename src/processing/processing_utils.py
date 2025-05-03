@@ -1,9 +1,14 @@
 import math
 import pandas as pd
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def prepare_multiprocessing(dataframe: pd.DataFrame, patients_per_process: int) -> (list[pd.DataFrame], int):
-    patient_ids = list(dataframe["patient_id"].unique())
+    logger.info(dataframe["patient_id"].unique())
+    patient_ids = dataframe["patient_id"].unique().tolist()
+    logger.info(f"Number of patients: {len(patient_ids)}")
     num_patients = len(patient_ids)
     n_jobs = math.ceil(num_patients / patients_per_process)
 

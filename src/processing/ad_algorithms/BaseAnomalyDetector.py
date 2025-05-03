@@ -340,18 +340,17 @@ class BaseAnomalyDetector:
             }
         return finished_anomaly_count_dict
 
-    @staticmethod
-    def _load_stored_anomalies(detected_anomalies_path: str, data_to_fix: pd.DataFrame) -> (pd.DataFrame, pd.DataFrame):
+
+    def _load_stored_anomalies(self, detected_anomalies_path: str, data_to_fix: pd.DataFrame) -> (pd.DataFrame, pd.DataFrame):
         logger.info(f"Path to load from {detected_anomalies_path}")
         detected_anomalies_df_list = []
         existing_anomaly_files = [f for f in os.listdir(detected_anomalies_path) if f.endswith(".pkl")]
         existing_meta_data_files = [f for f in os.listdir(detected_anomalies_path) if f.endswith(".json")]
-        logger.info(existing_anomaly_files)
-        for file in existing_anomaly_files:
-            full_path = os.path.join(detected_anomalies_path, file)
-            logger.info(full_path)
-            detected_anomalies_df_list.append(pd.read_pickle(full_path))
-        logger.info(len(detected_anomalies_df_list))
+        with Pool(processes=self.max_processes) as pool:
+            detected_anomalies_df_list = pool.starmap(pd.read_pickle, [(os.path.join(detected_anomalies_path, file)) for file in existing_anomaly_files])
+
+
+
         detected_anomalies_df = pd.concat(detected_anomalies_df_list, ignore_index=True).reset_index(drop=True)
         meta_data_list = []
         for file in existing_meta_data_files:
