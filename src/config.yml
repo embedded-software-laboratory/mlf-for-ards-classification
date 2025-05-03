@@ -1,7 +1,7 @@
 process:
   load_models: False
   load_timeseries_data: True
-  perform_anomaly_detection: False
+  perform_anomaly_detection: True
   perform_imputation: True
   perform_unit_conversion: True
   calculate_missing_params: True
@@ -159,7 +159,7 @@ storage_path: "../Data/ExperimentResult"
 
 
 data:
-  timeseries_file_path: "../Data/uka_data_050623_testing_patients.npy"
+  timeseries_file_path: "/work/rwth1474/Data/time_series/uka_data_050623_testing_patients.npy"
   database: "UKA"
   #image_file_path: "Data/Image_data"
   pneumonia_dataset: "balanced"
@@ -172,18 +172,17 @@ preprocessing:
 
   anomaly_detection:
     SW_ABSAD_MOD:
-      active: False
+      active: True
       name: "SW_ABSAD_MOD"
       columns_to_check: []
-      fix_algorithm: ""
-      handling_strategy: ""
+      fix_algorithm: "interpolate"
+      handling_strategy: "delete_than_impute"
       anomaly_threshold: 0.5
       supported_stages:
         - "prepare"
         - "detect"
         - "fix"
       active_stages:
-        - "detect"
         - "fix"
       anomaly_data_dir: "/work/rwth1474/Data/AnomalyDetection/anomaly_data/SW_ABSAD_MOD"
       prepared_data_dir: "/work/rwth1474/Data/AnomalyDetection/prepared_data/SW_ABSAD_MOD"

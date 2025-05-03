@@ -41,7 +41,8 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
         self.variance_check = bool(kwargs.get('variance_check', False))
         self.clean_training = bool(kwargs.get('clean_training_window', True))
         self.variance_window_length = 50
-        self.columns_to_check = kwargs["use_columns"].split(",")
+        columns =  str(kwargs.get('use_columns', "")).split(",")
+        self.columns_to_check = columns
         self.bandwidth = 0.5
         self.confidence_level = float(kwargs.get('confidence_level', 0.90))
         self.theta =  float(kwargs.get('theta', 0.5))

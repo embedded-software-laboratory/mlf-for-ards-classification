@@ -36,7 +36,7 @@ class DataProcessor:
                 value["max_processes"] = self.max_processes
                 if key == "Physical_Outliers":
                     return PhysicalLimitsDetector(**value)
-                if key == "SW_ABSAD_Mod":
+                if key == "SW_ABSAD_MOD":
                     return SW_ABSAD_Mod_Detector(**value)
                 if key == "DeepAnt":
                     return DeepAntDetector(**value)

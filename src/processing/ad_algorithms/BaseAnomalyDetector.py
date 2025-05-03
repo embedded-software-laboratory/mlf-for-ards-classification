@@ -193,6 +193,7 @@ class BaseAnomalyDetector:
         return process_pool_data_list,  fixed_df
 
     def execute_multiprocessing(self, stages, process_pool_data_list: list[pd.DataFrame]):
+        logger.info(f"Active stages: {stages}")
         for stage in stages:
             if stage == "prepare":
                 with Pool(processes=self.max_processes) as pool:
