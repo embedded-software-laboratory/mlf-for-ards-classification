@@ -1,4 +1,6 @@
 import logging
+import os
+from typing import Any
 
 import pandas as pd
 
@@ -30,22 +32,33 @@ class PhysicalLimitsDetector(BaseAnomalyDetector):
                 setattr(self, key, value)
         self.physical_limits_dict = physical_limits_database_dict[self.database]
 
-    def run(self, dataframe_detection: pd.DataFrame, job_count: int, total_jobs: int) -> tuple[pd.DataFrame, dict[str, dict[str, int]]]:
+    #def run(self, dataframe_detection: pd.DataFrame, job_count: int, total_jobs: int) -> tuple[pd.DataFrame, dict[str, dict[str, int]]]:
+#
+    #    relevant_data = self._prepare_data(dataframe_detection)["dataframe"]
+    #    anomaly_dict = self._predict(relevant_data)
+    #    anomaly_df =  anomaly_dict["anomaly_df"]
+    #    self._save_anomaly_df(anomaly_df)
+    #    fixed_df = self._handle_anomalies(anomaly_df, dataframe_detection)
+    #    return fixed_df, anomaly_dict["anomaly_count"]
 
-        relevant_data = self._prepare_data(dataframe_detection)["dataframe"]
-        anomaly_dict = self._predict(relevant_data)
-        anomaly_df =  anomaly_dict["anomaly_df"]
-        self._save_anomaly_df(anomaly_df)
-        fixed_df = self._handle_anomalies(anomaly_df, dataframe_detection)
-        return fixed_df, anomaly_dict["anomaly_count"]
-
+    def _load_prepared_data(self, path: str, type_of_dataset: str) -> Any:
+        prepared_files = [f for f in os.listdir(path) if f.endswith(f"{type_of_dataset}.pkl")]
+        if len(prepared_files) == 0:
+            raise FileNotFoundError(f"No prepared data found for {type_of_dataset} in {path}")
+        prepared_data = []
+        for file in prepared_files:
+            file_path = os.path.join(path, file)
+            with open(file_path, "rb") as f:
+                data = pd.read_pickle(f)
+                prepared_data.append(data)
+        return pd.concat(prepared_data, ignore_index=True).reset_index(drop=True)
 
     def _prepare_data(self, dataframe: pd.DataFrame, save_data: bool =False, overwrite: bool = True) -> dict:
         dataframe = dataframe[self.columns_to_check]
         return_dict = {"test": dataframe}
         if save_data:
             first_patient, last_patient = self._get_first_and_last_patient_id_for_name(dataframe)
-            save_path = f"{self.prepared_data_dir}/patient_{first_patient}_to_{last_patient}.pkl"
+            save_path = f"{self.prepared_data_dir}/patient_{first_patient}_to_{last_patient}_test.pkl"
             self._save_file(return_dict, save_path, overwrite)
         return return_dict
 

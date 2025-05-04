@@ -2,6 +2,7 @@ import bisect
 import copy
 import logging
 import math
+import os
 from multiprocessing import Pool
 from typing import Optional, Any
 
@@ -107,7 +108,7 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
         return_dict = {"test": dataframe_detection}
         if save_data:
             first_patient, last_patient = self._get_first_and_last_patient_id_for_name(dataframe_detection)
-            save_path = f"{self.prepared_data_dir}/patient_{first_patient}_to_{last_patient}.pkl"
+            save_path = f"{self.prepared_data_dir}/patient_{first_patient}_to_{last_patient}_test.pkl"
             self._save_file(return_dict, save_path, overwrite)
         return return_dict
 
@@ -123,7 +124,17 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
         }
         return meta_data_dict
 
-
+    def _load_prepared_data(self, path: str, type_of_dataset: str) -> Any:
+        prepared_files = [f for f in os.listdir(path) if f.endswith(f"{type_of_dataset}.pkl")]
+        if len(prepared_files) == 0:
+            raise FileNotFoundError(f"No prepared data found for {type_of_dataset} in {path}")
+        prepared_data = []
+        for file in prepared_files:
+            file_path = os.path.join(path, file)
+            with open(file_path, "rb") as f:
+                data = pd.read_pickle(f)
+                prepared_data.append(data)
+        return pd.concat(prepared_data, ignore_index=True).reset_index(drop=True)
 
 
     def _predict(self, dataframe: pd.DataFrame, **kwargs) -> dict:

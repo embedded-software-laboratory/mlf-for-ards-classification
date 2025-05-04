@@ -3,7 +3,7 @@ import os
 import pickle
 import sys
 from multiprocessing import Pool
-from typing import Union
+from typing import Union, Any
 
 import numpy as np
 
@@ -147,6 +147,9 @@ class BaseAnomalyDetector:
     def _create_meta_data_preparation(self, test_data: pd.DataFrame) -> dict:
         raise NotImplementedError()
 
+    def _load_prepared_data(self, path: str, type_of_dataset: str) -> Any:
+        raise NotImplementedError()
+
 
     def execute_handler(self, process_pool_data_list: list[pd.DataFrame],  patients_per_process: int):
         if self.needs_full_data:
@@ -169,12 +172,20 @@ class BaseAnomalyDetector:
             if stage == "prepare":
                 prepared_dict = self._prepare_data(dataframe, save_data=True, overwrite=False)
                 meta_data_preparation = self._create_meta_data_preparation(prepared_dict["test"])
-                self._save_file(meta_data_preparation, self.prepared_data_dir+"/meta_data_preparation.json", True)
+                self._save_file(meta_data_preparation, self.prepared_data_dir+"/meta_data_preparation_test.json", True)
 
             elif stage == "train" and self.trainable:
+                if not prepared_dict["train"] or not prepared_dict["val"]:
+                    train_data = self._load_prepared_data(self.prepared_data_dir, "train")
+                    val_data = self._load_prepared_data(self.prepared_data_dir, "val")
+                    prepared_dict["train"] = train_data
+                    prepared_dict["val"] = val_data
                 self._train_ad_model(prepared_dict["train"], prepared_dict["val"])
 
             elif stage == "predict":
+                if not prepared_dict["test"]:
+                    test_data = self._load_prepared_data(self.prepared_data_dir, "test")
+                    prepared_dict["test"] = test_data
                 anomaly_result_dict = self._predict(prepared_dict["test"])
                 anomaly_counts = self.finalize_anomaly_counts_single(anomaly_result_dict)
                 anomaly_df_meta_data = {
@@ -184,10 +195,10 @@ class BaseAnomalyDetector:
                 self.anomaly_counts = anomaly_counts
 
             elif stage == "fix":
-                if not prepared_dict["train"]:
+                if not prepared_dict["test"]:
                     data_to_fix = dataframe
                 else:
-                    data_to_fix = prepared_dict["train"]
+                    data_to_fix = prepared_dict["test"]
                 if not anomaly_result_dict["anomaly_df"]:
                     anomalies, data_to_fix = self._load_stored_anomalies(self.anomaly_data_dir, data_to_fix)
                 else:
@@ -205,27 +216,39 @@ class BaseAnomalyDetector:
     def execute_multiprocessing(self, stages, process_pool_data_list: list[pd.DataFrame], patients_per_process: int):
         logger.info(f"Active stages: {stages}")
         anomaly_result_list = []
+        prepared_data_list = []
         fixed_df = pd.DataFrame(columns=process_pool_data_list[0].columns)
         for stage in stages:
             if stage == "prepare":
                 with Pool(processes=self.max_processes) as pool:
-                    process_pool_data_list = pool.starmap(self._prepare_data, [(dataframe, True, False) for dataframe in process_pool_data_list])
-                    test_dfs = [result_dict["test"] for result_dict in process_pool_data_list]
+                    prepared_data_list = pool.starmap(self._prepare_data, [(dataframe, True, False) for dataframe in process_pool_data_list])
+                    test_dfs = [result_dict["test"] for result_dict in prepared_data_list]
                     test_df = pd.concat(test_dfs, ignore_index=True).reset_index(drop=True)
                     meta_data_preparation = self._create_meta_data_preparation(test_df)
-                    self._save_file(meta_data_preparation, self.prepared_data_dir+"/meta_data_preparation.json", True)
+                    self._save_file(meta_data_preparation, self.prepared_data_dir+"/meta_data_preparation_test.json", True)
 
 
 
             elif stage == "train" and self.trainable:
+                if not prepared_data_list:
+                    train_data = self._load_prepared_data(self.prepared_data_dir, "train")
+                    train_data_list = prepare_multiprocessing(train_data, patients_per_process)
+
+                    val_data = self._load_prepared_data(self.prepared_data_dir, "val")
+                    val_data_list = prepare_multiprocessing(val_data, patients_per_process)
+                    prepared_data_list = [{"train": train_data, "val": val_data} for train_data, val_data in zip(train_data_list, val_data_list)]
                 with Pool(processes=self.max_processes) as pool:
-                    train_data_list = [(result_dict["train"], result_dict["val"]) for result_dict in process_pool_data_list]
+
+                    train_data_list = [(result_dict["train"], result_dict["val"]) for result_dict in prepared_data_list]
                     pool.starmap(self._train_ad_model, [(train, val) for train, val in train_data_list])
 
             elif stage == "predict":
-
+                if not prepared_data_list:
+                    test_data = self._load_prepared_data(self.prepared_data_dir, "test")
+                    test_data_list = prepare_multiprocessing(test_data, patients_per_process)
+                    prepared_data_list = [{"test": test_data} for test_data in test_data_list]
                 with Pool(processes=self.max_processes) as pool:
-                    predict_data_list = [result_dict["test"] for result_dict in process_pool_data_list]
+                    predict_data_list = [result_dict["test"] for result_dict in prepared_data_list]
                     anomaly_result_list = pool.starmap(self._predict, [(dataframe) for dataframe in predict_data_list])
                 anomaly_count_list = [anomaly_result["anomaly_count"] for anomaly_result in anomaly_result_list]
                 contained_patients = [anomaly_result["anomaly_df"]["patient_id"].unique().to_list() for anomaly_result in anomaly_result_list]
@@ -241,19 +264,20 @@ class BaseAnomalyDetector:
 
 
             elif stage == "fix":
-                fixed_df_list = []
+
                 if not anomaly_result_list:
                     anomaly_result, patient_df_to_fix = self._load_stored_anomalies(self.anomaly_data_dir, pd.concat(process_pool_data_list))
-                    process_pool_data_list, _ = prepare_multiprocessing(patient_df_to_fix, patients_per_process)
-                    anomaly_result_list, _ = prepare_multiprocessing(anomaly_result, patients_per_process)
-                    process_pool_data_list = [{"train": None, "val": None, "test": dataframe} for dataframe in process_pool_data_list]
-                    anomaly_result_list = [{"anomaly_df": anomaly_result, "anomaly_count": {}} for anomaly_result in anomaly_result_list]
-                    logger.info(anomaly_result_list)
-                    logger.info(process_pool_data_list)
+                else:
+                    anomaly_result = pd.concat([anomaly_result["anomaly_df"] for anomaly_result in anomaly_result_list], ignore_index=True).reset_index(drop=True)
+                    if prepared_data_list:
+                        patient_df_to_fix = pd.concat([result_dict["test"] for result_dict in prepared_data_list], ignore_index=True).reset_index(drop=True)
+                    else:
+                        patient_df_to_fix = pd.concat(process_pool_data_list, ignore_index=True).reset_index(drop=True)
+
                 logger.info("Starting handling")
-                with Pool(processes=self.max_processes) as pool:
-                    fixed_df_list = pool.starmap(self._handle_anomalies, [(anomaly_result["anomaly_df"], result_dict["test"]) for anomaly_result, result_dict in zip(anomaly_result_list, process_pool_data_list)])
-                fixed_df = pd.concat(fixed_df_list, ignore_index=True).reset_index(drop=True)
+
+                fixed_df = self._handle_anomalies(anomaly_result, patient_df_to_fix)
+                fixed_df_list, _  = prepare_multiprocessing(fixed_df, patients_per_process)
                 process_pool_data_list = fixed_df_list
         if not "fix" in self.active_stages:
             logger.info("No fixing stage in the active stages. No data can be passed to the next module. Exiting...")

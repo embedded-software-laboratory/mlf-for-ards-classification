@@ -562,6 +562,12 @@ class DeepAntDetector(BaseAnomalyDetector):
 
         return  dataset, patients_to_remove, relevant
 
+    def _load_prepared_data(self, path: str, type_of_dataset: str) -> (DataModule, list, pd.DataFrame):
+        """Returns none because data handling is done by the setup function"""
+        return None
+
+
+
     def _prepare_data_step(self, data: pd.DataFrame, dataset_to_create: dict, save_data: bool, type_of_dataset: str)\
             -> (DataModule, list, pd.DataFrame):
         """
@@ -629,9 +635,9 @@ class DeepAntDetector(BaseAnomalyDetector):
         if save_data:
             self.windowed_data_disk_interaction = True
             logger.info("Saving data")
-            feature_path = os.path.join(self.prepared_data_dir + "/" + name + "_" + type_of_dataset + "_features.pkl")
-            label_path = os.path.join(self.prepared_data_dir + "/" + name + "_" + type_of_dataset + "_labels.pkl")
-            contained_patients_path = os.path.join(self.prepared_data_dir + "/" + name + "_" + type_of_dataset + "_contained_patients.pkl")
+            feature_path = os.path.join(self.prepared_data_dir + "/" + name + "_" + type_of_dataset + f"{type_of_dataset}_features.pkl")
+            label_path = os.path.join(self.prepared_data_dir + "/" + name + "_" + type_of_dataset + f"´{type_of_dataset}_labels.pkl")
+            contained_patients_path = os.path.join(self.prepared_data_dir + "/" + name + "_" + type_of_dataset + f"{type_of_dataset}_contained_patients.pkl")
             self._save_file(dataset.data_x, feature_path, True)
             self._save_file(dataset.data_y, label_path, True)
             self._save_file(contained_patients, contained_patients_path, True)
