@@ -100,7 +100,7 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
             # TODO handle metadata from PhysicalLimitsDetector
             physicalADDetector = PhysicalLimitsDetector(name="PhysicalLimitsDetectorSWABSABMOD", columns_to_check=self.columns_to_check, database=self.database, handling_strategy="delete_value", max_processes=1,
                                                         anomaly_data_dir=self.anomaly_data_dir + "/PhysicalLimitsDetector", prepared_data_dir=self.prepared_data_dir + "/PhysicalLimitsDetector", active_stages=self.active_stages)
-            dataframe_detection = physicalADDetector.execute_handler([dataframe_detection], 1, 1)
+            _, _, dataframe_detection = physicalADDetector.execute_handler([dataframe_detection], 1, 1)
 
         if self.replace_zeros:
             dataframe_detection = dataframe_detection.replace(0, np.nan)

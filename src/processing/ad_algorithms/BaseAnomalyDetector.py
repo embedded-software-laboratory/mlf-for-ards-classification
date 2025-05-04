@@ -151,18 +151,18 @@ class BaseAnomalyDetector:
         raise NotImplementedError()
 
 
-    def execute_handler(self, process_pool_data_list: list[pd.DataFrame],  patients_per_process: int):
+    def execute_handler(self, process_pool_data_list: list[pd.DataFrame],  patients_per_process: int) -> (list[pd.DataFrame], int, pd.DataFrame):
         if self.needs_full_data:
             logger.info("Starting single execution")
-            process_pool_data_list,  fixed_df = self.execute_single(self.active_stages, process_pool_data_list, patients_per_process)
+            fixed_df = self.execute_single(self.active_stages, process_pool_data_list, patients_per_process)
         else:
             logger.info("Starting multiprocessed execution")
-            process_pool_data_list, fixed_df = self.execute_multiprocessing(self.active_stages, process_pool_data_list, patients_per_process)
+            fixed_df = self.execute_multiprocessing(self.active_stages, process_pool_data_list, patients_per_process)
+        process_pool_data_list, n_jobs = prepare_multiprocessing(fixed_df, patients_per_process)
+        return process_pool_data_list, n_jobs, fixed_df
 
-        return process_pool_data_list, fixed_df
 
-
-    def execute_single(self, stages, process_pool_data_list: list[pd.DataFrame],  patients_per_process: int):
+    def execute_single(self, stages, process_pool_data_list: list[pd.DataFrame],  patients_per_process: int) -> pd.DataFrame:
         dataframe = pd.concat(process_pool_data_list, ignore_index=True).reset_index(drop=True)
         prepared_dict = {"train": None, "val": None, "test": None}
         anomaly_result_dict = {"anomaly_df": None, "anomaly_count": {}}
@@ -210,10 +210,10 @@ class BaseAnomalyDetector:
             logger.info("No fixing stage in the active stages. No data can be passed to the next module. Exiting...")
             sys.exit(0)
 
-        process_pool_data_list = prepare_multiprocessing(fixed_df, patients_per_process)
-        return process_pool_data_list,  fixed_df
 
-    def execute_multiprocessing(self, stages, process_pool_data_list: list[pd.DataFrame], patients_per_process: int):
+        return  fixed_df
+
+    def execute_multiprocessing(self, stages, process_pool_data_list: list[pd.DataFrame], patients_per_process: int) -> pd.DataFrame:
         logger.info(f"Active stages: {stages}")
         anomaly_result_list = []
         prepared_data_list = []
@@ -277,12 +277,12 @@ class BaseAnomalyDetector:
                 logger.info("Starting handling")
 
                 fixed_df = self._handle_anomalies(anomaly_result, patient_df_to_fix)
-                fixed_df_list, _  = prepare_multiprocessing(fixed_df, patients_per_process)
-                process_pool_data_list = fixed_df_list
+
+
         if not "fix" in self.active_stages:
             logger.info("No fixing stage in the active stages. No data can be passed to the next module. Exiting...")
             sys.exit(0)
-        return process_pool_data_list, fixed_df
+        return fixed_df
 
 
     def run_full(self, process_pool_data_list: list[pd.DataFrame], n_jobs: int, patients_per_process: int)\
@@ -431,6 +431,7 @@ class BaseAnomalyDetector:
             Returns:
                 pd.DataFrame: The complete DataFrame for a patient with anomalies handled.
         """
+        logger.info("Starting anomaly handling")
         if anomaly_df.empty or original_data.empty:
             return pd.DataFrame(columns=original_data.columns)
         anomaly_df = self._fix_anomaly_df(anomaly_df, relevant_data)
@@ -452,6 +453,7 @@ class BaseAnomalyDetector:
             raise ValueError(f"Unknown fixing strategy {self.handling_strategy}")
         finished_df = original_data
         finished_df.update(fixed_df)
+        logger.info("Finished anomaly handling")
         return finished_df
 
     @staticmethod
