@@ -433,8 +433,10 @@ class BaseAnomalyDetector:
         """
         logger.info("Starting anomaly handling")
         if anomaly_df.empty or original_data.empty:
+            logger.info("No data to fix. Exiting...")
             return pd.DataFrame(columns=original_data.columns)
         anomaly_df = self._fix_anomaly_df(anomaly_df, relevant_data)
+        logger.info(anomaly_df)
         if self.handling_strategy == "delete_value":
             fixed_df = self._delete_value(anomaly_df, relevant_data)
         elif self.handling_strategy == "delete_than_impute":
@@ -542,7 +544,7 @@ class BaseAnomalyDetector:
         anomaly_df_patients = detected_anomalies_df["patient_id"].unique().tolist()
         with Pool(processes=max_processes) as pool:
             patient_dfs = pool.starmap(split_patients, [(original_data, detected_anomalies_df, patient_id) for patient_id in anomaly_df_patients])
-
+        logger.info("After splitting for anomaly handling")
         with Pool(processes=max_processes) as pool:
             fixed_dfs = pool.starmap(self._handle_anomalies_patient, [(patient_df[1], patient_df[0][detected_anomalies_df.columns], patient_df[0]) for patient_df in patient_dfs])
 
