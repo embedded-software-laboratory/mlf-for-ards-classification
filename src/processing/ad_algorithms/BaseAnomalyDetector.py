@@ -474,10 +474,16 @@ class BaseAnomalyDetector:
         """
 
         anomaly_df_fixed = anomaly_df.copy(deep=True)
+        data_to_add = {"time": [], "patient_id": []}
         if len(anomaly_df_fixed.index) != len(starting_data.index):
             for index, row in starting_data.iterrows():
                 if row["time"] not in anomaly_df_fixed["time"].values:
-                    anomaly_df_fixed.append(row["time"])
+                    data_to_add["time"].append(row["time"])
+                    data_to_add["patient_id"].append(row["patient_id"])
+
+        anomaly_df_fixed = anomaly_df_fixed.append(data_to_add, ignore_index=True)
+        anomaly_df_fixed = anomaly_df_fixed.drop_duplicates(subset=["patient_id", "time"], keep="first")
+        anomaly_df_fixed.fillna(False, inplace=True)
         anomaly_df_fixed = anomaly_df_fixed.sort_values(by=["time"], ascending=True).reset_index(drop=True)
         anomaly_df_fixed.replace(np.nan, True, inplace=True)
         anomaly_df_fixed.drop(columns=["patient_id", "time"], inplace=True)
