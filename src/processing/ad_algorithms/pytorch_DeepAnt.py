@@ -554,8 +554,9 @@ class DeepAntDetector(BaseAnomalyDetector):
         patients_to_remove = []
         relevant = pd.DataFrame()
         if load_data or data is None:
-            dataset, patients_to_remove, relevant = self._load_data(dataset_to_create["name"], type_of_dataset)
-        if dataset is None:
+            filename = self._get_filename_from_dataset_config(dataset_to_create, type_of_dataset)
+            dataset, patients_to_remove, relevant = self._load_data(filename, type_of_dataset)
+        if dataset is None and not data is None:
             dataset, patients_to_remove, relevant = self._prepare_data_step(data, dataset_to_create, save_data, type_of_dataset)
 
 
