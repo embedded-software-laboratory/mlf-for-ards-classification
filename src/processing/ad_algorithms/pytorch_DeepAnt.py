@@ -278,8 +278,7 @@ class DeepAnt:
         )
         logger.info("Starting initial training...")
         self.initial_trainer.fit(self.anomaly_detector, train_loader, val_loader)
-
-        initial_checkpoint_path = os.path.join(self.config["run_dir"], f"initial_model_{self.name}.ckpt")
+        initial_checkpoint_path = os.path.join(self.config["checkpoint_dir"], f"initial_model_{self.name}.ckpt")
         self.anomaly_detector = AnomalyDetector.load_from_checkpoint(
             checkpoint_path=initial_checkpoint_path,
             model=self.deepant_predictor,
@@ -875,14 +874,15 @@ class DeepAntDetector(BaseAnomalyDetector):
         self.deepant_config["labels"] = dataset_to_create["labels"]
         feature_dim = 0
         if "train" in stages and "val" in stages:
-            train_dim = len(train_dataset.data_x[0])
-            val_dim = len(val_dataset.data_x[0])
+            
+            train_dim = train_dataset.data_x[0].shape[1]
+            val_dim = val_dataset.data_x[0].shape[1]
             if train_dim != val_dim:
                 logger.info(f"Train and val data dimensions do not match for {name}, skipping...")
                 return -1, [], pd.DataFrame()
             feature_dim = train_dim
         elif "test" in stages:
-            test_dim = len(test_dataset.data_x[0])
+            test_dim = test_dataset.data_x[0].shape[1]
             feature_dim = test_dim
         self.model[name] = DeepAnt(self.deepant_config, train_dataset, val_dataset, test_dataset,
                                    feature_dim, name)
