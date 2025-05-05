@@ -480,8 +480,8 @@ class BaseAnomalyDetector:
                 if row["time"] not in anomaly_df_fixed["time"].values:
                     data_to_add["time"].append(row["time"])
                     data_to_add["patient_id"].append(row["patient_id"])
-
-        anomaly_df_fixed = anomaly_df_fixed.append(data_to_add, ignore_index=True)
+        data_to_add_df = pd.DataFrame(data_to_add)
+        anomaly_df_fixed = pd.concat([anomaly_df_fixed, data_to_add_df], ignore_index=True).reset_index(drop=True)
         anomaly_df_fixed = anomaly_df_fixed.drop_duplicates(subset=["patient_id", "time"], keep="first")
         anomaly_df_fixed.fillna(False, inplace=True)
         anomaly_df_fixed = anomaly_df_fixed.sort_values(by=["time"], ascending=True).reset_index(drop=True)
@@ -542,16 +542,13 @@ class BaseAnomalyDetector:
 
         if not save_path:
             save_path = self.anomaly_data_dir
-        if self.needs_full_data:
-            max_processes = self.max_processes
-        else:
-            max_processes = 1
+
 
         anomaly_df_patients = detected_anomalies_df["patient_id"].unique().tolist()
-        with Pool(processes=max_processes) as pool:
+        with Pool(processes=self.max_processes) as pool:
             patient_dfs = pool.starmap(split_patients, [(original_data, detected_anomalies_df, patient_id) for patient_id in anomaly_df_patients])
         logger.info("After splitting for anomaly handling")
-        with Pool(processes=max_processes) as pool:
+        with Pool(processes=self.max_processes) as pool:
             fixed_dfs = pool.starmap(self._handle_anomalies_patient, [(patient_df[1], patient_df[0][detected_anomalies_df.columns], patient_df[0]) for patient_df in patient_dfs])
 
         fixed_df = pd.concat(fixed_dfs, ignore_index=True).reset_index(drop=True)
