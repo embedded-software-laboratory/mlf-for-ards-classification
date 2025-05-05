@@ -635,9 +635,10 @@ class DeepAntDetector(BaseAnomalyDetector):
         if save_data:
             self.windowed_data_disk_interaction = True
             logger.info("Saving data")
-            feature_path = os.path.join(self.prepared_data_dir + "/" + name + "_" + type_of_dataset + f"{type_of_dataset}_features.pkl")
-            label_path = os.path.join(self.prepared_data_dir + "/" + name + "_" + type_of_dataset + f"´{type_of_dataset}_labels.pkl")
-            contained_patients_path = os.path.join(self.prepared_data_dir + "/" + name + "_" + type_of_dataset + f"{type_of_dataset}_contained_patients.pkl")
+            dataset_file_name = self._get_filename_from_dataset_config(dataset_to_create, type_of_dataset)
+            feature_path = os.path.join(self.prepared_data_dir + "/" +  f"{dataset_file_name}_features.pkl")
+            label_path = os.path.join(self.prepared_data_dir + "/" +f"{dataset_file_name}_labels.pkl")
+            contained_patients_path = os.path.join(self.prepared_data_dir + "/" +f"{dataset_file_name}_contained_patients.pkl")
             self._save_file(dataset.data_x, feature_path, True)
             self._save_file(dataset.data_y, label_path, True)
             self._save_file(contained_patients, contained_patients_path, True)
@@ -646,8 +647,8 @@ class DeepAntDetector(BaseAnomalyDetector):
             if type_of_dataset == "test":
                 relevant = relevant[~relevant["patient_id"].isin(patients_to_remove)].reset_index(drop=True)
                 logger.info(f"Number of entries for {name}: {len(relevant)}")
-                patients_to_remove_path = os.path.join(self.prepared_data_dir + "/" + name + "_patients_to_remove.pkl")
-                relevant_path = os.path.join(self.prepared_data_dir + "/" + name + "_relevant.pkl")
+                patients_to_remove_path = os.path.join(self.prepared_data_dir + "/" + f"{dataset_file_name}_patients_to_remove.pkl")
+                relevant_path = os.path.join(self.prepared_data_dir + "/" + f"{dataset_file_name}_relevant.pkl")
                 self._save_file(patients_to_remove, patients_to_remove_path, True)
                 self._save_file(relevant, relevant_path, True)
 
@@ -904,10 +905,47 @@ class DeepAntDetector(BaseAnomalyDetector):
                                    len(dataset_to_create["features"]), name)
         return 0, patients_to_remove, relevant_data
 
+    @staticmethod
+    def _get_dataset_config_from_file_name(filename: str) -> dict:
+        split = filename.split("_")
+        dataset_name = split[0]
+        dataset_labels = split[2].split("+")
+        dataset_features = split[1].split("+")
+        return {
+            "name": dataset_name,
+            "labels": dataset_labels,
+            "features": dataset_features
+        }
+
+    @staticmethod
+    def _get_filename_from_dataset_config(dataset_to_create: dict, type_of_dataset: str) -> str:
+
+        name_str = dataset_to_create["name"]
+        features_str = "+".join(dataset_to_create["features"])
+        labels_str = "+".join(dataset_to_create["labels"])
+        filename_str = f"{name_str}_{features_str}_{labels_str}_{type_of_dataset}"
+        return filename_str
 
 
-    def _train_ad_model(self, data_training, data_validation, **kwargs):
+    def _train_ad_model(self, data_training: pd.DataFrame, data_validation: pd.DataFrame, **kwargs):
         stages = ["train", "val"]
+        if not self.datasets_to_create:
+            if not data_training is None or not data_training.empty:
+                self.datasets_to_create = [
+                    {"name": column,
+                     "labels": [column],
+                     "features": [column]}
+                    for column in list(data_training.columns) if column not in self.columns_not_to_check]
+            else:
+                contained_files = os.listdir(self.prepared_data_dir)
+                contained_test = [file.removesuffix("_test_features.pkl") for file in contained_files if file.endswith("test_features.pkl")]
+                contained_val = [file.removesuffix("_val_features.pkl") for file in contained_files if file.endswith("val_features.pkl")]
+                contained_train = [file.removesuffix("_train_features.pkl") for file in contained_files if file.endswith("train_features.pkl")]
+                all_present = list(set(contained_train).intersection(set(contained_val)).intersection(set(contained_test)))
+                for filename in all_present:
+                    self.datasets_to_create.append(self._get_dataset_config_from_file_name(filename))
+
+        logger.info(self.datasets_to_create)
         for dataset in self.datasets_to_create:
             logger.info(f"Training {dataset['name']}...")
             status, _, _ =self.setup_deep_ant(dataset, stages, data_training, data_validation, None,  load_data=True, save_data=False)
