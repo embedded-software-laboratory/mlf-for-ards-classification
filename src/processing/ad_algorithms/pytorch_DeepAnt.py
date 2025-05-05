@@ -555,6 +555,7 @@ class DeepAntDetector(BaseAnomalyDetector):
         relevant = pd.DataFrame()
         if load_data or data is None:
             filename = self._get_filename_from_dataset_config(dataset_to_create, type_of_dataset)
+
             dataset, patients_to_remove, relevant = self._load_data(filename, type_of_dataset)
         if dataset is None and not data is None:
             dataset, patients_to_remove, relevant = self._prepare_data_step(data, dataset_to_create, save_data, type_of_dataset)
@@ -673,9 +674,9 @@ class DeepAntDetector(BaseAnomalyDetector):
         """
 
         try:
-            with open(os.path.join(self.prepared_data_dir + "/" + name + f"_{type_of_dataset}_features.pkl"), "rb") as f:
+            with open(os.path.join(self.prepared_data_dir + "/" + name + f"_features.pkl"), "rb") as f:
                 data_x = pickle.load(f)
-            with open(os.path.join(self.prepared_data_dir + "/" + name + f"_{type_of_dataset}_labels.pkl"), "rb") as f:
+            with open(os.path.join(self.prepared_data_dir + "/" + name + "_labels.pkl"), "rb") as f:
                 data_y = pickle.load(f)
             if type_of_dataset == "test":
                 with open(os.path.join(self.prepared_data_dir + "/" + name + "_patients_to_remove.pkl"), "rb") as f:
@@ -888,12 +889,12 @@ class DeepAntDetector(BaseAnomalyDetector):
                 train_dataset, _, _ = self._handle_data_step(data_train, dataset_to_create, save_data, load_data, stage)
                 if not train_dataset:
                     logger.info(f"Not enough data for {stage}, skipping {dataset_to_create['name']}...")
-                    return -1, None, [], pd.DataFrame()
+                    return -1,  [], pd.DataFrame()
             elif stage == "val":
                 val_dataset, _, _ = self._handle_data_step(data_val, dataset_to_create, save_data, load_data, stage)
                 if not val_dataset:
                     logger.info(f"Not enough data for {stage}, skipping {dataset_to_create['name']}...")
-                    return -1, None, [], pd.DataFrame()
+                    return -1,  [], pd.DataFrame()
             elif stage == "test":
                 test_dataset, patients_to_remove, relevant_data = self._handle_data_step(data_test, dataset_to_create, save_data, load_data, stage)
                 if not test_dataset:
