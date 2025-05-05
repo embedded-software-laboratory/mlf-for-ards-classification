@@ -200,7 +200,7 @@ class BaseAnomalyDetector:
                 else:
                     data_to_fix = prepared_dict["test"]
                 if not anomaly_result_dict["anomaly_df"]:
-                    anomalies, data_to_fix = self._load_stored_anomalies(self.anomaly_data_dir, data_to_fix)
+                    anomalies = self._load_stored_anomalies(self.anomaly_data_dir)
                 else:
                     anomalies = anomaly_result_dict["anomaly_df"]
 
@@ -266,13 +266,14 @@ class BaseAnomalyDetector:
             elif stage == "fix":
 
                 if not anomaly_result_list:
-                    anomaly_result, patient_df_to_fix = self._load_stored_anomalies(self.anomaly_data_dir, pd.concat(process_pool_data_list))
+                    anomaly_result = self._load_stored_anomalies(self.anomaly_data_dir)
+
                 else:
                     anomaly_result = pd.concat([anomaly_result["anomaly_df"] for anomaly_result in anomaly_result_list], ignore_index=True).reset_index(drop=True)
-                    if prepared_data_list:
-                        patient_df_to_fix = pd.concat([result_dict["test"] for result_dict in prepared_data_list], ignore_index=True).reset_index(drop=True)
-                    else:
-                        patient_df_to_fix = pd.concat(process_pool_data_list, ignore_index=True).reset_index(drop=True)
+                if prepared_data_list:
+                    patient_df_to_fix = pd.concat([result_dict["test"] for result_dict in prepared_data_list], ignore_index=True).reset_index(drop=True)
+                else:
+                    patient_df_to_fix = pd.concat(process_pool_data_list, ignore_index=True).reset_index(drop=True)
 
                 logger.info("Starting handling")
 
@@ -376,7 +377,7 @@ class BaseAnomalyDetector:
         logger.info(f"Loading anomaly data from {full_path}")
         return pd.read_pickle(full_path)
 
-    def _load_stored_anomalies(self, detected_anomalies_path: str, data_to_fix: pd.DataFrame) -> (pd.DataFrame, pd.DataFrame):
+    def _load_stored_anomalies(self, detected_anomalies_path: str) -> pd.DataFrame:
         logger.info(f"Path to load from {detected_anomalies_path}")
         detected_anomalies_df_list = []
         existing_anomaly_files = [f for f in os.listdir(detected_anomalies_path) if f.endswith(".pkl")]
@@ -403,19 +404,11 @@ class BaseAnomalyDetector:
             logger.info(f"Can not find any anomalies in the file {detected_anomalies_path}.")
             sys.exit(0)
         
-        anomalies_patients = detected_anomalies_df["patient_id"].unique().tolist() if not meta_data["contained_patients"] else meta_data["contained_patients"]
+
         
-        logger.info(meta_data["contained_patients"])
-        relevant_data_to_fix = data_to_fix[data_to_fix["patient_id"].isin(anomalies_patients)].reset_index(drop=True)
-        patients_to_fix = relevant_data_to_fix["patient_id"].unique().tolist()
-        relevant_anomalies_df = detected_anomalies_df[detected_anomalies_df["patient_id"].isin(patients_to_fix)].reset_index(drop=True)
-        if relevant_anomalies_df.empty or relevant_anomalies_df is None:
-            logger.info(f"No overlapping patients found between stored anomalies and data to fix..")
-            sys.exit(0)
-        if relevant_data_to_fix.empty or relevant_data_to_fix is None:
-            logger.info(f"No overlapping patients found between stored anomalies and data to fix.")
-            sys.exit(0)
-        return relevant_anomalies_df, relevant_data_to_fix
+
+
+        return detected_anomalies_df
 
 
 
@@ -432,10 +425,11 @@ class BaseAnomalyDetector:
                 pd.DataFrame: The complete DataFrame for a patient with anomalies handled.
         """
         logger.info("Starting anomaly handling")
+        anomaly_df.drop(columns=["patient_id", "time"], inplace=True)
         if anomaly_df.empty or original_data.empty:
             logger.info("No data to fix. Exiting...")
             return pd.DataFrame(columns=original_data.columns)
-        anomaly_df = self._fix_anomaly_df(anomaly_df, relevant_data)
+
         logger.info(anomaly_df)
         if self.handling_strategy == "delete_value":
             fixed_df = self._delete_value(anomaly_df, relevant_data)
@@ -474,19 +468,11 @@ class BaseAnomalyDetector:
         """
 
         anomaly_df_fixed = anomaly_df.copy(deep=True)
-        data_to_add = {"time": [], "patient_id": []}
-        if len(anomaly_df_fixed.index) != len(starting_data.index):
-            for index, row in starting_data.iterrows():
-                if row["time"] not in anomaly_df_fixed["time"].values:
-                    data_to_add["time"].append(row["time"])
-                    data_to_add["patient_id"].append(row["patient_id"])
-        data_to_add_df = pd.DataFrame(data_to_add)
-        anomaly_df_fixed = pd.concat([anomaly_df_fixed, data_to_add_df], ignore_index=True).reset_index(drop=True)
-        anomaly_df_fixed = anomaly_df_fixed.drop_duplicates(subset=["patient_id", "time"], keep="first")
+        all_timestamps = starting_data[["patient_id", "time"]].drop_duplicates(subset=["patient_id", "time"], keep="first")
+        anomaly_df_fixed = pd.merge(all_timestamps, anomaly_df_fixed, how="outer", on=["patient_id", "time"])
         anomaly_df_fixed.fillna(False, inplace=True)
         anomaly_df_fixed = anomaly_df_fixed.sort_values(by=["time"], ascending=True).reset_index(drop=True)
-        anomaly_df_fixed.replace(np.nan, True, inplace=True)
-        anomaly_df_fixed.drop(columns=["patient_id", "time"], inplace=True)
+
         return anomaly_df_fixed
 
     def _calculate_anomaly_count(self, anomaly_df: pd.DataFrame, relevant_data: pd.DataFrame,
@@ -543,20 +529,36 @@ class BaseAnomalyDetector:
         if not save_path:
             save_path = self.anomaly_data_dir
 
-
         anomaly_df_patients = detected_anomalies_df["patient_id"].unique().tolist()
+        original_data_patients = original_data["patient_id"].unique().tolist()
+        contained_patients = list(set(anomaly_df_patients).intersection(original_data_patients))
+        detected_anomalies_df = detected_anomalies_df[detected_anomalies_df["patient_id"].isin(contained_patients)].reset_index(drop=True)
+        original_data_df = original_data[original_data["patient_id"].isin(contained_patients)].reset_index(drop=True)
+        relevant_data = original_data[detected_anomalies_df.columns]
+
+        if detected_anomalies_df.empty or detected_anomalies_df is None:
+            logger.info(f"No overlapping patients found between stored anomalies and data to fix..")
+            sys.exit(0)
+        if original_data_df.empty or original_data_df is None:
+            logger.info(f"No overlapping patients found between stored anomalies and data to fix.")
+            sys.exit(0)
+
+        detected_anomalies_df = self._fix_anomaly_df(detected_anomalies_df, relevant_data)
+
+        original_data_df_list = [y for x,y in original_data_df.groupby("patient_id")]
+        anomaly_df_list = [y for x,y in detected_anomalies_df.groupby("patient_id")]
+        relevant_data_df_list = [y for x,y in relevant_data.groupby("patient_id")]
         if not no_multi_processing:
+
             with Pool(processes=self.max_processes) as pool:
-                patient_dfs = pool.starmap(split_patients, [(original_data, detected_anomalies_df, patient_id) for patient_id in anomaly_df_patients])
-            logger.info("After splitting for anomaly handling")
-            with Pool(processes=self.max_processes) as pool:
-                fixed_dfs = pool.starmap(self._handle_anomalies_patient, [(patient_df[1], patient_df[0][detected_anomalies_df.columns], patient_df[0]) for patient_df in patient_dfs])
+                fixed_dfs = pool.starmap(self._handle_anomalies_patient,
+                                         [(anomaly_df_list[i], relevant_data_df_list[i], original_data_df_list[i])
+                                                                          for i in range(len(original_data_df_list))])
         else:
             fixed_dfs = []
-            for patient in anomaly_df_patients:
-                patient_df = original_data[original_data["patient_id"] == patient].reset_index(drop=True)
-                relevant_data = patient_df[detected_anomalies_df.columns]
-                fixed_df = self._handle_anomalies_patient(detected_anomalies_df, relevant_data, patient_df)
+            for i in range(len(original_data_df_list)):
+
+                fixed_df = self._handle_anomalies_patient(anomaly_df_list[i], relevant_data_df_list[i], original_data_df_list[i])
                 fixed_dfs.append(fixed_df)
         fixed_df = pd.concat(fixed_dfs, ignore_index=True).reset_index(drop=True)
         if save_data:
