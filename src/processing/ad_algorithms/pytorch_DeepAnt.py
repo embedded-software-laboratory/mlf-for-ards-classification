@@ -928,12 +928,22 @@ class DeepAntDetector(BaseAnomalyDetector):
                 for filename in all_present:
                     self.datasets_to_create.append(self._get_dataset_config_from_file_name(filename))
         for dataset in self.datasets_to_create:
+            name = dataset["name"]
+            retrain_model = self.retrain_models.get(name, True)
+            model_location = os.path.join(self.deepant_config["run_dir"], f"best_model_{name}.ckpt")
+            logger.info(f"Check if model exists at location {str(model_location)}")
+            model_exists = os.path.exists(os.path.join(self.deepant_config["run_dir"], f"best_model_{name}.ckpt"))
+            logger.info(f"Model exists: {model_exists}")
+            model_training = (not os.path.exists(model_location)) or retrain_model
+            logger.info(f"Model training requested: {retrain_model}")
+            logger.info(f"Model training : {model_training}")
             logger.info(f"Training {dataset['name']}...")
-            status, _, _ =self.setup_deep_ant(dataset, stages, data_training, data_validation, None,  load_data=True, save_data=False)
-            if status == -1:
-                logger.info(f"Not enough data for {dataset['name']}, skipping...")
-                continue
-            self._train_ad_model_step(dataset)
+            if model_training:
+                status, _, _ =self.setup_deep_ant(dataset, stages, data_training, data_validation, None,  load_data=True, save_data=False)
+                if status == -1:
+                    logger.info(f"Not enough data for {dataset['name']}, skipping...")
+                    continue
+                self._train_ad_model_step(dataset)
 
     def _predict(self, dataframe: pd.DataFrame, **kwargs ) -> dict:
 
