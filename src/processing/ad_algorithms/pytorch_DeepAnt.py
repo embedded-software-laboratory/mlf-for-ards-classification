@@ -504,36 +504,6 @@ class DeepAntDetector(BaseAnomalyDetector):
         return AnomalyDetectionMetaData(**meta_data_dict)
 
 
-    def run(self,  dataframe_detection: pd.DataFrame, job_count: int, total_jobs: int) -> (pd.DataFrame, dict[str, dict[str, int]]):
-        # TODO refactor
-        prepared_data = self._prepare_data(dataframe_detection)
-        existing_labels = []
-        for item in self.datasets_to_create:
-            labels = item["labels"]
-            for label in labels:
-                if label not in existing_labels:
-                    existing_labels.append(label)
-                else:
-                    raise ValueError("Double label detected for label: " + label)
-
-        results = []
-        for item in self.datasets_to_create:
-            print("Running dataset: ", item["name"])
-            results.append(self._run_step(prepared_data, item, self.retrain_models[item["name"]], self.load_data, self.save_data))
-
-        df_anomaly = pd.DataFrame()
-        for item in results:
-            if not item.empty:
-                df_anomaly.merge(item, how="outer", on=["patient_id", "time"])
-        df_anomaly.fillna(False, inplace=True)
-        anomaly_columns = df_anomaly.columns.tolist()
-        rename_dict = {column: column + "_anomaly" for column in anomaly_columns}
-        df_anomaly = df_anomaly.rename(columns=rename_dict)
-
-        self._save_anomaly_df(df_anomaly)
-        anomaly_dict = self._calculate_anomaly_count(df_anomaly, prepared_data["test"])
-        fixed_df = self._handle_anomalies(df_anomaly, prepared_data["test"])
-        return fixed_df, anomaly_dict
 
     @staticmethod
     def _build_patient_dict(dataframe: pd.DataFrame) -> dict:
@@ -903,8 +873,19 @@ class DeepAntDetector(BaseAnomalyDetector):
         name = dataset_to_create["name"]
         self.deepant_config["name"] = name
         self.deepant_config["labels"] = dataset_to_create["labels"]
+        feature_dim = 0
+        if "train" in stages and "val" in stages:
+            train_dim = len(train_dataset.data_x[0])
+            val_dim = len(val_dataset.data_x[0])
+            if train_dim != val_dim:
+                logger.info(f"Train and val data dimensions do not match for {name}, skipping...")
+                return -1, [], pd.DataFrame()
+            feature_dim = train_dim
+        elif "test" in stages:
+            test_dim = len(test_dataset.data_x[0])
+            feature_dim = test_dim
         self.model[name] = DeepAnt(self.deepant_config, train_dataset, val_dataset, test_dataset,
-                                   len(dataset_to_create["features"]), name)
+                                   feature_dim, name)
         return 0, patients_to_remove, relevant_data
 
     @staticmethod
