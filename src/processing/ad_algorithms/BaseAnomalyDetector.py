@@ -151,18 +151,18 @@ class BaseAnomalyDetector:
         raise NotImplementedError()
 
 
-    def execute_handler(self, process_pool_data_list: list[pd.DataFrame],  patients_per_process: int) -> (list[pd.DataFrame], int, pd.DataFrame):
-        if self.needs_full_data:
+    def execute_handler(self, process_pool_data_list: list[pd.DataFrame],  patients_per_process: int, no_multi_processing: bool = False) -> (list[pd.DataFrame], int, pd.DataFrame):
+        if self.needs_full_data or no_multi_processing:
             logger.info("Starting single execution")
-            fixed_df = self.execute_single(self.active_stages, process_pool_data_list, patients_per_process)
+            fixed_df = self.execute_single(self.active_stages, process_pool_data_list, patients_per_process, no_multi_processing)
         else:
             logger.info("Starting multiprocessed execution")
-            fixed_df = self.execute_multiprocessing(self.active_stages, process_pool_data_list, patients_per_process)
+            fixed_df = self.execute_multiprocessing(self.active_stages, process_pool_data_list, patients_per_process, no_multi_processing)
         process_pool_data_list, n_jobs = prepare_multiprocessing(fixed_df, patients_per_process)
         return process_pool_data_list, n_jobs, fixed_df
 
 
-    def execute_single(self, stages, process_pool_data_list: list[pd.DataFrame],  patients_per_process: int) -> pd.DataFrame:
+    def execute_single(self, stages, process_pool_data_list: list[pd.DataFrame],  patients_per_process: int, no_multiprocessing: bool = False) -> pd.DataFrame:
         dataframe = pd.concat(process_pool_data_list, ignore_index=True).reset_index(drop=True)
         prepared_dict = {"train": None, "val": None, "test": None}
         anomaly_result_dict = {"anomaly_df": None, "anomaly_count": {}}
@@ -204,7 +204,7 @@ class BaseAnomalyDetector:
                 else:
                     anomalies = anomaly_result_dict["anomaly_df"]
 
-                fixed_df = self._handle_anomalies(anomalies, data_to_fix)
+                fixed_df = self._handle_anomalies(anomalies, data_to_fix, no_multiprocessing)
 
         if not "fix" in self.active_stages:
             logger.info("No fixing stage in the active stages. No data can be passed to the next module. Exiting...")
@@ -213,7 +213,7 @@ class BaseAnomalyDetector:
 
         return  fixed_df
 
-    def execute_multiprocessing(self, stages, process_pool_data_list: list[pd.DataFrame], patients_per_process: int) -> pd.DataFrame:
+    def execute_multiprocessing(self, stages, process_pool_data_list: list[pd.DataFrame], patients_per_process: int, no_multi_processing: bool = False) -> pd.DataFrame:
         logger.info(f"Active stages: {stages}")
         anomaly_result_list = []
         prepared_data_list = []
@@ -276,7 +276,7 @@ class BaseAnomalyDetector:
 
                 logger.info("Starting handling")
 
-                fixed_df = self._handle_anomalies(anomaly_result, patient_df_to_fix)
+                fixed_df = self._handle_anomalies(anomaly_result, patient_df_to_fix, no_multi_processing)
 
 
         if not "fix" in self.active_stages:
@@ -533,7 +533,7 @@ class BaseAnomalyDetector:
 
 
 
-    def _handle_anomalies(self, detected_anomalies_df : pd.DataFrame, original_data: pd.DataFrame, save_data: bool =True, save_path: str = None) -> pd.DataFrame:
+    def _handle_anomalies(self, detected_anomalies_df : pd.DataFrame, original_data: pd.DataFrame, save_data: bool =True, save_path: str = None, no_multi_processing: bool = False) -> pd.DataFrame:
         logger.info(f"Type of orig {type(original_data)}")
         logger.info(original_data)
         if original_data.empty or original_data is None:
@@ -545,12 +545,19 @@ class BaseAnomalyDetector:
 
 
         anomaly_df_patients = detected_anomalies_df["patient_id"].unique().tolist()
-        with Pool(processes=self.max_processes) as pool:
-            patient_dfs = pool.starmap(split_patients, [(original_data, detected_anomalies_df, patient_id) for patient_id in anomaly_df_patients])
-        logger.info("After splitting for anomaly handling")
-        with Pool(processes=self.max_processes) as pool:
-            fixed_dfs = pool.starmap(self._handle_anomalies_patient, [(patient_df[1], patient_df[0][detected_anomalies_df.columns], patient_df[0]) for patient_df in patient_dfs])
-
+        if not no_multi_processing:
+            with Pool(processes=self.max_processes) as pool:
+                patient_dfs = pool.starmap(split_patients, [(original_data, detected_anomalies_df, patient_id) for patient_id in anomaly_df_patients])
+            logger.info("After splitting for anomaly handling")
+            with Pool(processes=self.max_processes) as pool:
+                fixed_dfs = pool.starmap(self._handle_anomalies_patient, [(patient_df[1], patient_df[0][detected_anomalies_df.columns], patient_df[0]) for patient_df in patient_dfs])
+        else:
+            fixed_dfs = []
+            for patient in anomaly_df_patients:
+                patient_df = original_data[original_data["patient_id"] == patient].reset_index(drop=True)
+                relevant_data = patient_df[detected_anomalies_df.columns]
+                fixed_df = self._handle_anomalies_patient(detected_anomalies_df, relevant_data, patient_df)
+                fixed_dfs.append(fixed_df)
         fixed_df = pd.concat(fixed_dfs, ignore_index=True).reset_index(drop=True)
         if save_data:
             fixed_data_path = os.path.join(save_path, f"fixed_data_{self.name}_{self.handling_strategy}_{self.fix_algorithm}.pkl")
