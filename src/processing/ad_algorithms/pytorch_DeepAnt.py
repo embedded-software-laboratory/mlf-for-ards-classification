@@ -909,6 +909,7 @@ class DeepAntDetector(BaseAnomalyDetector):
     def _train_ad_model(self, data_training, data_validation, **kwargs):
         stages = ["train", "val"]
         for dataset in self.datasets_to_create:
+            logger.info(f"Training {dataset['name']}...")
             status, _, _ =self.setup_deep_ant(dataset, stages, data_training, data_validation, None,  load_data=True, save_data=False)
             if status == -1:
                 logger.info(f"Not enough data for {dataset['name']}, skipping...")

@@ -175,7 +175,9 @@ class BaseAnomalyDetector:
                 self._save_file(meta_data_preparation, self.prepared_data_dir+"/meta_data_preparation_test.json", True)
 
             elif stage == "train" and self.trainable:
+                logger.info(f"Training stage")
                 if not prepared_dict["train"] or not prepared_dict["val"]:
+                    logger.info("Loading data for training")
                     train_data = self._load_prepared_data(self.prepared_data_dir, "train")
                     val_data = self._load_prepared_data(self.prepared_data_dir, "val")
                     prepared_dict["train"] = train_data
