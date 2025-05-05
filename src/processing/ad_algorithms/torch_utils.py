@@ -52,6 +52,7 @@ def split_patients(dataframe: pd.DataFrame, anomaly_df: pd.DataFrame, patient_id
             tuple [pd.DataFrame, pd.DataFrame]: A tuple containing the DataFrame for the specific patient_id and the DataFrame with anomalies for that patient_id.
 
     """
+    logger.info(f"Splitting data for patient_id: {patient_id}")
     patient_df = dataframe[dataframe["patient_id"] == patient_id].reset_index(drop=True)
     anomaly_df = anomaly_df[anomaly_df["patient_id"] == patient_id].reset_index(drop=True)
     return patient_df, anomaly_df
