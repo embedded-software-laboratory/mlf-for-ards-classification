@@ -930,7 +930,7 @@ class DeepAntDetector(BaseAnomalyDetector):
     def _train_ad_model(self, data_training: pd.DataFrame, data_validation: pd.DataFrame, **kwargs):
         stages = ["train", "val"]
         if not self.datasets_to_create:
-            if not data_training is None or not data_training.empty:
+            if not data_training is None and not data_training.empty:
                 self.datasets_to_create = [
                     {"name": column,
                      "labels": [column],
@@ -944,8 +944,6 @@ class DeepAntDetector(BaseAnomalyDetector):
                 all_present = list(set(contained_train).intersection(set(contained_val)).intersection(set(contained_test)))
                 for filename in all_present:
                     self.datasets_to_create.append(self._get_dataset_config_from_file_name(filename))
-
-        logger.info(self.datasets_to_create)
         for dataset in self.datasets_to_create:
             logger.info(f"Training {dataset['name']}...")
             status, _, _ =self.setup_deep_ant(dataset, stages, data_training, data_validation, None,  load_data=True, save_data=False)
