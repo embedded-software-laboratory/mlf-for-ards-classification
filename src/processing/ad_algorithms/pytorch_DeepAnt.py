@@ -884,17 +884,17 @@ class DeepAntDetector(BaseAnomalyDetector):
 
         for stage in stages:
             if stage == "train":
-                train_dataset, _, _ = self._handle_data_step(data_train, dataset_to_create["name"], save_data, load_data, stage)
+                train_dataset, _, _ = self._handle_data_step(data_train, dataset_to_create, save_data, load_data, stage)
                 if not train_dataset:
                     logger.info(f"Not enough data for {stage}, skipping {dataset_to_create['name']}...")
                     return -1, None, [], pd.DataFrame()
             elif stage == "val":
-                val_dataset, _, _ = self._handle_data_step(data_val, dataset_to_create["name"], save_data, load_data, stage)
+                val_dataset, _, _ = self._handle_data_step(data_val, dataset_to_create, save_data, load_data, stage)
                 if not val_dataset:
                     logger.info(f"Not enough data for {stage}, skipping {dataset_to_create['name']}...")
                     return -1, None, [], pd.DataFrame()
             elif stage == "test":
-                test_dataset, patients_to_remove, relevant_data = self._handle_data_step(data_test, dataset_to_create["name"], save_data, load_data, stage)
+                test_dataset, patients_to_remove, relevant_data = self._handle_data_step(data_test, dataset_to_create, save_data, load_data, stage)
                 if not test_dataset:
                     logger.info(f"Not enough data for {stage}, skipping {dataset_to_create['name']}...")
                     return -2, None, [], pd.DataFrame()
