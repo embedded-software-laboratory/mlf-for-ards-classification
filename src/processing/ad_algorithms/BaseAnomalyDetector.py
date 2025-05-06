@@ -688,7 +688,7 @@ class BaseAnomalyDetector:
             "anomaly_detection_algorithm": None,
             "anomaly_handling_strategy": self.handling_strategy,
             "anomaly_fixing_algorithm": self.fix_algorithm,
-            "columns_checked": self.columns_to_check,
+            #"columns_checked": self.columns_to_check,
             "anomaly_statistics":  self.anomaly_counts,
             "algorithm_specific_settings": None,
         }
