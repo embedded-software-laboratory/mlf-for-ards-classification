@@ -11,7 +11,7 @@ class AnomalyDetectionMetaData(BaseModel):
     anomaly_threshold: Union[float, None] = None
     columns_checked: Union[list[dict[str, list[str]]], None] = None
     anomaly_statistics: dict[str, dict[str, Union[int, float]]]
-    algorithm_specific_settings: dict[str, Union[str, int, float, bool, dict,  None]] = None
+    algorithm_specific_settings: dict[str, Union[str, int, float, bool, dict, list,  None]] = None
 
 
 
