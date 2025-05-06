@@ -281,6 +281,7 @@ class BaseAnomalyDetector:
                 logger.info("Starting handling")
 
                 fixed_df = self._handle_anomalies(anomaly_result, patient_df_to_fix, no_multi_processing)
+                logger.info("Finished handling")
 
 
         if not "fix" in self.active_stages:
@@ -550,8 +551,7 @@ class BaseAnomalyDetector:
         if original_data_df.empty or original_data_df is None:
             logger.info(f"No overlapping patients found between stored anomalies and data to fix.")
             sys.exit(0)
-        logger.info("Dtypes before fixing")
-        logger.info(detected_anomalies_df.dtypes)
+
         detected_anomalies_df = self._fix_anomaly_df(detected_anomalies_df, relevant_data)
         logger.info("Dtypes after fixing")
         logger.info(detected_anomalies_df.dtypes)
@@ -574,6 +574,7 @@ class BaseAnomalyDetector:
         fixed_df = pd.concat(fixed_dfs, ignore_index=True).reset_index(drop=True)
         if save_data:
             fixed_data_path = os.path.join(save_path, f"fixed_data_{self.name}_{self.handling_strategy}_{self.fix_algorithm}.pkl")
+
             self._save_file(fixed_df, fixed_data_path, True)
         return fixed_df
 
