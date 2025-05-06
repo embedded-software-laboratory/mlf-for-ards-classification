@@ -570,6 +570,7 @@ class BaseAnomalyDetector:
                 fixed_df = self._handle_anomalies_patient(anomaly_df_list[i], relevant_data_df_list[i], original_data_df_list[i])
                 fixed_dfs.append(fixed_df)
         fixed_df = pd.concat(fixed_dfs, ignore_index=True).reset_index(drop=True)
+        logger.info(save_data)
         if save_data:
             fixed_data_path = os.path.join(save_path, f"fixed_data_{self.name}_{self.handling_strategy}_{self.fix_algorithm}.pkl")
             logger.info(f"Saving fixed data to {fixed_data_path}")
