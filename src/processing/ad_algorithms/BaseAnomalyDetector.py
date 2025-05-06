@@ -269,7 +269,7 @@ class BaseAnomalyDetector:
 
                 if not anomaly_result_list:
                     anomaly_result = self._load_stored_anomalies(self.anomaly_data_dir)
-                    logger.info(f"Dtype of anomaly result: {anomaly_result.dtypes}")
+
 
                 else:
                     anomaly_result = pd.concat([anomaly_result["anomaly_df"] for anomaly_result in anomaly_result_list], ignore_index=True).reset_index(drop=True)
@@ -397,7 +397,7 @@ class BaseAnomalyDetector:
 
 
         detected_anomalies_df = pd.concat(detected_anomalies_df_list, ignore_index=True).reset_index(drop=True)
-        logger.info(f"After concat, dtypes: {detected_anomalies_df.dtypes}")
+
         meta_data_list = []
         for file in existing_meta_data_files:
             full_path = os.path.join(detected_anomalies_path, file)
@@ -553,8 +553,7 @@ class BaseAnomalyDetector:
             sys.exit(0)
 
         detected_anomalies_df = self._fix_anomaly_df(detected_anomalies_df, relevant_data)
-        logger.info("Dtypes after fixing")
-        logger.info(detected_anomalies_df.dtypes)
+
 
         original_data_df_list = [y for x,y in original_data_df.groupby("patient_id")]
         anomaly_df_list = [y for x,y in detected_anomalies_df.groupby("patient_id")]
@@ -574,7 +573,7 @@ class BaseAnomalyDetector:
         fixed_df = pd.concat(fixed_dfs, ignore_index=True).reset_index(drop=True)
         if save_data:
             fixed_data_path = os.path.join(save_path, f"fixed_data_{self.name}_{self.handling_strategy}_{self.fix_algorithm}.pkl")
-
+            logger.info(f"Saving fixed data to {fixed_data_path}")
             self._save_file(fixed_df, fixed_data_path, True)
         return fixed_df
 
