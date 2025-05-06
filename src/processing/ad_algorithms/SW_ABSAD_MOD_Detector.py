@@ -70,6 +70,7 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
                                                          }
         if self.variance_check:
             meta_data_dict["algorithm_specific_settings"]["variance_window_length"] = self.variance_window_length
+        meta_data_dict["algorithm_specific_settings"]["columns_to_check"] = None
         return AnomalyDetectionMetaData(**meta_data_dict)
 
     def run(self, dataframe_detection: pd.DataFrame, job_count: int, total_jobs: int) -> (pd.DataFrame, dict[str, dict[str, int]]):
