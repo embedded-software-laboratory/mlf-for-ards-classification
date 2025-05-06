@@ -377,10 +377,10 @@ class BaseAnomalyDetector:
     def _load_anomaly_df(self, anomaly_df_path: str, filename: str) -> pd.DataFrame:
 
         full_path = os.path.join(anomaly_df_path, filename)
-        logger.info(f"Loading anomaly data from {full_path}")
+
         df = pd.read_pickle(full_path)
         temp = df.drop(columns=["patient_id", "time"])
-        logger.info(temp.dtypes.unique())
+        logger.info(f"Loading anomaly data from {full_path} dtypes: {temp.dtypes.unique()}")
         return df
 
     def _load_stored_anomalies(self, detected_anomalies_path: str) -> pd.DataFrame:
@@ -394,6 +394,7 @@ class BaseAnomalyDetector:
 
 
         detected_anomalies_df = pd.concat(detected_anomalies_df_list, ignore_index=True).reset_index(drop=True)
+        logger.info(f"After concat, dtypes: {detected_anomalies_df.dtypes}")
         meta_data_list = []
         for file in existing_meta_data_files:
             full_path = os.path.join(detected_anomalies_path, file)
