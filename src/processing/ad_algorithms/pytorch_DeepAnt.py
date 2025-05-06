@@ -945,8 +945,24 @@ class DeepAntDetector(BaseAnomalyDetector):
                     continue
                 self._train_ad_model_step(dataset)
 
-    def _predict(self, dataframe: pd.DataFrame, **kwargs ) -> dict:
+    def _set_dataset_according_to_available_models(self):
+        datasets_without_models = []
+        for dataset in self.datasets_to_create:
+            name = dataset["name"]
+            model_name = f"best_model_{name}.ckpt"
+            model_location = os.path.join(self.deepant_config["run_dir"], model_name)
+            if not os.path.exists(model_location):
+                datasets_without_models.append(name)
+        self.datasets_to_create = [dataset for dataset in self.datasets_to_create if dataset not in datasets_without_models]
 
+    def _predict(self, dataframe: pd.DataFrame, **kwargs ) -> dict:
+        if not self.datasets_to_create:
+            contained_files = os.listdir(self.prepared_data_dir)
+            contained_test = [file.removesuffix("_test_features.pkl") for file in contained_files if
+                              file.endswith("test_features.pkl")]
+            for name in contained_test:
+                self.datasets_to_create.append(self._get_dataset_config_from_file_name(name))
+            self._set_dataset_according_to_available_models()
         anomaly_df = pd.DataFrame()
         relevant_df = pd.DataFrame()
         anomaly_df_list = []
