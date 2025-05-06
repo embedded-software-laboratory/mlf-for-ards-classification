@@ -544,8 +544,11 @@ class BaseAnomalyDetector:
         if original_data_df.empty or original_data_df is None:
             logger.info(f"No overlapping patients found between stored anomalies and data to fix.")
             sys.exit(0)
-
+        logger.info("Dtypes before fixing")
+        logger.info(detected_anomalies_df.dtypes)
         detected_anomalies_df = self._fix_anomaly_df(detected_anomalies_df, relevant_data)
+        logger.info("Dtypes after fixing")
+        logger.info(detected_anomalies_df.dtypes)
 
         original_data_df_list = [y for x,y in original_data_df.groupby("patient_id")]
         anomaly_df_list = [y for x,y in detected_anomalies_df.groupby("patient_id")]
