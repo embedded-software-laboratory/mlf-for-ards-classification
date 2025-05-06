@@ -378,7 +378,9 @@ class BaseAnomalyDetector:
 
         full_path = os.path.join(anomaly_df_path, filename)
         logger.info(f"Loading anomaly data from {full_path}")
-        return pd.read_pickle(full_path)
+        df = pd.read_pickle(full_path)
+        logger.info(df.dtypes)
+        return df
 
     def _load_stored_anomalies(self, detected_anomalies_path: str) -> pd.DataFrame:
         logger.info(f"Path to load from {detected_anomalies_path}")
