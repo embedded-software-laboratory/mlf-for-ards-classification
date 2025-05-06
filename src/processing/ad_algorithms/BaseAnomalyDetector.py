@@ -554,13 +554,11 @@ class BaseAnomalyDetector:
         detected_anomalies_df = self._fix_anomaly_df(detected_anomalies_df, relevant_data)
 
         if not self.columns_to_check:
-            contained_colums = detected_anomalies_df.columns.tolist()
-            self.columns_to_check = []
-            for column in contained_colums:
-                if column not in  self.columns_to_check:
-                    self.columns_to_check.append(column)
+            # TODO handle setting columns to check
+            pass
         if not self.anomaly_counts:
-            anomaly_counts_dict = self._calculate_anomaly_count_full(detected_anomalies_df, relevant_data, self.columns_to_check)
+            relevant_columns = [column for column in detected_anomalies_df.columns if column not in self.columns_not_to_check]
+            anomaly_counts_dict = self._calculate_anomaly_count_full(detected_anomalies_df, relevant_data, relevant_columns)
             self.anomaly_counts = self.finalize_anomaly_counts_single(anomaly_counts_dict)
 
         original_data_df_list = [y for x,y in original_data_df.groupby("patient_id")]

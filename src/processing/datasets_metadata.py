@@ -9,7 +9,7 @@ class AnomalyDetectionMetaData(BaseModel):
     anomaly_handling_strategy: str
     anomaly_fixing_algorithm: Union[str, None] = None
     anomaly_threshold: Union[float, None] = None
-    columns_checked: list[dict[str, list[str]]]
+    columns_checked: Union[list[dict[str, list[str]]], None] = None
     anomaly_statistics: dict[str, Union[int, float]]
     algorithm_specific_settings: dict[str, Union[str, int, float, bool, None]] = None
 
