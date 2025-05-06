@@ -206,7 +206,7 @@ class BaseAnomalyDetector:
                 else:
                     anomalies = anomaly_result_dict["anomaly_df"]
 
-                fixed_df = self._handle_anomalies(anomalies, data_to_fix, no_multiprocessing)
+                fixed_df = self._handle_anomalies(anomalies, data_to_fix, detected_anomalies_df=no_multiprocessing)
 
         if not "fix" in self.active_stages:
             logger.info("No fixing stage in the active stages. No data can be passed to the next module. Exiting...")
@@ -280,7 +280,7 @@ class BaseAnomalyDetector:
 
                 logger.info("Starting handling")
 
-                fixed_df = self._handle_anomalies(anomaly_result, patient_df_to_fix, no_multi_processing)
+                fixed_df = self._handle_anomalies(anomaly_result, patient_df_to_fix, no_multi_processing=no_multi_processing)
                 logger.info("Finished handling")
 
 
