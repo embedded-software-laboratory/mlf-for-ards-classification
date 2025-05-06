@@ -19,6 +19,8 @@ class DataFileManager:
             dataset = self._load_csv_file(file_path)
         elif splitted_path[1] == ".npy":
             dataset = self._load_numpy_file(file_path)
+        elif splitted_path[1] == ".pkl":
+            dataset = self._load_pkl_file(file_path)
         else:
             raise RuntimeError("File type " + splitted_path[1] + " not supported!")
 
@@ -37,6 +39,10 @@ class DataFileManager:
     @staticmethod
     def _load_csv_file(file_path) -> pd.DataFrame:
         return pd.read_csv(file_path)
+
+    @staticmethod
+    def _load_pkl_file(file_path) -> pd.DataFrame:
+        return pd.read_pickle(file_path)
 
     @staticmethod
     def _load_numpy_file(file_path) -> pd.DataFrame:
