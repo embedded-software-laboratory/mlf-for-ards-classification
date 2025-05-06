@@ -650,6 +650,7 @@ class DeepAntDetector(BaseAnomalyDetector):
             if type_of_dataset == "test":
                 patients_to_remove_path = os.path.join(self.prepared_data_dir + "/" + name + "_patients_to_remove.pkl")
                 patients_to_remove_path = patients_to_remove_path.replace("test_", "")
+                logger.info(f"Loading patients to remove from {patients_to_remove_path}")
                 with open(patients_to_remove_path, "rb") as f:
                     patients_to_remove = pickle.load(f)
                 with open(os.path.join(self.prepared_data_dir + "/" + name + "_relevant.pkl"), "rb") as f:
