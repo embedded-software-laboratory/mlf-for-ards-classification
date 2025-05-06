@@ -529,8 +529,6 @@ class BaseAnomalyDetector:
 
 
     def _handle_anomalies(self, detected_anomalies_df : pd.DataFrame, original_data: pd.DataFrame, save_data: bool =True, save_path: str = None, no_multi_processing: bool = False) -> pd.DataFrame:
-        logger.info(f"Type of orig {type(original_data)}")
-        logger.info(original_data.dtypes)
         if original_data.empty or original_data is None:
             logger.info("No data to fix. Exiting...")
             sys.exit(0)
