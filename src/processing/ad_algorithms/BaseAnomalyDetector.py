@@ -380,7 +380,7 @@ class BaseAnomalyDetector:
 
         df = pd.read_pickle(full_path)
         temp = df.drop(columns=["patient_id", "time"])
-        logger.info(f"Loading anomaly data from {full_path} dtypes: {temp.dtypes.unique()}")
+        logger.info(f"Loading anomaly data from {full_path} dtypes: {temp.dtypes.unique()}, columns: {temp.columns}")
         return df
 
     def _load_stored_anomalies(self, detected_anomalies_path: str) -> pd.DataFrame:
