@@ -434,13 +434,13 @@ class BaseAnomalyDetector:
             Returns:
                 pd.DataFrame: The complete DataFrame for a patient with anomalies handled.
         """
-        logger.info("Starting anomaly handling")
+
         anomaly_df.drop(columns=["patient_id", "time"], inplace=True)
         if anomaly_df.empty or original_data.empty:
             logger.info("No data to fix. Exiting...")
             return pd.DataFrame(columns=original_data.columns)
 
-        logger.info(anomaly_df)
+
         if self.handling_strategy == "delete_value":
             fixed_df = self._delete_value(anomaly_df, relevant_data)
         elif self.handling_strategy == "delete_than_impute":
@@ -459,7 +459,6 @@ class BaseAnomalyDetector:
             raise ValueError(f"Unknown fixing strategy {self.handling_strategy}")
         finished_df = original_data
         finished_df.update(fixed_df)
-        logger.info("Finished anomaly handling")
         return finished_df
 
     @staticmethod
