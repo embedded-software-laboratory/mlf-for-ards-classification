@@ -189,7 +189,7 @@ class BaseAnomalyDetector:
                     test_data = self._load_prepared_data(self.prepared_data_dir, "test")
                     prepared_dict["test"] = test_data
                 anomaly_result_dict = self._predict(prepared_dict["test"])
-                anomaly_counts = self.finalize_anomaly_counts_single(anomaly_result_dict)
+                anomaly_counts = self.finalize_anomaly_counts_single(anomaly_result_dict["anomaly_count"])
                 anomaly_df_meta_data = {
                     "contained_patients": anomaly_result_dict["anomaly_df"]["patient_id"].unique().tolist(),
                 }
