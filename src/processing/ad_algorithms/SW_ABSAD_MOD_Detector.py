@@ -28,9 +28,9 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
         self.type = "SW_ABSAD_Mod"
         self.model = None
         self.anomaly_data_dir = str(
-            kwargs.get("anomaly_data_dir", f"/work/rwth1474/Data/AnomalyDetection/anomaly_data/SW_ABSAD_Mod/{self.name}"))
+            kwargs.get("anomaly_data_dir", f"/work/rwth1474/Data/AnomalyDetection/anomaly_data/SW_ABSAD_MOD/{self.name}"))
         self.prepared_data_dir = str(
-            kwargs.get("prepared_data_dir", "/work/rwth1474/Data/AnomalyDetection/windowed_data"))
+            kwargs.get("prepared_data_dir", "/work/rwth1474/Data/AnomalyDetection/prepared_data/SW_ABSAD_MOD"))
         check_directory(self.anomaly_data_dir)
         check_directory(self.prepared_data_dir)
 
