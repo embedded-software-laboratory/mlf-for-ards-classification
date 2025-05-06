@@ -7,7 +7,7 @@ from typing import Union, Any
 
 import numpy as np
 
-from processing.ad_algorithms.torch_utils import split_patients
+from processing.ad_algorithms.torch_utils import split_patients, check_directory
 from processing.processing_utils import prepare_multiprocessing
 
 import pandas as pd
@@ -380,7 +380,7 @@ class BaseAnomalyDetector:
 
         df = pd.read_pickle(full_path)
         temp = df.drop(columns=["patient_id", "time"])
-        logger.info(f"Loading anomaly data from {full_path} dtypes: {temp.dtypes.unique()}")
+
         if "ards" in list(temp.columns):
             logger.info(f"DANGER {full_path}")
         return df
@@ -536,7 +536,8 @@ class BaseAnomalyDetector:
             sys.exit(0)
 
         if not save_path:
-            save_path = self.anomaly_data_dir
+            save_path = os.path.join(self.anomaly_data_dir, "fixed_data")
+        check_directory(save_path)
 
         anomaly_df_patients = detected_anomalies_df["patient_id"].unique().tolist()
         original_data_patients = original_data["patient_id"].unique().tolist()
