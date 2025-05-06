@@ -130,7 +130,7 @@ class Framework:
         elif stage == "to_evaluate":
             needed_models = self.timeseries_models_to_evaluate
         else:
-            print("For stage " + stage + " it does not make sense to load models")
+            logger.info("For stage " + stage + " it does not make sense to load models")
             return
         self.available_timeseries_models = self.TimeseriesModelManager.load_models(needed_models, self.available_timeseries_models, self.model_base_paths)
 
@@ -142,7 +142,7 @@ class Framework:
 
         for model_type, models in model_dict.items():
             for model in models:
-                print("Start training " + model.name + " for algorithm " + model.algorithm)
+                logger.info("Start training " + model.name + " for algorithm " + model.algorithm)
                 model.train_timeseries(self.timeseries_training_set, self.config, "Training")
                 if self.process["save_models"]:
                     if self.config["algorithm_base_path"][model.algorithm] != "default":
@@ -150,7 +150,7 @@ class Framework:
                     else:
                         save_path = self.outdir
                     model.save(save_path)
-                print("Successfully trained " + model.name + " for algorithm " + model.algorithm)
+                logger.info("Successfully trained " + model.name + " for algorithm " + model.algorithm)
                 self.available_timeseries_models[model.algorithm].append(model)
 
 
@@ -167,7 +167,7 @@ class Framework:
                 if model.name not in model_names["Names"]:
                     continue
                 prediction = model.predict(input_features)
-                print(f"Finished prediction of {model.name}")
+                logger.info(f"Finished prediction of {model.name}")
                 df = pd.DataFrame({"ards_predicted": prediction}).reset_index(drop=True)
                 df = pd.concat([test_data, df], axis=1)
                 df.to_csv(self.outdir + f"prediction_{model.algorithm}_{model.name}.csv", index=False)
@@ -225,10 +225,10 @@ class Framework:
             final_result = self.timeseries_evaluations_result
 
         else:
-            print("This should never happen")
+            logger.info("This should never happen")
             return
 
-        print(f"Save results to {result_location}")
+        logger.info(f"Save results to {result_location}")
         with open(result_location, 'w', encoding='utf-8') as f:
             f.write(final_result.model_dump_json(indent=4))
 
@@ -263,13 +263,13 @@ class Framework:
 
         if self.process["perform_timeseries_training"]:
             if not self.timeseries_training_set:
-                print("Can not train without training data. Exiting...")
+                logger.info("Can not train without training data. Exiting...")
                 exit()
             self.learn_timeseries_models()
 
         if self.process["perform_timeseries_classification"]:
             if not self.timeseries_test_set:
-                print("Can not predict without test data. Exiting...")
+                logger.info("Can not predict without test data. Exiting...")
                 exit()
             self.execute_timeseries_models(self.timeseries_test_set)
 
@@ -278,7 +278,7 @@ class Framework:
 
         if self.process["perform_cross_validation"]:
             if not self.timeseries_training_set:
-                print("Can not cross validate without training data. Exiting...")
+                logger.info("Can not cross validate without training data. Exiting...")
                 exit()
             self.cross_validate_models()
 
@@ -288,13 +288,13 @@ class Framework:
 
 
         if self.process["load_image_data"]:
-            print("Currently not supported")
+            logger.info("Currently not supported")
             #self.load_image_data()
 
         if self.process["train_image_models"]:
-            print("Currently not supported")
+            logger.info("Currently not supported")
             #self.learn_image_models()
 
         if self.process["test_image_models"]:
-            print("Currently not supported")
+            logger.info("Currently not supported")
             self.evaluate_image_models()

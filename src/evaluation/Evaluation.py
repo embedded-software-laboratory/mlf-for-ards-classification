@@ -1,7 +1,7 @@
 
 
 import copy
-
+import logging
 from typing import Union
 from datetime import datetime
 
@@ -15,7 +15,7 @@ from metrics.ModelFactories import ExperimentResult, ModelResultFactory, ResultM
 from sklearn.model_selection import StratifiedKFold
 
 
-
+logger = logging.getLogger(__name__)
 
 
 
@@ -27,13 +27,13 @@ class Evaluation:
         self.model_results = {}
 
     def evaluate_timeseries_models(self, models_to_evaluate_dict: dict[str, list[Model]]) -> ExperimentResult:
-        print("Evaluating models")
+        logger.info("Evaluating models")
         for model_algorithm in models_to_evaluate_dict:
-            print(f"Evaluating models for algorithm {model_algorithm}")
+            logger.info(f"Evaluating models for algorithm {model_algorithm}")
             for timeseries_model in models_to_evaluate_dict[model_algorithm]:
-                print(f"Evaluating {timeseries_model.name}")
+                logger.info(f"Evaluating {timeseries_model.name}")
                 if not timeseries_model.trained:
-                    print(f"Skipping {timeseries_model.name} because it makes no sense to evaluate an untrained model")
+                    logger.info(f"Skipping {timeseries_model.name} because it makes no sense to evaluate an untrained model")
                     continue
                 else:
                     model_evaluation = ModelEvaluation(self.config, timeseries_model, self)
@@ -102,7 +102,7 @@ class ModelEvaluation:
     def cross_validate_timeseries_model(self, data: TimeSeriesDataset) -> None:
 
         if self.evaluation.eval_info is None:
-            print("Can not perform cross validation without evaluation information")
+            logger.info("Can not perform cross validation without evaluation information")
             return
 
         processing_meta_data = TimeSeriesMetaDataManagement.extract_procesing_meta_data(data.meta_data)

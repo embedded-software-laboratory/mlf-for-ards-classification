@@ -4,10 +4,12 @@ from pathlib import Path
 import numpy as np
 import os
 import pandas as pd
+import logging
 from pydantic import ValidationError
 
 from processing.datasets_metadata import  TimeseriesMetaData
 
+logger = logging.getLogger(__name__)
 
 class DataFileManager:
 
@@ -29,7 +31,7 @@ class DataFileManager:
                 dataset_metadata = TimeseriesMetaData.model_validate_json(file_content)
             except ValidationError as err:
                 dataset_metadata = None
-                print(f"Error reading dataset metadata: {err}")
+                logger.info(f"Error reading dataset metadata: {err}")
 
         return dataset, dataset_metadata
     @staticmethod

@@ -17,6 +17,9 @@ from sklearn.svm import SVC, LinearSVC
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import StratifiedKFold
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class FeatureSelection:
@@ -41,13 +44,10 @@ class FeatureSelection:
 
 
     def perform_feature_selection(self, dataframe):
-        print("Start feature selection...")
+        logger.info(f"Start feature selection with {self.feature_selection_method}...")
         if self.feature_selection_method == "low_variance":
-            print("perform low variance selection...")
             dataframe = self.low_variance_selection(dataframe, self.variance)
-            print("Done!")
         if self.feature_selection_method == "univariate":
-            print("perform univariate selection...")
             dataframe = self.univariate_selection(dataframe, self.k)
         if self.feature_selection_method == "recursive":
             dataframe = self.recursive_selection(dataframe, self.k)
@@ -59,6 +59,7 @@ class FeatureSelection:
             dataframe = self.tree_selection(dataframe)
         if self.feature_selection_method == "sequential":
             dataframe = self.sequential_selection(dataframe)
+        logger.info(f"Finished feature selection.")
         return dataframe
         
 
