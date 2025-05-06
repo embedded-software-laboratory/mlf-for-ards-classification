@@ -124,7 +124,7 @@ class BaseAnomalyDetector:
 
         first_patient_id, last_patient_id = self._get_first_and_last_patient_id_for_name(anomaly_df)
         anomaly_df_path = f"{self.anomaly_data_dir}/anomaly_data_{self.name}_{first_patient_id}_{last_patient_id}.pkl"
-        self._save_file(anomaly_df, anomaly_df_path)
+        self._save_file(anomaly_df, anomaly_df_path, True)
 
         return anomaly_df_path
 
@@ -206,7 +206,7 @@ class BaseAnomalyDetector:
                 else:
                     anomalies = anomaly_result_dict["anomaly_df"]
 
-                fixed_df = self._handle_anomalies(anomalies, data_to_fix, detected_anomalies_df=no_multiprocessing)
+                fixed_df = self._handle_anomalies(anomalies, data_to_fix, no_multi_processing=no_multiprocessing)
 
         if not "fix" in self.active_stages:
             logger.info("No fixing stage in the active stages. No data can be passed to the next module. Exiting...")
