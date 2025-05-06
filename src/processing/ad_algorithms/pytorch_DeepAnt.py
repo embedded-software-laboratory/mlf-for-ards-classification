@@ -648,7 +648,7 @@ class DeepAntDetector(BaseAnomalyDetector):
             with open(os.path.join(self.prepared_data_dir + "/" + name + "_labels.pkl"), "rb") as f:
                 data_y = pickle.load(f)
             if type_of_dataset == "test":
-                with open(os.path.join(self.prepared_data_dir + "/" + name + "_patients_to_remove.pkl"), "rb") as f:
+                with open(os.path.join(self.prepared_data_dir + "/" + name.replace("test_") + "_patients_to_remove.pkl"), "rb") as f:
                     patients_to_remove = pickle.load(f)
                 with open(os.path.join(self.prepared_data_dir + "/" + name + "_relevant.pkl"), "rb") as f:
                     relevant_df = pickle.load(f)
