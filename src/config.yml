@@ -24,7 +24,7 @@ models:
     timeseries_models:
         to_train:
           AdaBoost:
-            Names: [ "Default"]
+            Names: [ "AdaBoost"]
             Configs: [ "default"]
             Active: True
           #BayesianNetwork:
@@ -40,7 +40,7 @@ models:
             Configs: []
             Active: False
           RandomForest:
-            Names: [ "Default"]
+            Names: [ "RandomForest"]
             Configs: [ "default"]
             Active: True
           SupportVectorMachine:
@@ -48,13 +48,13 @@ models:
             Configs: []
             Active: False
           XGBoost:
-            Names: [ "Default"]
+            Names: [ "XGBoost"]
             Configs: [ "default"]
             Active: True
 
         to_execute:
           AdaBoost:
-            Names: ["Default"]
+            Names: ["AdaBoost"]
             Active: True
           #BayesianNetwork:
           #  Names: []
@@ -66,18 +66,18 @@ models:
             Names: []
             Active: False
           RandomForest:
-            Names: ["Default"]
+            Names: ["RandomForest"]
             Active: True
           SupportVectorMachine:
             Names: []
             Active: False
           XGBoost:
-            Names: ["Default"]
+            Names: ["XGBoost"]
             Active: True
 
         to_evaluate:
           AdaBoost:
-            Names: ["Default"]
+            Names: ["AdaBoost"]
             Active: True
           #BayesianNetwork:
           #  Names: []
@@ -89,18 +89,18 @@ models:
             Names: []
             Active: False
           RandomForest:
-            Names: ["Default"]
+            Names: ["RandomForest"]
             Active: True
           SupportVectorMachine:
             Names: []
             Active: False
           XGBoost:
-            Names: ["Default"]
+            Names: ["XGBoost"]
             Active: True
 
         to_cross_validate:
           AdaBoost:
-            Names: ["Default"]
+            Names: ["AdaBoost"]
             Configs: ["default"]
             Active: True
           ##BayesianNetwork:
@@ -116,7 +116,7 @@ models:
             Configs: [ ]
             Active: False
           RandomForest:
-            Names: ["Default" ]
+            Names: ["RandomForest"]
             Configs: [ "default"]
             Active: True
           SupportVectorMachine:
@@ -124,7 +124,7 @@ models:
             Configs: [ ]
             Active: False
           XGBoost:
-            Names: ["Default" ]
+            Names: ["XGBoost" ]
             Configs: ["default" ]
             Active: True
         base_path_config:
