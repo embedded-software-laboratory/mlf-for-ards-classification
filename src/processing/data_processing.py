@@ -11,7 +11,9 @@ from processing.processing_utils import prepare_multiprocessing, get_processing_
 import pandas as pd
 import math
 from multiprocessing import Pool
+import logging
 
+logger = logging.getLogger(__name__)
 
 
 
@@ -47,25 +49,25 @@ class DataProcessor:
         process_pool_data_list, n_jobs = prepare_multiprocessing(dataframe, self.patients_per_process)
 
 
-        print("Start data preprocessing...")
+        logger.info("Start data preprocessing...")
         if self.process["perform_anomaly_detection"]:
             process_pool_data_list,  n_jobs, dataframe = self.anomaly_detector.execute_handler(process_pool_data_list,  self.patients_per_process)
             self.anomaly_detector.create_meta_data()
 
 
         if self.process["perform_imputation"]:
-            print("Impute missing data...")
+            logger.info("Impute missing data...")
             with Pool(processes=self.max_processes) as pool:
                 process_pool_data_list = pool.starmap(self.data_imputator.impute_missing_data, [(process_pool_data_list[i], i, n_jobs) for i in range(n_jobs)])
 
             dataframe = pd.concat(process_pool_data_list).reset_index(drop=True)
             self.data_imputator.create_meta_data()
-            print("Finished imputing missing data.")
+            logger.info("Finished imputing missing data.")
 
 
         if self.process["perform_unit_conversion"]:
             if not dataset_metadata or  (dataset_metadata and not dataset_metadata.imputation):
-                print("Convert units...")
+                logger.info("Convert units...")
                 columns_to_convert = []
                 for column in dataframe.columns:
                     if column in self.unit_converter.conversion_formulas[self.database_name].keys():
@@ -77,40 +79,40 @@ class DataProcessor:
 
                 dataframe = pd.concat(process_pool_data_list).reset_index(drop=True)
                 self.unit_converter.create_meta_data(self.database_name)
-                print("Converted units!")
+                logger.info("Converted units!")
 
             else:
-                print("Data is already converted. Skipping...")
+                logger.info("Data is already converted. Skipping...")
 
         if self.process["calculate_missing_params"]:
-            print("Calculate missing parameters...")
+            logger.info("Calculate missing parameters...")
 
             with Pool(processes=self.max_processes) as pool:
                 process_pool_data_list = pool.starmap(self.param_calculator.calculate_missing_params,
                                                       [(process_pool_data_list[i], i, n_jobs) for i in range(n_jobs)])
             dataframe = pd.concat(process_pool_data_list).reset_index(drop=True)
             self.param_calculator.create_meta_data()
-            print("Calculated missing params.")
+            logger.info("Calculated missing params.")
 
 
         if self.process["perform_ards_onset_detection"]:
             if not dataset_metadata or (dataset_metadata and not dataset_metadata.onset_detection):
-                print("Detect ARDS onset..")
+                logger.info("Detect ARDS onset..")
                 with Pool(processes=self.max_processes) as pool:
                     process_pool_data_list = pool.starmap(self.onset_determiner.determine_ards_onset,
                                                           [(process_pool_data_list[i], i, n_jobs) for i in range(n_jobs)])
                 dataframe = pd.concat(process_pool_data_list).reset_index(drop=True)
                 self.onset_determiner.create_meta_data()
-                print("Detected ARDS onset!")
+                logger.info("Detected ARDS onset!")
             else:
-                print("Data is already converted. Skipping...")
+                logger.info("Data is already converted. Skipping...")
 
         if self.process["perform_filtering"]:
-            print("Filter data...")
+            logger.info("Filter data...")
             dataframe = self.filter.filter_data(dataframe)
             self.filter.create_meta_data()
-            print("Filtered data!")
-        print("Data preprocessing completed!")
+            logger.info("Filtered data!")
+        logger.info("Data preprocessing completed!")
         return dataframe
 
     def processing_meta_data(self):

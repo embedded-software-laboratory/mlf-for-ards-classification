@@ -3,6 +3,10 @@ import pandas as pd
 from sklearn.model_selection import  train_test_split
 import random
 import math
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class DataSegregator:
 
@@ -10,7 +14,7 @@ class DataSegregator:
         self.training_test_ratio = config["training_test_ratio"]
         self.ards_percentage = config["percentage_of_ards_patients"]
         if not self.ards_percentage:
-            print("Percentage of ARDS patients is needed for the Data segregation to run...")
+            logger.info("Percentage of ARDS patients is needed for the Data segregation to run...")
             raise ValueError
         self.random_state = config["splitting_seed"]
     
@@ -30,14 +34,14 @@ class DataSegregator:
         if num_ards_patients > num_target_ards_patients:
             total_patients = math.floor(num_non_ards_patients * 1/(1-self.ards_percentage))
             num_target_ards_patients = math.floor(total_patients*self.ards_percentage)
-            print("Too much ARDS patients, rebalancing...")
+            logger.info("Too much ARDS patients, rebalancing...")
             samples = random.sample(range(num_ards_patients), num_target_ards_patients)
             ards_data_sampled = ards_data.iloc[samples]
             data = pd.concat([ards_data_sampled, non_ards_data]).reset_index(drop=True)
 
 
         elif num_non_ards_patients > num_target_non_ards_patients:
-            print("Too few ARDS patients, rebalancing...")
+            logger.info("Too few ARDS patients, rebalancing...")
             total_patients = math.floor(num_ards_patients * 1 / self.ards_percentage)
             num_target_non_ards_patients = math.floor(total_patients*(1-self.ards_percentage))
             samples = random.sample(range(num_non_ards_patients), num_target_non_ards_patients)
@@ -45,7 +49,7 @@ class DataSegregator:
             
             data = pd.concat([non_ards_data_sampled, ards_data]).reset_index(drop=True)
         else:
-            print("Everything is fine, no rebalancing...")
+            logger.info("Everything is fine, no rebalancing...")
             data = pd.concat([ards_data, non_ards_data], axis=0).reset_index(drop=True)
         
         data.drop(["time", "patient_id"], axis=1, inplace=True)

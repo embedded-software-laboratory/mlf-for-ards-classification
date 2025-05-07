@@ -1,4 +1,5 @@
 import yaml
+import logging
 
 from ml_models.timeseries_model import TimeSeriesModel
 from ml_models.adaboost import AdaBoostModel
@@ -8,6 +9,8 @@ from ml_models.random_forest import RandomForestModel
 #from ml_models.recurrentneuralnetworkmodel import RecurrentNeuralNetworkModel
 from ml_models.support_vector_machine import SupportVectorMachineModel
 from ml_models.xgboost_model import XGBoostModel
+
+logger = logging.getLogger(__name__)
 
 
 class TimeSeriesModelManager:
@@ -53,11 +56,11 @@ class TimeSeriesModelManager:
                     if model_name == model.name:
                         found = True
                 if not found:
-                    print(f"Model {model_name} of type {model_type} not found. Loading model from disk...")
+                    logger.info(f"Model {model_name} of type {model_type} not found. Loading model from disk...")
                     model = eval(model_type + "Model()")
                     model.name = model_name
                     model.algorithm = model_type
                     model.load(base_path)
                     available_models_dict[model_type].append(model)
-                    print(f"Loaded model {model_name} of type {model_type}")
+                    logger.info(f"Loaded model {model_name} of type {model_type}")
         return available_models_dict
