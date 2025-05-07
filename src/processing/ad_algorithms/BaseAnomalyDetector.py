@@ -333,13 +333,13 @@ class BaseAnomalyDetector:
             else:
                 for key, value in anomaly_count.items():
 
+                    total_anomalies_name = key + "_total_anomalies"
+                    total_data_name = key + "_total_data"
+                    percentage_anomalies_name = key + "_percentage_anomalies"
 
                     if key in anomaly_counts.keys():
                         data = anomaly_counts[key]
-                        total_anomalies_name = key + "_total_anomalies"
 
-                        total_data_name = key + "_total_data"
-                        percentage_anomalies_name = key + "_percentage_anomalies"
                         anomaly_counts[key] = {
                             total_anomalies_name: data[total_anomalies_name] + value["anomaly_count"],
                             total_data_name: data[total_data_name] + value["total_data"],
