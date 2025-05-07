@@ -88,11 +88,11 @@ class PhysicalLimitsDetector(BaseAnomalyDetector):
                     min_value = self.physical_limits_dict[column]["min"]
                     max_value = self.physical_limits_dict[column]["max"]
                 
-                    anomaly_dict[column] = (~dataframe[column].isna()) | (dataframe[column] < min_value) | (dataframe[column] > max_value)
+                    anomaly_dict[column] = (~dataframe[column].isna()) & ((dataframe[column] < min_value) | (dataframe[column] > max_value))
         anomaly_dict["patient_id"] = dataframe["patient_id"]
         anomaly_dict["time"] = dataframe["time"]
         anomaly_df = pd.DataFrame.from_dict(anomaly_dict)
-        
+        logger.info(anomaly_df)
         anomaly_count_dict = self._calculate_anomaly_count(anomaly_df, dataframe)
         self._save_anomaly_df(anomaly_df)
         result_dict = {

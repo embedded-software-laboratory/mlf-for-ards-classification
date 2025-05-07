@@ -197,6 +197,7 @@ class BaseAnomalyDetector:
                 self.anomaly_counts = anomaly_counts
 
             elif stage == "fix":
+                # TODO fix patient_df_to_fix only containing data used for ad
                 if not prepared_dict["test"]:
                     data_to_fix = dataframe
                 else:
@@ -266,7 +267,7 @@ class BaseAnomalyDetector:
 
 
             elif stage == "fix":
-
+                # TODO fix patient_df_to_fix only containing data used for ad
                 if not anomaly_result_list:
                     anomaly_result = self._load_stored_anomalies(self.anomaly_data_dir)
 
@@ -281,6 +282,8 @@ class BaseAnomalyDetector:
                 logger.info("Starting handling")
 
                 fixed_df = self._handle_anomalies(anomaly_result, patient_df_to_fix, no_multi_processing=no_multi_processing)
+                logger.info(fixed_df.columns)
+                logger.info(patient_df_to_fix.columns)
                 logger.info("Finished handling")
 
 
