@@ -58,6 +58,8 @@ class PhysicalLimitsDetector(BaseAnomalyDetector):
             relevant_columns = [column for column in dataframe.columns.tolist() if column in self.physical_limits_dict.keys()]
         else:
             relevant_columns = self.columns_to_check
+        if "patient_id" not in relevant_columns:
+            relevant_columns.append("patient_id")
         relevant_data = dataframe[relevant_columns]
         return_dict = {"test": relevant_data}
         if save_data:
