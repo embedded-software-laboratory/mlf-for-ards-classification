@@ -60,12 +60,14 @@ class PhysicalLimitsDetector(BaseAnomalyDetector):
             relevant_columns = self.columns_to_check
         if "patient_id" not in relevant_columns:
             relevant_columns.append("patient_id")
+        if "time" not in relevant_columns:
+            relevant_columns.append("time")
         relevant_data = dataframe[relevant_columns]
         return_dict = {"test": relevant_data}
         if save_data:
             first_patient, last_patient = self._get_first_and_last_patient_id_for_name(dataframe)
             save_path = f"{self.prepared_data_dir}/patient_{first_patient}_to_{last_patient}_test.pkl"
-            self._save_file(return_dict, save_path, overwrite)
+            self._save_file(relevant_data, save_path, overwrite)
         return return_dict
 
     def _create_meta_data_preparation(self, test_data: pd.DataFrame) -> dict:
@@ -81,21 +83,16 @@ class PhysicalLimitsDetector(BaseAnomalyDetector):
         anomaly_dict = {}
         for column in dataframe.columns:
             if self.columns_to_check == [] or column in self.columns_to_check:
-
-                anomaly_dict[column] = []
-                min_value = self.physical_limits_dict[column]["min"]
-                max_value = self.physical_limits_dict[column]["max"]
                 column_present = column in self.physical_limits_dict.keys()
-                for index, row in dataframe.iterrows():
-                    if row[column] is None or not column_present:
-                        anomaly_dict[column].append(False)
-                    elif row[column] >= min_value or row[column] <= max_value:
-                        anomaly_dict[column].append(True)
-                    else:
-                        anomaly_dict[column].append(False)
+                if column_present:
+                    min_value = self.physical_limits_dict[column]["min"]
+                    max_value = self.physical_limits_dict[column]["max"]
+                
+                    anomaly_dict[column] = (~dataframe[column].isna()) | (dataframe[column] < min_value) | (dataframe[column] > max_value)
+        anomaly_dict["patient_id"] = dataframe["patient_id"]
+        anomaly_dict["time"] = dataframe["time"]
         anomaly_df = pd.DataFrame.from_dict(anomaly_dict)
-        anomaly_df["patient_id"] = dataframe["patient_id"]
-        anomaly_df["timestamp"] = dataframe["timestamp"]
+        
         anomaly_count_dict = self._calculate_anomaly_count(anomaly_df, dataframe)
         self._save_anomaly_df(anomaly_df)
         result_dict = {

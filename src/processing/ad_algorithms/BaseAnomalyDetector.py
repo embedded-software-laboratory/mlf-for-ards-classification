@@ -247,13 +247,13 @@ class BaseAnomalyDetector:
             elif stage == "predict":
                 if not prepared_data_list:
                     test_data = self._load_prepared_data(self.prepared_data_dir, "test")
-                    test_data_list = prepare_multiprocessing(test_data, patients_per_process)
+                    test_data_list, _ = prepare_multiprocessing(test_data, patients_per_process)
                     prepared_data_list = [{"test": test_data} for test_data in test_data_list]
                 with Pool(processes=self.max_processes) as pool:
                     predict_data_list = [result_dict["test"] for result_dict in prepared_data_list]
-                    anomaly_result_list = pool.starmap(self._predict, [(dataframe) for dataframe in predict_data_list])
+                    anomaly_result_list = pool.starmap(self._predict, [(dataframe, )for dataframe in predict_data_list])
                 anomaly_count_list = [anomaly_result["anomaly_count"] for anomaly_result in anomaly_result_list]
-                contained_patients = [anomaly_result["anomaly_df"]["patient_id"].unique().to_list() for anomaly_result in anomaly_result_list]
+                contained_patients = [anomaly_result["anomaly_df"]["patient_id"].unique().tolist() for anomaly_result in anomaly_result_list]
                 contained_patients = [item for sublist in contained_patients for item in sublist]
                 meta_data_anomaly_df = {
                     "contained_patients": contained_patients,
@@ -331,7 +331,7 @@ class BaseAnomalyDetector:
                         }
                     }
             else:
-                for key, value in anomaly_count.items:
+                for key, value in anomaly_count.items():
 
                     data = anomaly_counts[key]
                     total_anomalies_name = key + "_total_anomalies"
