@@ -9,6 +9,9 @@ from metrics import EvalResultFactory, EvalResult
 from evaluation import ModelEvaluation
 
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 class TimeSeriesModel(Model):
 
@@ -46,15 +49,13 @@ class TimeSeriesModel(Model):
 
     def save(self, filepath: str, name: str= None):
         if not self.trained:
-            print("It makes no sense to save the model before training it")
+            logger.info("It makes no sense to save the model before training it")
             return
         if not name:
             base_path = filepath + f"{self.algorithm}_{self.name}"
         else:
             base_path = filepath + name
         evaluation_location = base_path + "_training_evaluation.json"
-        print(self.training_evaluation.training_dataset.model_dump_json(indent=4))
-        print(self.training_evaluation.test_dataset.model_dump_json(indent=4))
         with open(evaluation_location, "w") as evaluation_file:
             evaluation_file.write(self.training_evaluation.model_dump_json(indent=4))
 

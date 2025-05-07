@@ -1,7 +1,9 @@
 import pandas as pd
+import logging
 
 from processing.datasets_metadata import UnitConversionMetaData
 
+logger = logging.getLogger(__name__)
 
 class UnitConverter:
 
@@ -24,7 +26,7 @@ class UnitConverter:
 
 
     def convert_units(self, dataframe: pd.DataFrame, database_name: str, job_number: int, total_job_count: int):
-        print("Start unit conversion for job " + str(job_number) + f" of {total_job_count} jobs...")
+        logger.info("Start unit conversion for job " + str(job_number) + f" of {total_job_count} jobs...")
         #formulas = self.conversion_formulas_old[database_name]
         for column in self._columns_to_convert:
             dataframe[column] = dataframe[column].apply(self.conversion_formulas[database_name][column])
@@ -33,7 +35,7 @@ class UnitConverter:
         #        for index in series.index:
         #            formula = formulas[series_name].replace("source_value", str(series[index]))
         #            series[index] = eval(formula)
-        print("Finished unit conversion for job " + str(job_number) + f" of {total_job_count} jobs...")
+        logger.info("Finished unit conversion for job " + str(job_number) + f" of {total_job_count} jobs...")
         return dataframe
 
     def create_meta_data(self, database_name: str):
