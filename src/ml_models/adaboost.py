@@ -15,7 +15,7 @@ class AdaBoostModel(TimeSeriesProbaModel):
             "estimator": None,
             "n_estimators": 50,
             "learning_rate": 1.0,
-            "algorithm": 'SAMME.R',
+            "algorithm": 'SAMME',
             "random_state": 42
         }
         self.model = self._init()
