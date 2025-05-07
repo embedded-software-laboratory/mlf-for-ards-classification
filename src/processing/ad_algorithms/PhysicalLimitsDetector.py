@@ -54,8 +54,12 @@ class PhysicalLimitsDetector(BaseAnomalyDetector):
         return pd.concat(prepared_data, ignore_index=True).reset_index(drop=True)
 
     def _prepare_data(self, dataframe: pd.DataFrame, save_data: bool =False, overwrite: bool = True) -> dict:
-        dataframe = dataframe[self.columns_to_check]
-        return_dict = {"test": dataframe}
+        if not self.columns_to_check:
+            relevant_columns = [column for column in dataframe.columns.tolist() if column in self.physical_limits_dict.keys()]
+        else:
+            relevant_columns = self.columns_to_check
+        relevant_data = dataframe[relevant_columns]
+        return_dict = {"test": relevant_data}
         if save_data:
             first_patient, last_patient = self._get_first_and_last_patient_id_for_name(dataframe)
             save_path = f"{self.prepared_data_dir}/patient_{first_patient}_to_{last_patient}_test.pkl"
