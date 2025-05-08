@@ -180,6 +180,7 @@ class BaseAnomalyDetector:
                 self.anomaly_counts = anomaly_counts
 
             elif stage == "fix":
+                # TODO fix patient_df_to_fix only containing data used for ad
                 if not prepared_dict["test"]:
                     data_to_fix = dataframe
                 else:
@@ -230,13 +231,13 @@ class BaseAnomalyDetector:
             elif stage == "predict":
                 if not prepared_data_list:
                     test_data = self._load_prepared_data(self.prepared_data_dir, "test")
-                    test_data_list = prepare_multiprocessing(test_data, patients_per_process)
+                    test_data_list, _ = prepare_multiprocessing(test_data, patients_per_process)
                     prepared_data_list = [{"test": test_data} for test_data in test_data_list]
                 with Pool(processes=self.max_processes) as pool:
                     predict_data_list = [result_dict["test"] for result_dict in prepared_data_list]
-                    anomaly_result_list = pool.starmap(self._predict, [(dataframe) for dataframe in predict_data_list])
+                    anomaly_result_list = pool.starmap(self._predict, [(dataframe, )for dataframe in predict_data_list])
                 anomaly_count_list = [anomaly_result["anomaly_count"] for anomaly_result in anomaly_result_list]
-                contained_patients = [anomaly_result["anomaly_df"]["patient_id"].unique().to_list() for anomaly_result in anomaly_result_list]
+                contained_patients = [anomaly_result["anomaly_df"]["patient_id"].unique().tolist() for anomaly_result in anomaly_result_list]
                 contained_patients = [item for sublist in contained_patients for item in sublist]
                 meta_data_anomaly_df = {
                     "contained_patients": contained_patients,
@@ -249,7 +250,7 @@ class BaseAnomalyDetector:
 
 
             elif stage == "fix":
-
+                # TODO fix patient_df_to_fix only containing data used for ad
                 if not anomaly_result_list:
                     anomaly_result = self._load_stored_anomalies(self.anomaly_data_dir)
 
@@ -264,6 +265,8 @@ class BaseAnomalyDetector:
                 logger.info("Starting handling")
 
                 fixed_df = self._handle_anomalies(anomaly_result, patient_df_to_fix, no_multi_processing=no_multi_processing)
+                logger.info(fixed_df.columns)
+                logger.info(patient_df_to_fix.columns)
                 logger.info("Finished handling")
 
 
@@ -292,14 +295,15 @@ class BaseAnomalyDetector:
                         }
                     }
             else:
-                for key, value in anomaly_count.items:
+                for key, value in anomaly_count.items():
 
-                    data = anomaly_counts[key]
                     total_anomalies_name = key + "_total_anomalies"
-
                     total_data_name = key + "_total_data"
                     percentage_anomalies_name = key + "_percentage_anomalies"
+
                     if key in anomaly_counts.keys():
+                        data = anomaly_counts[key]
+
                         anomaly_counts[key] = {
                             total_anomalies_name: data[total_anomalies_name] + value["anomaly_count"],
                             total_data_name: data[total_data_name] + value["total_data"],

@@ -159,7 +159,7 @@ storage_path: "../Data/ExperimentResult"
 
 
 data:
-  timeseries_file_path: "/work/rwth1474/Data/time_series/uka_data_050623_testing_patients.npy"
+  timeseries_file_path: "/work/rwth1474/Data/time_series/uka_data_fixed_data_DeepAnt_delete_than_impute_interpolate.pkl"
   database: "UKA"
   #image_file_path: "Data/Image_data"
   pneumonia_dataset: "balanced"
@@ -167,12 +167,12 @@ data:
 
 preprocessing:
   patients_per_process: 500
-  max_processes: 20
+  max_processes: 2
 
 
   anomaly_detection:
     SW_ABSAD_MOD:
-      active: True
+      active: False
       name: "SW_ABSAD_MOD"
       columns_to_check: []
       fix_algorithm: "interpolate"
@@ -180,7 +180,7 @@ preprocessing:
       anomaly_threshold: 0.5
       supported_stages:
         - "prepare"
-        - "detect"
+        - "predict"
         - "fix"
       active_stages:
         - "fix"
@@ -207,7 +207,7 @@ preprocessing:
       anomaly_threshold: 0.5
       supported_stages:
         - "prepare"
-        - "detect"
+        - "predict"
         - "fix"
       active_stages:
         - "detect"
@@ -216,19 +216,19 @@ preprocessing:
       prepared_data_dir: "/work/rwth1474/Data/AnomalyDetection/prepared_data/Physical_Outliers"
 
     DeepAnt:
-      active: False
+      active: True
       name: "DeepAnt"
       columns_to_check: []
-      fix_algorithm: ""
-      handling_strategy: ""
+      fix_algorithm: "interpolate"
+      handling_strategy: "delete_than_impute"
       anomaly_threshold: 0.5
       supported_stages:
         - "prepare"
         - "train"
-        - "detect"
+        - "predict"
         - "fix"
       active_stages:
-        - "prepare"
+        - "fix"
       anomaly_data_dir: "/work/rwth1474/Data/AnomalyDetection/anomaly_data/DeepAnt"
       prepared_data_dir: "/work/rwth1474/Data/AnomalyDetection/windowed_data"
       window_generator_config:
@@ -241,7 +241,7 @@ preprocessing:
       hidden_size: 256
       max_epochs: 100
       max_initial_epochs: 10
-      batch_size: 2048
+      batch_size: 32
       patience: 5
       run_dir: "../Data/Models/AnomalyDetection/DeepAnt"
       checkpoint_dir: "../Data/Models/AnomalyDetection/DeepAnt/checkpoints"
