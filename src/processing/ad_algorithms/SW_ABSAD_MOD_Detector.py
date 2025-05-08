@@ -73,17 +73,6 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
         meta_data_dict["algorithm_specific_settings"]["columns_to_check"] = None
         return AnomalyDetectionMetaData(**meta_data_dict)
 
-    def run(self, dataframe_detection: pd.DataFrame, job_count: int, total_jobs: int) -> (pd.DataFrame, dict[str, dict[str, int]]):
-        logger.info(f"Running job {job_count} of {total_jobs} for {self.name}")
-        dataframe_detection = self._prepare_data(dataframe_detection)["dataframe"]
-        anomaly_dict = self._predict(dataframe_detection)
-
-
-        fixed_df = pd.concat(anomaly_dict["fixed_dfs"]).reset_index(drop=True)
-        anomaly_df = pd.concat(anomaly_dict["anomaly_dfs"]).reset_index(drop=True)
-        self._save_anomaly_df(anomaly_df)
-        logger.info("Saved data")
-        return fixed_df, anomaly_dict["anomaly_count"]
 
 
     def _prepare_data(self, dataframe_detection: pd.DataFrame, save_data: bool =False, overwrite: bool = True) -> dict[str, pd.DataFrame]:

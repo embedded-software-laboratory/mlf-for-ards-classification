@@ -50,21 +50,6 @@ class BaseAnomalyDetector:
 
 
 
-    def run(self,  dataframe_detection: pd.DataFrame, job_count: int, total_jobs: int) -> (pd.DataFrame, dict[str, dict[str, int]]):
-        """
-            Runs the anomaly detection process from start to finish.
-
-            Args:
-                dataframe_detection (pd.DataFrame): The input DataFrame containing the data to be processed.
-                job_count (int): The current job count (Irrelevant for approaches that need the full dataset).
-                total_jobs (int): The total number of jobs (Irrelevant for approaches that need the full dataset).
-
-            Returns:
-                pd.DataFrame: The processed DataFrame with anomalies handled.
-                dict: A dictionary containing the anomaly counts for each column as well as the total amount of data present for each column.
-
-        """
-        raise NotImplementedError()
 
     @staticmethod
     def _calculate_anomaly_count_full(anomaly_df: pd.DataFrame, relevant_data: pd.DataFrame,
@@ -135,8 +120,6 @@ class BaseAnomalyDetector:
     def _predict(self, dataframe: pd.DataFrame, **kwargs) -> dict:
         raise NotImplementedError()
 
-    def _predict_proba(self):
-        raise NotImplementedError()
 
     def _prepare_data(self, dataframe: pd.DataFrame, save_data: bool = False, overwrite: bool = False) -> dict:
         raise NotImplementedError()
@@ -290,29 +273,7 @@ class BaseAnomalyDetector:
         return fixed_df
 
 
-    def run_full(self, process_pool_data_list: list[pd.DataFrame], n_jobs: int, patients_per_process: int)\
-        -> (list[pd.DataFrame], dict[str, dict[str, Union[int, float]]], pd.DataFrame):
 
-        if not self.needs_full_data:
-            process_pool_data_list, anomaly_counts, dataframe = self.run_multiprocessing(process_pool_data_list, n_jobs)
-
-        else:
-            process_pool_data_list, anomaly_counts, dataframe = self.run_single(process_pool_data_list,
-                                                                                patients_per_process)
-
-        self.anomaly_counts = anomaly_counts
-
-        return process_pool_data_list, n_jobs, dataframe
-
-
-    def run_multiprocessing(self,  process_pool_data_list: list[pd.DataFrame], n_jobs: int) -> (list[pd.DataFrame], dict[str, dict[str, Union[int, float]]], pd.DataFrame):
-        with Pool(processes=self.max_processes) as pool:
-            process_pool_data_list, anomaly_count_list = pool.starmap(self.run,
-                                                                      [(process_pool_data_list[i], i, n_jobs) for i in
-                                                                       range(n_jobs)])
-        anomaly_counts = self.finalize_anomaly_counts_multiprocessing(anomaly_count_list)
-        fixed_df = pd.concat(process_pool_data_list, ignore_index=True).reset_index(drop=True)
-        return process_pool_data_list,  anomaly_counts, fixed_df
 
     @staticmethod
     def finalize_anomaly_counts_multiprocessing(anomaly_count_list: list) -> dict[str, dict[str, Union[int, float]]]:
@@ -353,12 +314,6 @@ class BaseAnomalyDetector:
                         }
         return anomaly_counts
 
-    def run_single(self, process_pool_data_list: list[pd.DataFrame], patients_per_process: int) -> (list[pd.DataFrame], dict[str, dict[str, Union[int, float]]], pd.DataFrame):
-        dataframe = pd.concat(process_pool_data_list, ignore_index=True).reset_index(drop=True)
-        fixed_df, anomaly_counts = self.run(dataframe, 0, 1)
-        anomaly_counts = self.finalize_anomaly_counts_single(anomaly_counts)
-        process_pool_data_list, n_jobs = prepare_multiprocessing(fixed_df, patients_per_process)
-        return process_pool_data_list, anomaly_counts, fixed_df
 
     @staticmethod
     def finalize_anomaly_counts_single(anomaly_counts: dict[str, dict[str, Union[int, float]]]) -> dict[str, dict[str, Union[int, float]]]:
@@ -374,8 +329,8 @@ class BaseAnomalyDetector:
             }
         return finished_anomaly_count_dict
 
-
-    def _load_anomaly_df(self, anomaly_df_path: str, filename: str) -> pd.DataFrame:
+    @staticmethod
+    def _load_anomaly_df(anomaly_df_path: str, filename: str) -> pd.DataFrame:
 
         full_path = os.path.join(anomaly_df_path, filename)
 
@@ -413,11 +368,6 @@ class BaseAnomalyDetector:
         if detected_anomalies_df.empty or detected_anomalies_df is None:
             logger.info(f"Can not find any anomalies in the file {detected_anomalies_path}.")
             sys.exit(0)
-        
-
-        
-
-
         return detected_anomalies_df
 
 
