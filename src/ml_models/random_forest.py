@@ -42,6 +42,7 @@ class RandomForestModel(TimeSeriesProbaModel):
 
         # Learn and store resulting model
         self.model = self.model.fit(predictors, label)
+        print(self.model.feature_importances_)
         self.trained = True
 
     def predict(self, data):
