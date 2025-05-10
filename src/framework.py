@@ -171,7 +171,8 @@ class Framework:
                 logger.info(f"Finished prediction of {model.name}")
                 df = pd.DataFrame({"ards_predicted": prediction}).reset_index(drop=True)
                 df = pd.concat([test_data, df], axis=1)
-                df.to_csv(self.outdir + f"prediction_{model.algorithm}_{model.name}.csv", index=False)
+                name = self.config["evaluation"]["evaluation_name"].replace(" ", "_")
+                df.to_csv(self.outdir + f"{name}_prediction_{model.algorithm}_{model.name}.csv", index=False)
 
     def evaluate_timeseries_models(self):
         self.load_timeseries_models("to_evaluate")
