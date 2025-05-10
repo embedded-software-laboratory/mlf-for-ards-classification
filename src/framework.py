@@ -111,10 +111,11 @@ class Framework:
 
 
         current_time_str = str(datetime.now().strftime('%Y-%m-%d_%H_%M_%S'))
-        base_path_data = self.outdir + os.path.basename(self.timeseries_file_path) + f"_{current_time_str}_"
-        path_complete = base_path_data + "complete"
-        path_training = base_path_data + "training"
-        path_test = base_path_data + "test"
+        name = self.config["evaluation"]["evaluation_name"].replace(" ", "_")
+        base_path_data = self.outdir + name + "_data"
+        path_complete = base_path_data + "_complete"
+        path_training = base_path_data + "_training"
+        path_test = base_path_data + "_test"
 
         self.timeseries_training_set = TimeSeriesDatasetManagement.factory_method(training_data, processing_meta_data,path_training, "Training")
         self.timeseries_test_set = TimeSeriesDatasetManagement.factory_method(test_data, processing_meta_data, path_test, "Test")
