@@ -199,3 +199,45 @@ class TPR(ListMetricSpec):
         return GenericMetric(metric_name=metric_dict['metric_name'],
                              metric_value=ListValue(metric_value=metric_dict['metric_value']),
                              metric_spec=TPR())
+
+class PPV(FloatMetricSpec):
+    def calculate_metric(self, metric_parameters: dict, stage:str) -> GenericMetric:
+        prediction_labels = metric_parameters['predicted_label']
+        true_labels = metric_parameters['true_labels']
+        tn, fp, fn, tp = confusion_matrix(true_labels, prediction_labels).ravel()
+
+        return GenericMetric(metric_name="PPV" + " " + stage,
+                             metric_value=FloatValue(metric_value=(tp / (tp + fp))),
+                             metric_spec=PPV())
+
+    def needs_probabilities(self) -> bool:
+        return False
+
+    def create_from_value(self, metric_value: FloatValue, metric_name: str) -> GenericMetric:
+        return GenericMetric(metric_name=metric_name, metric_value=metric_value, metric_spec=PPV())
+
+    def create_from_dict(self, metric_dict: dict) -> GenericMetric:
+        return GenericMetric(metric_name=metric_dict['metric_name'],
+                             metric_value=FloatValue(metric_value=metric_dict['metric_value']),
+                             metric_spec=PPV())
+
+class NPV(FloatMetricSpec):
+    def calculate_metric(self, metric_parameters: dict, stage:str) -> GenericMetric:
+        prediction_labels = metric_parameters['predicted_label']
+        true_labels = metric_parameters['true_labels']
+        tn, fp, fn, tp = confusion_matrix(true_labels, prediction_labels).ravel()
+
+        return GenericMetric(metric_name="NPV" + " " + stage,
+                             metric_value=FloatValue(metric_value=(tn / (tn + fn))),
+                             metric_spec=NPV())
+
+    def needs_probabilities(self) -> bool:
+        return False
+
+    def create_from_value(self, metric_value: FloatValue, metric_name: str) -> GenericMetric:
+        return GenericMetric(metric_name=metric_name, metric_value=metric_value, metric_spec=NPV())
+
+    def create_from_dict(self, metric_dict: dict) -> GenericMetric:
+        return GenericMetric(metric_name=metric_dict['metric_name'],
+                             metric_value=FloatValue(metric_value=metric_dict['metric_value']),
+                             metric_spec=NPV())

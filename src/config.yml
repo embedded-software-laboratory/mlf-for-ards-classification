@@ -292,7 +292,7 @@ evaluation:
     shuffle: True
     random_state: 42
   threshold_optimization_algorithms: ["Standard", "MaxTPR", "MaxTPRMinFPR", "GeometricRoot"]
-  evaluation_metrics: ["AUC", "Accuracy", "F1Score", "FPR", "MCC", "OptimalProbability", "Sensitivity", "Specificity", "TPR"]
+  evaluation_metrics: ["AUC", "Accuracy", "F1Score", "FPR", "MCC", "OptimalProbability", "Sensitivity", "Specificity", "TPR","PPV", "NPV"]
   evaluation_name: "Evaluation None No AD Lowest Horovitz"
 
 #image_model_parameters:
