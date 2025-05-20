@@ -424,9 +424,9 @@ class DeepAntDetector(BaseAnomalyDetector):
         self.patience = int(kwargs.get("patience", 5))
         self.run_dir = str(kwargs.get("run_dir", "../Data/Models/AnomalyDetection/DeepAnt"))
         self.checkpoint_dir = str(kwargs.get("checkpoint_dir", "../Data/Models/AnomalyDetection/DeepAnt"))
-        self.prepared_data_dir = str(kwargs.get("prepared_data_dir", "/work/rwth1474/Data/AnomalyDetection/windowed_data"))
+        self.prepared_data_dir = str(kwargs.get("prepared_data_dir", "/work/rwth1474/Data/AnomalyDetection/prepared_data/DeepAnt"))
         self.anomaly_data_dir = self.anomaly_data_dir = str(
-            kwargs.get("anomaly_data_dir", f"/work/rwth1474/Data/AnomalyDetection/anomaly_data/SW_ABSAD_Mod/{self.name}"))
+            kwargs.get("anomaly_data_dir", f"/work/rwth1474/Data/AnomalyDetection/anomaly_data/DeepAnt/{self.name}"))
         check_directory(str(self.run_dir))
         check_directory(str(self.checkpoint_dir))
         check_directory(str(self.prepared_data_dir))
@@ -525,7 +525,7 @@ class DeepAntDetector(BaseAnomalyDetector):
         if load_data or data is None:
             filename = self._get_filename_from_dataset_config(dataset_to_create, type_of_dataset)
 
-            dataset, patients_to_remove, relevant = self._load_data(filename, type_of_dataset)
+            dataset, patients_to_remove, relevant = self._load_prepared_data(filename, type_of_dataset)
         if dataset is None and not data is None:
             dataset, patients_to_remove, relevant = self._prepare_data_step(data, dataset_to_create, save_data, type_of_dataset)
 
@@ -533,9 +533,6 @@ class DeepAntDetector(BaseAnomalyDetector):
 
         return  dataset, patients_to_remove, relevant
 
-    def _load_prepared_data(self, path: str, type_of_dataset: str) -> (DataModule, list, pd.DataFrame):
-        """Returns none because data handling is done by the setup function"""
-        return None
 
 
 
@@ -629,7 +626,7 @@ class DeepAntDetector(BaseAnomalyDetector):
         else:
             return dataset, patients_to_remove, relevant
 
-    def _load_data(self, name: str, type_of_dataset: str) -> (DataModule, list, pd.DataFrame):
+    def _load_prepared_data(self, storage_info: str, type_of_dataset: str) -> (DataModule, list, pd.DataFrame):
         """
             Loads the data from the specified file.
 

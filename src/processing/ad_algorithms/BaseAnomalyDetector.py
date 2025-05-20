@@ -130,7 +130,7 @@ class BaseAnomalyDetector:
     def _create_meta_data_preparation(self, test_data: pd.DataFrame) -> dict:
         raise NotImplementedError()
 
-    def _load_prepared_data(self, path: str, type_of_dataset: str) -> Any:
+    def _load_prepared_data(self, storage_info: str, type_of_dataset: str) -> Any:
         raise NotImplementedError()
 
 

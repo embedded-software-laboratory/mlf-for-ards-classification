@@ -114,13 +114,13 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
         }
         return meta_data_dict
 
-    def _load_prepared_data(self, path: str, type_of_dataset: str) -> Any:
-        prepared_files = [f for f in os.listdir(path) if f.endswith(f"{type_of_dataset}.pkl")]
+    def _load_prepared_data(self, storage_info: str, type_of_dataset: str) -> Any:
+        prepared_files = [f for f in os.listdir(storage_info) if f.endswith(f"{type_of_dataset}.pkl")]
         if len(prepared_files) == 0:
-            raise FileNotFoundError(f"No prepared data found for {type_of_dataset} in {path}")
+            raise FileNotFoundError(f"No prepared data found for {type_of_dataset} in {storage_info}")
         prepared_data = []
         for file in prepared_files:
-            file_path = os.path.join(path, file)
+            file_path = os.path.join(storage_info, file)
             with open(file_path, "rb") as f:
                 data = pd.read_pickle(f)
                 prepared_data.append(data)
