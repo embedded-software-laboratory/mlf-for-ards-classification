@@ -159,7 +159,7 @@ class BaseAnomalyDetector:
 
             elif stage == "train" and self.trainable:
                 logger.info(f"Training stage")
-                if not prepared_dict["train"] or not prepared_dict["val"]:
+                if prepared_dict["train"] is None or prepared_dict["val"] is None or prepared_dict["train"].empty or prepared_dict["val"].empty:
                     logger.info("Loading data for training")
                     train_data = self._load_prepared_data(self.prepared_data_dir, "train")
                     val_data = self._load_prepared_data(self.prepared_data_dir, "val")
