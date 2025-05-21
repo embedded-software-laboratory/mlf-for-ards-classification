@@ -6,6 +6,7 @@ from typing import Any
 
 import joblib
 import pandas as pd
+from pandas.core.interchange import column
 from pyod.models.alad import ALAD
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
@@ -45,6 +46,7 @@ class ALADDetector(BaseAnomalyDetector):
         self.save_data = bool(kwargs.get('save_data', True))
         self.retrain_models = dict(kwargs.get('retrain_models', {}))
         self._update_retrain_models()
+        self.trained_models = []
 
     def _update_retrain_models(self):
         for dataset in self._datasets_to_create:
@@ -86,23 +88,57 @@ class ALADDetector(BaseAnomalyDetector):
             logger.error("Unknown dataset type.")
             return -1, pd.DataFrame(), [], pd.DataFrame()
 
-    def _setup_alad(self, dataset_to_create: dict, data_train: pd.DataFrame, load_data: bool = True, save_data: bool = True) -> tuple:
-        status = 0
+    def _handle_data_step(self, dataset_to_create: dict, data: pd.DataFrame, stage, load_data: bool = True, save_data: bool=True) -> (int, pd.DataFrame, list, pd.DataFrame):
         name = dataset_to_create["name"]
-        self.model[name] = ALAD(**self.hyperparameters)
+        dataset = None
+        status = -1
+        patients_to_remove = []
+        relevant_data = pd.DataFrame()
         if load_data:
             status, dataset, patients_to_remove, relevant_data = self._load_prepared_data(os.path.join(self.prepared_data_dir, f"{name}_train_features.pkl"), "train")
+        if status != 0:
+            status , dataset, patients_to_remove, relevant_data = self._prepare_data_step(data, dataset_to_create, save_data, "train")
+        if  dataset is None or dataset.empty :
+            logger.info(f"No dataset for stage {stage} for parameter {name}. Skipping.")
+        return status, dataset, patients_to_remove, relevant_data
+
+
+    def _setup_alad(self, dataset_to_create: dict, data: pd.DataFrame, stage: str, load_data: bool = True, save_data: bool = True) -> tuple:
+        name = dataset_to_create["name"]
+        status, dataset, patients_to_remove, relevant_data = self._handle_data_step(dataset_to_create, data, stage, load_data, save_data)
+        dataset = pd.DataFrame()
+        patients_to_remove = []
+        relevant_data = pd.DataFrame()
+        if stage == "train":
+            self.model[name] = ALAD(**self.hyperparameters)
+
+
+
+        elif stage == "predict":
+            model_location = os.path.join(self.checkpoint_dir, f"model_{name}.ckpt")
+            model_file_exists = os.path.exists(model_location)
+            if not model_file_exists:
+                status = -1
+                logger.info(f"No model file for parameter {name}. Please train a model before using prediction")
+            else:
+                self.model[name] = joblib.load(model_location)
+                self.trained_models.append(name)
+        if status != 0:
+            logger.info(f"Problem while setting up model for stage {stage} for parameter {name}. Skipping...")
+
+
+        return status, dataset, patients_to_remove, relevant_data
 
 
 
 
 
-    def _train_ad_model(self, data_training, data_validation, **kwargs):
+    def _build_datasets_from_dataframe_or_files(self, data: pd.DataFrame) -> None:
         if not self._datasets_to_create:
-            if not data_training is None and not data_training.empty:
+            if not data is None and not data.empty:
                 self._datasets_to_create = [{"name": column,
                                              "features": column}
-                                            for column in data_training.columns if column not in self.columns_to_check]
+                                            for column in data.columns if column not in self.columns_to_check]
             else:
                 contained_files = os.listdir(self.prepared_data_dir)
                 contained_train = [file.removesuffix("_train_features.pkl") for file in contained_files if file.endswith("_train_features.pkl")]
@@ -110,6 +146,10 @@ class ALADDetector(BaseAnomalyDetector):
                 all_present = list(set(contained_train).intersection(set(contained_test)))
                 for filename in all_present:
                     self._datasets_to_create.append(self._get_dataset_config_from_filename(filename))
+
+
+    def _train_ad_model(self, data_training, data_validation, **kwargs):
+        self._build_datasets_from_dataframe_or_files(data_training)
 
         for dataset in self._datasets_to_create:
             name = dataset["name"]
@@ -120,18 +160,35 @@ class ALADDetector(BaseAnomalyDetector):
             model_training = retrain_model or not model_exists
             if model_training:
                 logger.info(f"Training model for {name}...")
-                if name not in self.model:
-                    self._setup_alad(dataset,  data_training,  self.load_data, self.save_data)
+                if name not in self.model.keys():
+                    status, dataset_features, _, _ = self._setup_alad(dataset,  data_training, "train",  self.load_data, self.save_data)
                 else:
-                    pass
+                    status, dataset_features, _, _ = self._handle_data_step(dataset, data_training, "train", self.load_data, self.save_data)
+                if status == 0:
+                    self.model[name].fit(dataset_features)
+                    self.trained_models.append(name)
+                    joblib.dump(self.model[name], model_location)
+
+                else:
+                    logger.info(f"Problem while training model for {name}. Skipping.")
+                    continue
 
 
 
 
-        raise NotImplementedError()
+
 
     def _predict(self, dataframe: pd.DataFrame, **kwargs) -> dict:
-        raise NotImplementedError()
+        self._build_datasets_from_dataframe_or_files(None)
+        for dataset in self._datasets_to_create:
+            name = dataset["name"]
+            status, dataset_features, patients_to_remove, relevant_data = self._handle_data_step(dataset, dataframe, True, self.save_data)
+            if status == 0:
+                anomalies = self.model[name].predict(dataset_features)
+
+            else:
+                logger.info(f"Problem while predicting for {name}. Skipping.")
+                continue
 
 
     def _prepare_data(self, dataframe: pd.DataFrame, save_data: bool = False, overwrite: bool = False) -> dict:
@@ -185,7 +242,7 @@ class ALADDetector(BaseAnomalyDetector):
         if not os.path.exists(feature_file)  or overwrite:
             self._prepare_data_step(data_dict[dataset_type], item, True, dataset_type)
 
-    def _prepare_data_step(self, dataframe: pd.DataFrame, dataset_to_create: dict, save_data, type_of_dataset: str) -> (pd.DataFrame, list, pd.DataFrame):
+    def _prepare_data_step(self, dataframe: pd.DataFrame, dataset_to_create: dict, save_data, type_of_dataset: str) -> (int, pd.DataFrame, list, pd.DataFrame):
         name = dataset_to_create["name"]
         relevant_columns = dataset_to_create["features"]
         relevant_data = dataframe[relevant_columns + ["patient_id", "time"]]
@@ -195,7 +252,7 @@ class ALADDetector(BaseAnomalyDetector):
 
         if len(relevant_data.index) == 0:
             logger.info(f"Not enough data for {type_of_dataset}, skipping {name}...")
-            return None, [], pd.DataFrame()
+            return -1, None, [], pd.DataFrame()
         to_scale = relevant_data[relevant_columns].copy(deep=True)
         if type_of_dataset == "train":
             scaler = MinMaxScaler()
@@ -213,7 +270,7 @@ class ALADDetector(BaseAnomalyDetector):
 
         if dataset.empty:
             logger.info(f"No data found for {name}. Skipping...")
-            return None, [], pd.DataFrame()
+            return -1, None, [], pd.DataFrame()
 
         if save_data:
             dataset_file_name = self._get_filename_from_dataset_config(dataset_to_create, type_of_dataset)
@@ -229,11 +286,12 @@ class ALADDetector(BaseAnomalyDetector):
                 self._save_file(patients_to_remove, patients_to_remove_path, True)
                 self._save_file(relevant_data, relevant_path, True)
         if type_of_dataset != "test":
-            return dataset, [], pd.DataFrame()
+            return 0, dataset, [], pd.DataFrame()
         else:
-            return dataset, patients_to_remove, relevant_data
+            return 0, dataset, patients_to_remove, relevant_data
 
-    def _get_dataset_config_from_filename(self, filename):
+    @staticmethod
+    def _get_dataset_config_from_filename(filename):
         split = filename.split("_")
         name = split[0]
         dataset_features = split[1].split("+")
