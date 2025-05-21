@@ -95,7 +95,7 @@ class ALADDetector(BaseAnomalyDetector):
         dataset = pd.DataFrame()
         patients_to_remove = []
         relevant = pd.DataFrame()
-
+        
         try:
             path = self.prepared_data_dir + "/" + f"{storage_info}_features.pkl"
             if type_of_dataset == "train":
@@ -106,7 +106,9 @@ class ALADDetector(BaseAnomalyDetector):
                 dataset = pd.read_pickle(path)
 
                 relevant_path = self.prepared_data_dir + "/" + f"{storage_info}_relevant.pkl"
+                
                 relevant = pd.read_pickle(relevant_path)
+                
                 patients_to_remove_path =  self.prepared_data_dir + "/" + f"{storage_info}_patients_to_remove.pkl"
 
                 with open(patients_to_remove_path, "rb") as f:
@@ -130,6 +132,8 @@ class ALADDetector(BaseAnomalyDetector):
         status = -1
         patients_to_remove = []
         relevant_data = pd.DataFrame()
+        if stage == "predict":
+            stage = "test"
         if load_data:
             filename = self._get_filename_from_dataset_config(dataset_to_create, stage)
             status, dataset, patients_to_remove, relevant_data = self._load_data(filename, stage)
@@ -143,10 +147,9 @@ class ALADDetector(BaseAnomalyDetector):
     def _setup_alad(self, dataset_to_create: dict, data: pd.DataFrame, stage: str, load_data: bool = True, save_data: bool = True) -> tuple:
         name = dataset_to_create["name"]
         dataset = pd.DataFrame()
-        status, dataset, patients_to_remove, relevant_data = self._handle_data_step(dataset_to_create, data, stage, load_data, save_data)
-        
         patients_to_remove = []
         relevant_data = pd.DataFrame()
+        status, dataset, patients_to_remove, relevant_data = self._handle_data_step(dataset_to_create, data, stage, load_data, save_data)
         if stage == "train":
             if not self.hyperparameters:
                 self.model[name] = ALAD()
@@ -228,11 +231,12 @@ class ALADDetector(BaseAnomalyDetector):
         self._build_datasets_from_dataframe_or_files(None)
         for dataset in self._datasets_to_create:
             name = dataset["name"]
-            status, dataset_features, patients_to_remove, relevant_data = self._setup_alad(dataset, dataframe, "test", self.load_data, self.save_data)
-
+            status, dataset_features, patients_to_remove, relevant_data = self._setup_alad(dataset, dataframe, "predict", self.load_data, self.save_data)
+            
             if status == 0:
                 anomalies = self.model[name].predict(dataset_features)
-                logger.info(anomalies)
+                
+                
 
             else:
                 logger.info(f"Problem while predicting for {name}. Skipping.")
