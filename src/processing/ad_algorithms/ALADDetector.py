@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 class ALADDetector(BaseAnomalyDetector):
 
     def __init__(self, **kwargs):
-        super().__init__()
+        super().__init__(**kwargs)
         self.sk_seed = int(kwargs.get("sk_seed", 42))
         self.name = "ALAD"
         self.algorithm = "ALAD"
