@@ -90,7 +90,7 @@ class ALADDetector(BaseAnomalyDetector):
 
     def _load_data(self, storage_info: str, type_of_dataset: str) -> Any:
 
-        path = self.prepared_data_dir + "/" + f"{storage_info}_{type_of_dataset}_features.pkl"
+        path = self.prepared_data_dir + "/" + f"{storage_info}_features.pkl"
         if type_of_dataset == "train":
             dataset = pd.read_pickle(path)
             return dataset, [], pd.DataFrame()
@@ -303,9 +303,9 @@ class ALADDetector(BaseAnomalyDetector):
             contained_patients_path = os.path.join(self.prepared_data_dir, f"{dataset_file_name}_patients.pkl")
             self._save_file(dataset, feature_path, True)
             self._save_file(relevant_patients, contained_patients_path, True)
-
-            if dataset_to_create == "test":
-                logger.info(f"In save data for test for {name}...")
+            
+            if type_of_dataset == "test":
+                
                 relevant_path = os.path.join(self.prepared_data_dir, f"{dataset_file_name}_relevant.pkl")
                 patients_to_remove_path = os.path.join(self.prepared_data_dir, f"{dataset_file_name}_patients_to_remove.pkl")
                 
