@@ -87,15 +87,15 @@ class ALADDetector(BaseAnomalyDetector):
         """Returns none because data handling is done by the setup function"""
         return None
 
-    @staticmethod
-    def _load_data(storage_info: str, type_of_dataset: str) -> Any:
 
+    def _load_data(self, storage_info: str, type_of_dataset: str) -> Any:
 
+        path = self.prepared_data_dir + "/" + f"{storage_info}_{type_of_dataset}_features.pkl"
         if type_of_dataset == "train":
-            dataset = pd.read_pickle(storage_info)
+            dataset = pd.read_pickle(path)
             return dataset, [], pd.DataFrame()
         elif type_of_dataset == "predict":
-            dataset = pd.read_pickle(storage_info)
+            dataset = pd.read_pickle(path)
 
 
             relevant_path = storage_info.replace("features", "relevant")
@@ -115,9 +115,10 @@ class ALADDetector(BaseAnomalyDetector):
         patients_to_remove = []
         relevant_data = pd.DataFrame()
         if load_data:
-            status, dataset, patients_to_remove, relevant_data = self._load_data(os.path.join(self.prepared_data_dir, f"{name}_train_features.pkl"), "train")
+            filename = self._get_filename_from_dataset_config(dataset_to_create, stage)
+            status, dataset, patients_to_remove, relevant_data = self._load_data(filename, stage)
         if status != 0:
-            status , dataset, patients_to_remove, relevant_data = self._prepare_data_step(data, dataset_to_create, save_data, "train")
+            status , dataset, patients_to_remove, relevant_data = self._prepare_data_step(data, dataset_to_create, save_data, stage)
         if  dataset is None or dataset.empty :
             logger.info(f"No dataset for stage {stage} for parameter {name}. Skipping.")
         return status, dataset, patients_to_remove, relevant_data
@@ -304,6 +305,7 @@ class ALADDetector(BaseAnomalyDetector):
             self._save_file(relevant_patients, contained_patients_path, True)
 
             if dataset_to_create == "test":
+                logger.info(f"In save data for test for {name}...")
                 relevant_path = os.path.join(self.prepared_data_dir, f"{dataset_file_name}_relevant.pkl")
                 patients_to_remove_path = os.path.join(self.prepared_data_dir, f"{dataset_file_name}_patients_to_remove.pkl")
                 
