@@ -45,7 +45,7 @@ class ALADDetector(BaseAnomalyDetector):
         self.load_data = bool(kwargs.get('load_data', True))
         self.save_data = bool(kwargs.get('save_data', True))
         self.retrain_models = dict(kwargs.get('retrain_models', {}))
-        self._update_retrain_models()
+        
         self.trained_models = []
 
     def _update_retrain_models(self):
@@ -93,8 +93,8 @@ class ALADDetector(BaseAnomalyDetector):
         path = self.prepared_data_dir + "/" + f"{storage_info}_features.pkl"
         if type_of_dataset == "train":
             dataset = pd.read_pickle(path)
-            return dataset, [], pd.DataFrame()
-        elif type_of_dataset == "predict":
+            return 0, dataset, [], pd.DataFrame()
+        elif type_of_dataset == "test":
             dataset = pd.read_pickle(path)
 
 
@@ -105,7 +105,7 @@ class ALADDetector(BaseAnomalyDetector):
                 patients_to_remove = pickle.load(f)
             return 0, dataset, patients_to_remove, relevant
         else:
-            logger.error("Unknown dataset type.")
+            logger.error(f"Unknown dataset type. {type_of_dataset}")
             return -1, pd.DataFrame(), [], pd.DataFrame()
 
     def _handle_data_step(self, dataset_to_create: dict, data: pd.DataFrame, stage, load_data: bool = True, save_data: bool=True) -> (int, pd.DataFrame, list, pd.DataFrame):
@@ -126,8 +126,9 @@ class ALADDetector(BaseAnomalyDetector):
 
     def _setup_alad(self, dataset_to_create: dict, data: pd.DataFrame, stage: str, load_data: bool = True, save_data: bool = True) -> tuple:
         name = dataset_to_create["name"]
-        status, dataset, patients_to_remove, relevant_data = self._handle_data_step(dataset_to_create, data, stage, load_data, save_data)
         dataset = pd.DataFrame()
+        status, dataset, patients_to_remove, relevant_data = self._handle_data_step(dataset_to_create, data, stage, load_data, save_data)
+        
         patients_to_remove = []
         relevant_data = pd.DataFrame()
         if stage == "train":
@@ -177,7 +178,7 @@ class ALADDetector(BaseAnomalyDetector):
 
         for dataset in self._datasets_to_create:
             name = dataset["name"]
-            retrain_model = self.retrain_models.get(name, True)
+            retrain_model = self.retrain_models.get(name, False)
             model_location = os.path.join(self.checkpoint_dir, f"model_{name}.ckpt")
             logger.info(f"Check if model for {name} exists in {model_location}")
             model_exists = os.path.exists(model_location)
@@ -196,6 +197,8 @@ class ALADDetector(BaseAnomalyDetector):
                 else:
                     logger.info(f"Problem while training model for {name}. Skipping.")
                     continue
+            else:
+                logger.info(f"Model already exists for {name}")
 
 
 
@@ -206,9 +209,10 @@ class ALADDetector(BaseAnomalyDetector):
         self._build_datasets_from_dataframe_or_files(None)
         for dataset in self._datasets_to_create:
             name = dataset["name"]
-            status, dataset_features, patients_to_remove, relevant_data = self._handle_data_step(dataset, dataframe, True, self.save_data)
+            status, dataset_features, patients_to_remove, relevant_data = self._handle_data_step(dataset, dataframe, "test", self.load_data, self.save_data)
             if status == 0:
                 anomalies = self.model[name].predict(dataset_features)
+                logger.info(anomalies)
 
             else:
                 logger.info(f"Problem while predicting for {name}. Skipping.")
