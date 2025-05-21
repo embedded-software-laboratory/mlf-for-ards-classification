@@ -91,22 +91,38 @@ class ALADDetector(BaseAnomalyDetector):
     def _load_data(self, storage_info: str, type_of_dataset: str) -> Any:
 
         path = self.prepared_data_dir + "/" + f"{storage_info}_features.pkl"
-        if type_of_dataset == "train":
-            dataset = pd.read_pickle(path)
-            return 0, dataset, [], pd.DataFrame()
-        elif type_of_dataset == "test":
-            dataset = pd.read_pickle(path)
+        status = -1
+        dataset = pd.DataFrame()
+        patients_to_remove = []
+        relevant = pd.DataFrame()
 
+        try:
+            path = self.prepared_data_dir + "/" + f"{storage_info}_features.pkl"
+            if type_of_dataset == "train":
+                dataset = pd.read_pickle(path)
+                status = 0
 
-            relevant_path = storage_info.replace("features", "relevant")
-            relevant = pd.read_pickle(relevant_path)
-            patients_to_remove_path = storage_info.replace("features", "patients_to_remove")
-            with open(patients_to_remove_path, "rb") as f:
-                patients_to_remove = pickle.load(f)
-            return 0, dataset, patients_to_remove, relevant
-        else:
-            logger.error(f"Unknown dataset type. {type_of_dataset}")
-            return -1, pd.DataFrame(), [], pd.DataFrame()
+            elif type_of_dataset == "test":
+                dataset = pd.read_pickle(path)
+
+                relevant_path = self.prepared_data_dir + "/" + f"{storage_info}_relevant.pkl"
+                relevant = pd.read_pickle(relevant_path)
+                patients_to_remove_path =  self.prepared_data_dir + "/" + f"{storage_info}_patients_to_remove.pkl"
+
+                with open(patients_to_remove_path, "rb") as f:
+                    patients_to_remove = pickle.load(f)#
+                status = 0
+
+            else:
+                logger.error(f"Unknown dataset type. {type_of_dataset}")
+        except Exception as e:
+            logger.error(f"Failed to load data for {storage_info} {type_of_dataset}: {e}")
+            status = -1
+            dataset = pd.DataFrame()
+            relevant = pd.DataFrame()
+            patients_to_remove = []
+        return  status, dataset, patients_to_remove, relevant
+
 
     def _handle_data_step(self, dataset_to_create: dict, data: pd.DataFrame, stage, load_data: bool = True, save_data: bool=True) -> (int, pd.DataFrame, list, pd.DataFrame):
         name = dataset_to_create["name"]
