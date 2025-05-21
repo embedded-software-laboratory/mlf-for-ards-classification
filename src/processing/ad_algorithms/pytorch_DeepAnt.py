@@ -497,7 +497,7 @@ class DeepAntDetector(BaseAnomalyDetector):
             "window_generator_config": self.window_generator_config,}
 
         if self.windowed_data_disk_interaction:
-            meta_data_dict["algorithm_specific_settings"]["windowed_data_dir"] = self.prepared_data_dir
+            meta_data_dict["algorithm_specific_settings"]["prepared_data_dir"] = self.prepared_data_dir
 
 
         return AnomalyDetectionMetaData(**meta_data_dict)
@@ -640,17 +640,17 @@ class DeepAntDetector(BaseAnomalyDetector):
         """
 
         try:
-            with open(os.path.join(self.prepared_data_dir + "/" + name + f"_features.pkl"), "rb") as f:
+            with open(os.path.join(self.prepared_data_dir + "/" + storage_info + f"_features.pkl"), "rb") as f:
                 data_x = pickle.load(f)
-            with open(os.path.join(self.prepared_data_dir + "/" + name + "_labels.pkl"), "rb") as f:
+            with open(os.path.join(self.prepared_data_dir + "/" + storage_info + "_labels.pkl"), "rb") as f:
                 data_y = pickle.load(f)
             if type_of_dataset == "test":
-                patients_to_remove_path = os.path.join(self.prepared_data_dir + "/" + name + "_patients_to_remove.pkl")
+                patients_to_remove_path = os.path.join(self.prepared_data_dir + "/" + storage_info + "_patients_to_remove.pkl")
                 patients_to_remove_path = patients_to_remove_path.replace("test_", "")
                 logger.info(f"Loading patients to remove from {patients_to_remove_path}")
                 with open(patients_to_remove_path, "rb") as f:
                     patients_to_remove = pickle.load(f)
-                relevant_path = os.path.join(self.prepared_data_dir + "/" + name + "_relevant.pkl")
+                relevant_path = os.path.join(self.prepared_data_dir + "/" + storage_info + "_relevant.pkl")
                 relevant_path = relevant_path.replace("test_", "")
                 with open(relevant_path, "rb") as f:
                     relevant_df = pickle.load(f)
@@ -660,7 +660,7 @@ class DeepAntDetector(BaseAnomalyDetector):
             dataset = DataModule(data_x, data_y, device=self.device)
             self.windowed_data_disk_interaction = True
         except Exception as e:
-            logger.error(f"Failed to load data for {name} {type_of_dataset}: {e}")
+            logger.error(f"Failed to load data for {storage_info} {type_of_dataset}: {e}")
             dataset = None
             patients_to_remove = []
             relevant_df = pd.DataFrame()
@@ -668,71 +668,71 @@ class DeepAntDetector(BaseAnomalyDetector):
 
 
 
-    def _run_step(self, data: dict[str, pd.DataFrame], dataset_to_create: dict, retrain_model: bool, load_data: bool, save_data: bool) -> pd.DataFrame:
-        """
-            Runs the anomaly detection step for a specific dataset.
-
-            Args:
-                data (dict): Dictionary containing the prepared data.
-                dataset_to_create (dict): Dictionary containing the dataset configuration.
-                retrain_model (bool): If true we do not utilize the existing model, but train a new one.
-                load_data (bool): Whether to load the data required for model training and anomaly detection from disk or create a new dataset. If loading fails, a new dataset is created.
-                save_data (bool): Whether to save the data used for model training and anomaly detection or not.
-
-
-            Returns:
-                pd.DataFrame: The processed DataFrame after anomaly detection.
-        """
-
-        name = dataset_to_create["name"]
-        train = data["train"]
-        val = data["val"]
-        test = data["test"]
-
-
-        model_location = os.path.join(self.deepant_config["run_dir"], f"best_model_{name}.ckpt")
-        logger.info(f"Check if model exists at location {str(model_location)}")
-        model_exists = os.path.exists(os.path.join(self.deepant_config["run_dir"], f"best_model_{name}.ckpt"))
-        logger.info(f"Model exists: {model_exists}")
-        model_training = (not os.path.exists(model_location)) or retrain_model
-        logger.info(f"Model training requested: {retrain_model}")
-        logger.info(f"Model training : {model_training}")
-
-        stages = []
-        if model_training:
-            stages.append("train")
-            stages.append("val")
-        stages.append("test")
-
-
-        status, _, _, relevant_df =self.setup_deep_ant(dataset_to_create, stages, train, val, test, load_data, save_data)
-
-        if (status == -1 and model_training) or status == -2:
-            return pd.DataFrame()
-
-
-
-
-        if model_training:
-            self.model[name].train()
-
-        anomaly_dict = self.model[name].predict()
-        label_index_dict = {}
-        for i in range(len(dataset_to_create["labels"])):
-            label_index_dict[i] = dataset_to_create["labels"][i]
-        anomaly_df = relevant_df[["patient_id", "time"]]
-        marked_anomaly_dict = {}
-        for key, value in anomaly_dict.items():
-            index = int(key.replace("feature_", ""))
-            name = label_index_dict[index]
-            anomaly_indices = value.tolist()
-            marked_anomaly_list = [False] * len(relevant_df)
-            for i in anomaly_indices:
-                marked_anomaly_list[i] = True
-            marked_anomaly_dict[name + "_anomaly"] = marked_anomaly_list
-
-
-        return anomaly_df
+    #def _run_step(self, data: dict[str, pd.DataFrame], dataset_to_create: dict, retrain_model: bool, load_data: bool, save_data: bool) -> pd.DataFrame:
+    #    """
+    #        Runs the anomaly detection step for a specific dataset.
+#
+    #        Args:
+    #            data (dict): Dictionary containing the prepared data.
+    #            dataset_to_create (dict): Dictionary containing the dataset configuration.
+    #            retrain_model (bool): If true we do not utilize the existing model, but train a new one.
+    #            load_data (bool): Whether to load the data required for model training and anomaly detection from disk or create a new dataset. If loading fails, a new dataset is created.
+    #            save_data (bool): Whether to save the data used for model training and anomaly detection or not.
+#
+#
+    #        Returns:
+    #            pd.DataFrame: The processed DataFrame after anomaly detection.
+    #    """
+#
+    #    name = dataset_to_create["name"]
+    #    train = data["train"]
+    #    val = data["val"]
+    #    test = data["test"]
+#
+#
+    #    model_location = os.path.join(self.deepant_config["run_dir"], f"best_model_{name}.ckpt")
+    #    logger.info(f"Check if model exists at location {str(model_location)}")
+    #    model_exists = os.path.exists(os.path.join(self.deepant_config["run_dir"], f"best_model_{name}.ckpt"))
+    #    logger.info(f"Model exists: {model_exists}")
+    #    model_training = (not os.path.exists(model_location)) or retrain_model
+    #    logger.info(f"Model training requested: {retrain_model}")
+    #    logger.info(f"Model training : {model_training}")
+#
+    #    stages = []
+    #    if model_training:
+    #        stages.append("train")
+    #        stages.append("val")
+    #    stages.append("test")
+#
+#
+    #    status, _, _, relevant_df =self.setup_deep_ant(dataset_to_create, stages, train, val, test, load_data, save_data)
+#
+    #    if (status == -1 and model_training) or status == -2:
+    #        return pd.DataFrame()
+#
+#
+#
+#
+    #    if model_training:
+    #        self.model[name].train()
+#
+    #    anomaly_dict = self.model[name].predict()
+    #    label_index_dict = {}
+    #    for i in range(len(dataset_to_create["labels"])):
+    #        label_index_dict[i] = dataset_to_create["labels"][i]
+    #    anomaly_df = relevant_df[["patient_id", "time"]]
+    #    marked_anomaly_dict = {}
+    #    for key, value in anomaly_dict.items():
+    #        index = int(key.replace("feature_", ""))
+    #        name = label_index_dict[index]
+    #        anomaly_indices = value.tolist()
+    #        marked_anomaly_list = [False] * len(relevant_df)
+    #        for i in anomaly_indices:
+    #            marked_anomaly_list[i] = True
+    #        marked_anomaly_dict[name + "_anomaly"] = marked_anomaly_list
+#
+#
+    #    return anomaly_df
 
 
 

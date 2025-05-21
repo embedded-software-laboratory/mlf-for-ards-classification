@@ -12,7 +12,7 @@ from sklearn.preprocessing import MinMaxScaler
 
 from processing.ad_algorithms.BaseAnomalyDetector import BaseAnomalyDetector
 from processing.ad_algorithms.torch_utils import check_directory
-
+from processing.datasets_metadata import AnomalyDetectionMetaData
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +54,17 @@ class ALADDetector(BaseAnomalyDetector):
                 self.retrain_models[dataset] = False
 
     def create_meta_data(self):
-        pass
+        meta_data_dict =  super().create_meta_data()
+        meta_data_dict["anomaly_detection_algorithm"] = self.type
+        meta_data_dict["algorithm_specific_settings"] = {
+            "train_percentage": self.train_percentage,
+            "test_percentage": self.test_percentage,
+            "datasets": self._datasets_to_create,
+            "config": self.hyperparameters,
+            "checkpoint_dir": self.checkpoint_dir,
+            "prepared_data_dir": self.prepared_data_dir
+        }
+        return AnomalyDetectionMetaData(**meta_data_dict)
 
     def _load_prepared_data(self, storage_info: str, type_of_dataset: str) -> Any:
 
@@ -71,14 +81,52 @@ class ALADDetector(BaseAnomalyDetector):
             patients_to_remove_path = storage_info.replace("features", "patients_to_remove")
             with open(patients_to_remove_path, "rb") as f:
                 patients_to_remove = pickle.load(f)
-            return dataset, patients_to_remove, relevant
+            return 0, dataset, patients_to_remove, relevant
         else:
-            logger.error("Unknown dataset type. Exiting...")
-            sys.exit(1)
+            logger.error("Unknown dataset type.")
+            return -1, pd.DataFrame(), [], pd.DataFrame()
+
+    def _setup_alad(self, dataset_to_create: dict, data_train: pd.DataFrame, load_data: bool = True, save_data: bool = True) -> tuple:
+        status = 0
+        name = dataset_to_create["name"]
+        self.model[name] = ALAD(**self.hyperparameters)
+        if load_data:
+            status, dataset, patients_to_remove, relevant_data = self._load_prepared_data(os.path.join(self.prepared_data_dir, f"{name}_train_features.pkl"), "train")
+
+
 
 
 
     def _train_ad_model(self, data_training, data_validation, **kwargs):
+        if not self._datasets_to_create:
+            if not data_training is None and not data_training.empty:
+                self._datasets_to_create = [{"name": column,
+                                             "features": column}
+                                            for column in data_training.columns if column not in self.columns_to_check]
+            else:
+                contained_files = os.listdir(self.prepared_data_dir)
+                contained_train = [file.removesuffix("_train_features.pkl") for file in contained_files if file.endswith("_train_features.pkl")]
+                contained_test = [file.removesuffix("_test_features.pkl") for file in contained_files if file.endswith("_test_features.pkl")]
+                all_present = list(set(contained_train).intersection(set(contained_test)))
+                for filename in all_present:
+                    self._datasets_to_create.append(self._get_dataset_config_from_filename(filename))
+
+        for dataset in self._datasets_to_create:
+            name = dataset["name"]
+            retrain_model = self.retrain_models.get(name, True)
+            model_location = os.path.join(self.checkpoint_dir, f"model_{name}.ckpt")
+            logger.info(f"Check if model for {name} exists in {model_location}")
+            model_exists = os.path.exists(model_location)
+            model_training = retrain_model or not model_exists
+            if model_training:
+                logger.info(f"Training model for {name}...")
+                if name not in self.model:
+                    self._setup_alad(dataset,  data_training,  self.load_data, self.save_data)
+                else:
+                    pass
+
+
+
 
         raise NotImplementedError()
 
@@ -184,6 +232,16 @@ class ALADDetector(BaseAnomalyDetector):
             return dataset, [], pd.DataFrame()
         else:
             return dataset, patients_to_remove, relevant_data
+
+    def _get_dataset_config_from_filename(self, filename):
+        split = filename.split("_")
+        name = split[0]
+        dataset_features = split[1].split("+")
+        dataset_config = {
+            "name": name,
+            "features": dataset_features
+        }
+        return dataset_config
 
 
 
