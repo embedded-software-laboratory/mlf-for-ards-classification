@@ -1,19 +1,19 @@
 process:
   load_models: False
   load_timeseries_data: True
-  perform_anomaly_detection: False
-  perform_imputation: True
-  perform_unit_conversion: True
-  calculate_missing_params: True
-  perform_ards_onset_detection: True
+  perform_anomaly_detection: True
+  perform_imputation: False
+  perform_unit_conversion: False
+  calculate_missing_params: False
+  perform_ards_onset_detection: False
   perform_filtering: False
   perform_feature_selection: False
-  perform_data_segregation: True
-  perform_timeseries_training: True
-  perform_timeseries_classification: True
-  perform_threshold_optimization: True
-  calculate_evaluation_metrics: True
-  perform_cross_validation: True
+  perform_data_segregation: False
+  perform_timeseries_training: False
+  perform_timeseries_classification: False
+  perform_threshold_optimization: False
+  calculate_evaluation_metrics: False
+  perform_cross_validation: False
   save_models: False
 
   load_image_data: False
@@ -153,13 +153,13 @@ algorithm_base_path:
   RecurrentNeuralNetwork: "Save/Cross validation results/Recurrent neural network_1"
 
 
-storage_path: "../Data/ExperimentResult"
+storage_path: "../Data/ExperimentResult/Seeds"
 
 
 
 
 data:
-  timeseries_file_path: "/work/rwth1474/Data/time_series/uka_data_fixed_data_DeepAnt_delete_than_impute_interpolate.pkl"
+  timeseries_file_path: "/work/rwth1474/Data/time_series/uka_data_050623_testing_patients.npy"
   database: "UKA"
   #image_file_path: "Data/Image_data"
   pneumonia_dataset: "balanced"
@@ -199,27 +199,26 @@ preprocessing:
       k: 5
       s: 5
     Physical_Outliers:
-      active: False
+      active: True
       name: "Physical_Outliers"
       columns_to_check: [ ]
-      fix_algorithm: ""
-      handling_strategy: ""
+      fix_algorithm: "forward"
+      handling_strategy: "delete_than_impute"
       anomaly_threshold: 0.5
       supported_stages:
         - "prepare"
         - "predict"
         - "fix"
       active_stages:
-        - "detect"
         - "fix"
       anomaly_data_dir: "/work/rwth1474/Data/AnomalyDetection/anomaly_data/Physical_Outliers"
       prepared_data_dir: "/work/rwth1474/Data/AnomalyDetection/prepared_data/Physical_Outliers"
 
     DeepAnt:
-      active: True
+      active: False
       name: "DeepAnt"
       columns_to_check: []
-      fix_algorithm: "interpolate"
+      fix_algorithm: "forward"
       handling_strategy: "delete_than_impute"
       anomaly_threshold: 0.5
       supported_stages:
@@ -255,7 +254,7 @@ preprocessing:
   filtering:
     filter:
     - BD
-    - Lite
+    - Strict
 
   imputation: 
     impute_empty_cells: True
@@ -293,7 +292,7 @@ evaluation:
     random_state: 42
   threshold_optimization_algorithms: ["Standard", "MaxTPR", "MaxTPRMinFPR", "GeometricRoot"]
   evaluation_metrics: ["AUC", "Accuracy", "F1Score", "FPR", "MCC", "OptimalProbability", "Sensitivity", "Specificity", "TPR"]
-  evaluation_name: "Evaluation None No AD Lowest Horovitz"
+  evaluation_name: "Evaluation Strict Physical_Outliers forward Lowest Horovitz"
 
 #image_model_parameters:
 #  method: last_block
