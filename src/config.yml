@@ -159,7 +159,7 @@ storage_path: "../Data/ExperimentResult/Seeds"
 
 
 data:
-  timeseries_file_path: "/work/rwth1474/Data/time_series/uka_data_050623_testing_patients.npy"
+  timeseries_file_path: "/work/rwth1474/Data/time_series/uka_data_050623.npy"
   database: "UKA"
   #image_file_path: "Data/Image_data"
   pneumonia_dataset: "balanced"
@@ -199,7 +199,7 @@ preprocessing:
       k: 5
       s: 5
     Physical_Outliers:
-      active: True
+      active: False
       name: "Physical_Outliers"
       columns_to_check: [ ]
       fix_algorithm: "forward"

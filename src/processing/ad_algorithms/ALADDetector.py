@@ -195,7 +195,7 @@ class ALADDetector(BaseAnomalyDetector):
 
 
     def _prepare_data(self, dataframe: pd.DataFrame, save_data: bool = False, overwrite: bool = False) -> dict:
-        diagnosis =  dataframe[["patient_id", "ards"]].drop_na(subset=["ards"]).reset_index(drop=True)
+        diagnosis =  dataframe[["patient_id", "ards"]].dropna(subset=["ards"]).reset_index(drop=True)
         train_patients, test_patients = train_test_split(diagnosis, test_size=self.test_percentage, random_state=self.sk_seed, shuffle=True,
                                                          stratify=diagnosis["ards"])
         train_patients_ids = train_patients["patient_id"].unique()
@@ -203,17 +203,17 @@ class ALADDetector(BaseAnomalyDetector):
         train_data = dataframe[dataframe["patient_id"].isin(train_patients_ids)].reset_index(drop=True)
         test_data = dataframe[dataframe["patient_id"].isin(test_patients_ids)].reset_index(drop=True)
         data_dict = {
-            "train_data": train_data,
-            "val_data": None,
-            "test_data": test_data,
+            "train": train_data,
+            "val": None,
+            "test": test_data
 
         }
         if not self._datasets_to_create:
             self._datasets_to_create = [{"name": column,
-                                         "features": column}
-                                        for column in dataframe.columns if column not in self.columns_to_check]
+                                         "features": [column]}
+                                        for column in dataframe.columns if column not in self.columns_not_to_check]
         if "prepare" in self.active_stages:
-            datatypes_to_prepare = ["test", "train"]
+            datatypes_to_prepare = ["train", "test"]
         elif "train" in self.active_stages:
             datatypes_to_prepare = ["train"]
         elif "predict" in self.active_stages:
@@ -248,10 +248,12 @@ class ALADDetector(BaseAnomalyDetector):
     def _prepare_data_step(self, dataframe: pd.DataFrame, dataset_to_create: dict, save_data, type_of_dataset: str) -> (int, pd.DataFrame, list, pd.DataFrame):
         name = dataset_to_create["name"]
         relevant_columns = dataset_to_create["features"]
+        
         relevant_data = dataframe[relevant_columns + ["patient_id", "time"]]
         relevant_data = relevant_data.dropna(subset=relevant_columns, how="any", axis=0).reset_index(drop=True)
         logger.info(f"Preparing {type_of_dataset} data for {name}...")
         relevant_patients = relevant_data["patient_id"].unique().tolist()
+        patients_to_remove = list(set(dataframe["patient_id"].unique().tolist()) - set(relevant_patients))
 
         if len(relevant_data.index) == 0:
             logger.info(f"Not enough data for {type_of_dataset}, skipping {name}...")
@@ -274,7 +276,6 @@ class ALADDetector(BaseAnomalyDetector):
         if dataset.empty:
             logger.info(f"No data found for {name}. Skipping...")
             return -1, None, [], pd.DataFrame()
-
         if save_data:
             dataset_file_name = self._get_filename_from_dataset_config(dataset_to_create, type_of_dataset)
             feature_path = os.path.join(self.prepared_data_dir, f"{dataset_file_name}_features.pkl")
@@ -285,9 +286,10 @@ class ALADDetector(BaseAnomalyDetector):
             if dataset_to_create == "test":
                 relevant_path = os.path.join(self.prepared_data_dir, f"{dataset_file_name}_relevant.pkl")
                 patients_to_remove_path = os.path.join(self.prepared_data_dir, f"{dataset_file_name}_patients_to_remove.pkl")
-                patients_to_remove = list(set(dataframe["patient_id"].unique().tolist()) - set(relevant_patients))
+                
                 self._save_file(patients_to_remove, patients_to_remove_path, True)
                 self._save_file(relevant_data, relevant_path, True)
+        
         if type_of_dataset != "test":
             return 0, dataset, [], pd.DataFrame()
         else:
