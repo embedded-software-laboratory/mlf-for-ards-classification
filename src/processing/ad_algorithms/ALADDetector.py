@@ -83,7 +83,12 @@ class ALADDetector(BaseAnomalyDetector):
         }
         return AnomalyDetectionMetaData(**meta_data_dict)
 
-    def _load_prepared_data(self, storage_info: str, type_of_dataset: str) -> Any:
+    def _load_prepared_data(self, path: str, type_of_dataset: str) -> Any:
+        """Returns none because data handling is done by the setup function"""
+        return None
+
+    @staticmethod
+    def _load_data(storage_info: str, type_of_dataset: str) -> Any:
 
 
         if type_of_dataset == "train":
@@ -110,7 +115,7 @@ class ALADDetector(BaseAnomalyDetector):
         patients_to_remove = []
         relevant_data = pd.DataFrame()
         if load_data:
-            status, dataset, patients_to_remove, relevant_data = self._load_prepared_data(os.path.join(self.prepared_data_dir, f"{name}_train_features.pkl"), "train")
+            status, dataset, patients_to_remove, relevant_data = self._load_data(os.path.join(self.prepared_data_dir, f"{name}_train_features.pkl"), "train")
         if status != 0:
             status , dataset, patients_to_remove, relevant_data = self._prepare_data_step(data, dataset_to_create, save_data, "train")
         if  dataset is None or dataset.empty :
