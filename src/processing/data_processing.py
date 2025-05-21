@@ -1,11 +1,11 @@
-
+from processing.ad_algorithms.ALADDetector import ALADDetector
 from processing.filter import Filter
 from processing.unit_converter import UnitConverter
 from processing.data_imputator import DataImputator
 from processing.param_calculation import ParamCalculator
 from processing.onset_determiner import OnsetDeterminer
 from processing.datasets_metadata import TimeseriesMetaData
-from processing.ad_algorithms import PhysicalLimitsDetector, SW_ABSAD_Mod_Detector, DeepAntDetector, BaseAnomalyDetector
+from processing.ad_algorithms import PhysicalLimitsDetector, SW_ABSAD_Mod_Detector, DeepAntDetector, BaseAnomalyDetector, ALADDetector
 from processing.processing_utils import prepare_multiprocessing, get_processing_meta_data
 
 import pandas as pd
@@ -42,6 +42,8 @@ class DataProcessor:
                     return SW_ABSAD_Mod_Detector(**value)
                 if key == "DeepAnt":
                     return DeepAntDetector(**value)
+                if key == "ALAD":
+                    return ALADDetector(**value)
         return BaseAnomalyDetector()
 
     def process_data(self, dataframe: pd.DataFrame, dataset_metadata: TimeseriesMetaData):
