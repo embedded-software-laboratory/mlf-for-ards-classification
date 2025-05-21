@@ -525,7 +525,7 @@ class DeepAntDetector(BaseAnomalyDetector):
         if load_data or data is None:
             filename = self._get_filename_from_dataset_config(dataset_to_create, type_of_dataset)
 
-            dataset, patients_to_remove, relevant = self._load_prepared_data(filename, type_of_dataset)
+            dataset, patients_to_remove, relevant = self._load_data(filename, type_of_dataset)
         if dataset is None and not data is None:
             dataset, patients_to_remove, relevant = self._prepare_data_step(data, dataset_to_create, save_data, type_of_dataset)
 
@@ -626,7 +626,11 @@ class DeepAntDetector(BaseAnomalyDetector):
         else:
             return dataset, patients_to_remove, relevant
 
-    def _load_prepared_data(self, storage_info: str, type_of_dataset: str) -> (DataModule, list, pd.DataFrame):
+    def _load_prepared_data(self, path: str, type_of_dataset: str) -> (DataModule, list, pd.DataFrame):
+        """Returns none because data handling is done by the setup function"""
+        return None
+
+    def _load_data(self, name: str, type_of_dataset: str) -> (DataModule, list, pd.DataFrame):
         """
             Loads the data from the specified file.
 
@@ -640,17 +644,17 @@ class DeepAntDetector(BaseAnomalyDetector):
         """
 
         try:
-            with open(os.path.join(self.prepared_data_dir + "/" + storage_info + f"_features.pkl"), "rb") as f:
+            with open(os.path.join(self.prepared_data_dir + "/" + name + f"_features.pkl"), "rb") as f:
                 data_x = pickle.load(f)
-            with open(os.path.join(self.prepared_data_dir + "/" + storage_info + "_labels.pkl"), "rb") as f:
+            with open(os.path.join(self.prepared_data_dir + "/" + name + "_labels.pkl"), "rb") as f:
                 data_y = pickle.load(f)
             if type_of_dataset == "test":
-                patients_to_remove_path = os.path.join(self.prepared_data_dir + "/" + storage_info + "_patients_to_remove.pkl")
+                patients_to_remove_path = os.path.join(self.prepared_data_dir + "/" + name + "_patients_to_remove.pkl")
                 patients_to_remove_path = patients_to_remove_path.replace("test_", "")
                 logger.info(f"Loading patients to remove from {patients_to_remove_path}")
                 with open(patients_to_remove_path, "rb") as f:
                     patients_to_remove = pickle.load(f)
-                relevant_path = os.path.join(self.prepared_data_dir + "/" + storage_info + "_relevant.pkl")
+                relevant_path = os.path.join(self.prepared_data_dir + "/" + name + "_relevant.pkl")
                 relevant_path = relevant_path.replace("test_", "")
                 with open(relevant_path, "rb") as f:
                     relevant_df = pickle.load(f)
@@ -660,7 +664,7 @@ class DeepAntDetector(BaseAnomalyDetector):
             dataset = DataModule(data_x, data_y, device=self.device)
             self.windowed_data_disk_interaction = True
         except Exception as e:
-            logger.error(f"Failed to load data for {storage_info} {type_of_dataset}: {e}")
+            logger.error(f"Failed to load data for {name} {type_of_dataset}: {e}")
             dataset = None
             patients_to_remove = []
             relevant_df = pd.DataFrame()
