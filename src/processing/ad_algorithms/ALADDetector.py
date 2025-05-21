@@ -229,18 +229,47 @@ class ALADDetector(BaseAnomalyDetector):
 
     def _predict(self, dataframe: pd.DataFrame, **kwargs) -> dict:
         self._build_datasets_from_dataframe_or_files(None)
+        relevant_df_list = []
+        anomaly_df_list = []
         for dataset in self._datasets_to_create:
             name = dataset["name"]
             status, dataset_features, patients_to_remove, relevant_data = self._setup_alad(dataset, dataframe, "predict", self.load_data, self.save_data)
             
             if status == 0:
                 anomalies = self.model[name].predict(dataset_features)
-                
-                
-
             else:
                 logger.info(f"Problem while predicting for {name}. Skipping.")
                 continue
+            anomaly_df = pd.DataFrame()
+            anomaly_df["patient_id"] = relevant_data["patient_id"]
+            anomaly_df["time"] = relevant_data["time"]
+            anomaly_df[name] = [anomaly == 1 for anomaly in anomalies]
+            anomaly_df_list.append(anomaly_df)
+            relevant_df_list.append(relevant_data)
+        anomaly_df = pd.DataFrame()
+        relevant_df = pd.DataFrame()
+        for i in range(len(anomaly_df_list)):
+            if i == 0:
+                anomaly_df = anomaly_df_list[i]
+            else:
+                anomaly_df = pd.merge(anomaly_df, anomaly_df_list[i], how="outer", on=["patient_id", "time"])
+        for i in range(len(relevant_df_list)):
+            if i == 0:
+                relevant_df = relevant_df_list[i]
+            else:
+                relevant_df = pd.merge(relevant_df_list[i], relevant_df_list[i], how="outer", on=["patient_id", "time"])
+
+
+        anomaly_df.fillna(False, inplace=True)
+        self._save_anomaly_df(anomaly_df)
+        anomaly_count_dict = self._calculate_anomaly_count(anomaly_df, relevant_df)
+
+
+        return {
+            "anomaly_df": anomaly_df,
+            "anomaly_count": anomaly_count_dict,
+        }
+
 
 
     def _prepare_data(self, dataframe: pd.DataFrame, save_data: bool = False, overwrite: bool = False) -> dict:
