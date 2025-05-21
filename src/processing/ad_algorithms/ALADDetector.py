@@ -110,7 +110,10 @@ class ALADDetector(BaseAnomalyDetector):
         patients_to_remove = []
         relevant_data = pd.DataFrame()
         if stage == "train":
-            self.model[name] = ALAD(**self.hyperparameters)
+            if not self.hyperparameters:
+                self.model[name] = ALAD()
+            else:
+                self.model[name] = ALAD(**self.hyperparameters)
 
 
 
