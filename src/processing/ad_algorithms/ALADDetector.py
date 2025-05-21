@@ -156,14 +156,17 @@ class ALADDetector(BaseAnomalyDetector):
 
 
         elif stage == "predict":
-            model_location = os.path.join(self.checkpoint_dir, f"model_{name}.ckpt")
-            model_file_exists = os.path.exists(model_location)
-            if not model_file_exists:
-                status = -1
-                logger.info(f"No model file for parameter {name}. Please train a model before using prediction")
-            else:
-                self.model[name] = joblib.load(model_location)
-                self.trained_models.append(name)
+            if not name in self.model.keys() or not name in self.trained_models:
+
+                model_location = os.path.join(self.checkpoint_dir, f"model_{name}.ckpt")
+                model_file_exists = os.path.exists(model_location)
+
+                if not model_file_exists:
+                    status = -1
+                    logger.info(f"No model file for parameter {name}. Please train a model before using prediction")
+                else:
+                    self.model[name] = joblib.load(model_location)
+                    self.trained_models.append(name)
         if status != 0:
             logger.info(f"Problem while setting up model for stage {stage} for parameter {name}. Skipping...")
 
@@ -225,7 +228,8 @@ class ALADDetector(BaseAnomalyDetector):
         self._build_datasets_from_dataframe_or_files(None)
         for dataset in self._datasets_to_create:
             name = dataset["name"]
-            status, dataset_features, patients_to_remove, relevant_data = self._handle_data_step(dataset, dataframe, "test", self.load_data, self.save_data)
+            status, dataset_features, patients_to_remove, relevant_data = self._setup_alad(dataset, dataframe, "test", self.load_data, self.save_data)
+
             if status == 0:
                 anomalies = self.model[name].predict(dataset_features)
                 logger.info(anomalies)
