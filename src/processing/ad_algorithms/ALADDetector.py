@@ -55,6 +55,21 @@ class ALADDetector(BaseAnomalyDetector):
             else:
                 self.retrain_models[dataset] = False
 
+    def _create_meta_data_preparation(self, test_data: pd.DataFrame) -> dict:
+        contained_patients = test_data["patient_id"].unique().tolist()
+        meta_data_dict = {
+            "algorithm_specific_settings": {
+
+                "train_percentage": self.train_percentage,
+
+                "test_percentage": 1 - self.train_percentage,
+                "seed": self.sk_seed
+            },
+            "datasets": self._datasets_to_create,
+            "contained_patients": contained_patients,
+        }
+        return meta_data_dict
+
     def create_meta_data(self):
         meta_data_dict =  super().create_meta_data()
         meta_data_dict["anomaly_detection_algorithm"] = self.type
