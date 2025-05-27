@@ -646,7 +646,7 @@ class BaseAnomalyDetector:
             "anomaly_statistics":  self.anomaly_counts,
             "algorithm_specific_settings": None,
         }
-        logger.info(self.anomaly_counts)
+
         if self.handling_strategy == "delete_row_if_many_anomalies":
             meta_data_dict["anomaly_threshold"] = self.anomaly_threshold
         else:
