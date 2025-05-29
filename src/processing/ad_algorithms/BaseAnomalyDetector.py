@@ -568,8 +568,7 @@ class BaseAnomalyDetector:
         """
         nan_mask = dataframe.isna()
         dataframe = dataframe.mask(anomaly_df)
-        dataframe = self._fix_deleted(dataframe)
-        dataframe = dataframe.mask(nan_mask)
+        dataframe = self._fix_deleted(dataframe, nan_mask=nan_mask)
         return dataframe
 
     @staticmethod
@@ -606,14 +605,16 @@ class BaseAnomalyDetector:
         """
         n_columns = len(dataframe.columns)
         n_anomalies = anomaly_df.sum(axis=1)
-        dataframe = dataframe.fillna(-100000)
         index_to_drop = []
         for i in range(len(dataframe)):
             if n_anomalies[i]/n_columns > self.anomaly_threshold:
                 index_to_drop.append(i)
-        dataframe = dataframe.drop(index_to_drop)
-        dataframe = self._fix_deleted(dataframe)
-        dataframe = dataframe.replace(-100000, pd.NA)
+
+        anomaly_df = anomaly_df.drop(index_to_drop).reset_index(drop=True)
+        dataframe = dataframe.drop(index_to_drop).reset_index(drop=True)
+        nan_mask = dataframe.isna()
+        dataframe = dataframe.mask(anomaly_df)
+        dataframe = self._fix_deleted(dataframe, nan_mask=nan_mask)
         return dataframe
 
     @staticmethod
@@ -623,7 +624,7 @@ class BaseAnomalyDetector:
                 dataframe[column + "_anomaly"] = anomaly_df[column]
         return dataframe
 
-    def _fix_deleted(self, dataframe: pd.DataFrame) -> pd.DataFrame:
+    def _fix_deleted(self, dataframe: pd.DataFrame, nan_mask) -> pd.DataFrame:
         if self.fix_algorithm == "forward":
             dataframe = dataframe.fillna(method="ffill")
         elif self.fix_algorithm == "backward":
@@ -633,6 +634,7 @@ class BaseAnomalyDetector:
 
         else:
             raise ValueError("Invalid fix_algorithm for Anomaly detection")
+        dataframe = dataframe.mask(nan_mask)
         return dataframe
 
 
