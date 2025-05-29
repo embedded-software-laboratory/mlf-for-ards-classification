@@ -16,7 +16,7 @@ def config_generator(template_config_path: str, filtering: bool, splitting_seed:
                 template_config["preprocessing"]["anomaly_detection"][key]["fix_algorithm"] = imputation
             else:
                 template_config["preprocessing"]["anomaly_detection"][key]["active"] = False
-    template_config["data_segregation"]["splitting_seed"] = splitting_seed
+    template_config["evaluation"]["cross_validation"]["random_state"] = splitting_seed
     template_config["evaluation"]["evaluation_name"] = f"Evaluation {name}"
     yaml.dump(template_config, open(config_name, 'w'))
     return template_config
@@ -29,7 +29,7 @@ def config_generator_without_fix(template_config_path: str, filter_active: bool,
     config_name = f"config_{name.replace(' ', '_')}.yml"
     template_config["process"]["perform_filtering"] = filtering
     template_config["process"]["perform_anomaly_detection"] = False
-    template_config["data_segregation"]["splitting_seed"] = splitting_seed
+    template_config["evaluation"]["cross_validation"]["random_state"] = splitting_seed
     template_config["evaluation"]["evaluation_name"] = f"Evaluation {name}"
     if not detector:
         data_path = "/work/rwth1474/Data/timeseries_data/uka_data_050623_testing_patients.npy"
