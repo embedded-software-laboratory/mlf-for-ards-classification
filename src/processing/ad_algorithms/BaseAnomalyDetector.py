@@ -185,7 +185,7 @@ class BaseAnomalyDetector:
                     data_to_fix = dataframe
                 else:
                     data_to_fix = prepared_dict["test"]
-                if not anomaly_result_dict["anomaly_df"]:
+                if anomaly_result_dict["anomaly_df"] is None:
                     anomalies = self._load_stored_anomalies(self.anomaly_data_dir)
                 else:
                     anomalies = anomaly_result_dict["anomaly_df"]
