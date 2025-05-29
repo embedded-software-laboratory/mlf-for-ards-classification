@@ -228,11 +228,14 @@ class ALADDetector(BaseAnomalyDetector):
 
 
     def _predict(self, dataframe: pd.DataFrame, **kwargs) -> dict:
+        logger.info(f"Start anomaly detection")
         self._build_datasets_from_dataframe_or_files(None)
         relevant_df_list = []
         anomaly_df_list = []
         for dataset in self._datasets_to_create:
+            
             name = dataset["name"]
+            logger.info(f"Predicting for parameter {name}...")
             status, dataset_features, patients_to_remove, relevant_data = self._setup_alad(dataset, dataframe, "predict", self.load_data, self.save_data)
             
             if status == 0:
@@ -246,6 +249,7 @@ class ALADDetector(BaseAnomalyDetector):
             anomaly_df[name] = [anomaly == 1 for anomaly in anomalies]
             anomaly_df_list.append(anomaly_df)
             relevant_df_list.append(relevant_data)
+            logger.info(f"Predicting for parameter {name} finished...")
         anomaly_df = pd.DataFrame()
         relevant_df = pd.DataFrame()
         for i in range(len(anomaly_df_list)):
@@ -263,7 +267,7 @@ class ALADDetector(BaseAnomalyDetector):
         anomaly_df.fillna(False, inplace=True)
         self._save_anomaly_df(anomaly_df)
         anomaly_count_dict = self._calculate_anomaly_count(anomaly_df, relevant_df)
-
+        logger.info(f"Finished anomaly detection")
 
         return {
             "anomaly_df": anomaly_df,
