@@ -1,6 +1,7 @@
 
 
-from sklearn.metrics import accuracy_score, matthews_corrcoef, confusion_matrix, roc_curve, f1_score, auc
+from sklearn.metrics import accuracy_score, matthews_corrcoef, confusion_matrix, roc_curve, f1_score, auc, \
+    precision_recall_curve
 
 from metrics.Models import *
 
@@ -221,6 +222,9 @@ class PPV(FloatMetricSpec):
                              metric_value=FloatValue(metric_value=metric_dict['metric_value']),
                              metric_spec=PPV())
 
+
+
+
 class NPV(FloatMetricSpec):
     def calculate_metric(self, metric_parameters: dict, stage:str) -> GenericMetric:
         prediction_labels = metric_parameters['predicted_label']
@@ -241,3 +245,40 @@ class NPV(FloatMetricSpec):
         return GenericMetric(metric_name=metric_dict['metric_name'],
                              metric_value=FloatValue(metric_value=metric_dict['metric_value']),
                              metric_spec=NPV())
+
+
+class Precisions(ListMetricSpec):
+    def calculate_metric(self, metric_parameters: dict, stage:str) -> GenericMetric:
+        prediction_probs = metric_parameters['prediction_probs']
+        true_labels = metric_parameters['true_labels']
+        precision, _, _ = precision_recall_curve(true_labels, prediction_probs)
+        return GenericMetric(metric_name="Precision" + " " + stage, metric_value=ListValue(metric_value=precision), metric_spec=Precisions())
+
+    def needs_probabilities(self) -> bool:
+        return True
+
+    def create_from_value(self, metric_value: ListValue, metric_name: str) -> GenericMetric:
+        return GenericMetric(metric_name=metric_name, metric_value=StringValue(metric_value="Mean calculation makes no sense for Precision"), metric_spec=Precisions())
+
+    def create_from_dict(self, metric_dict: dict) -> GenericMetric:
+        return GenericMetric(metric_name=metric_dict['metric_name'],
+                             metric_value=ListValue(metric_value=metric_dict['metric_value']),
+                             metric_spec=Precisions())
+
+class Recalls(ListMetricSpec):
+    def calculate_metric(self, metric_parameters: dict, stage:str) -> GenericMetric:
+        prediction_probs = metric_parameters['prediction_probs']
+        true_labels = metric_parameters['true_labels']
+        _, recall, _ = precision_recall_curve(true_labels, prediction_probs)
+        return GenericMetric(metric_name="Recall" + " " + stage, metric_value=ListValue(metric_value=recall), metric_spec=Recalls())
+
+    def needs_probabilities(self) -> bool:
+        return True
+
+    def create_from_value(self, metric_value: ListValue, metric_name: str) -> GenericMetric:
+        return GenericMetric(metric_name=metric_name, metric_value=StringValue(metric_value="Mean calculation makes no sense for Recall"), metric_spec=Recalls())
+
+    def create_from_dict(self, metric_dict: dict) -> GenericMetric:
+        return GenericMetric(metric_name=metric_dict['metric_name'],
+                             metric_value=ListValue(metric_value=metric_dict['metric_value']),
+                             metric_spec=Recalls())

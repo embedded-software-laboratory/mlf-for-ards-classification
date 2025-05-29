@@ -322,7 +322,7 @@ evaluation:
     shuffle: True
     random_state: 42
   threshold_optimization_algorithms: ["Standard", "MaxTPR", "MaxTPRMinFPR", "GeometricRoot"]
-  evaluation_metrics: ["AUC", "Accuracy", "F1Score", "FPR", "MCC", "OptimalProbability", "Sensitivity", "Specificity", "TPR","PPV", "NPV"]
+  evaluation_metrics: ["AUC", "Accuracy", "F1Score", "FPR", "MCC", "OptimalProbability", "Sensitivity", "Specificity", "TPR","PPV", "NPV", "Precisions", "Recalls"]
   evaluation_name: "Evaluation ALAD Test"
 
 #image_model_parameters:
