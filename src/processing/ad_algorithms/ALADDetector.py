@@ -72,7 +72,7 @@ class ALADDetector(BaseAnomalyDetector):
 
     def create_meta_data(self):
         meta_data_dict =  super().create_meta_data()
-        meta_data_dict["anomaly_detection_algorithm"] = self.type
+        meta_data_dict["anomaly_detection_algorithm"] = self.algorithm
         meta_data_dict["algorithm_specific_settings"] = {
             "train_percentage": self.train_percentage,
             "test_percentage": self.test_percentage,
