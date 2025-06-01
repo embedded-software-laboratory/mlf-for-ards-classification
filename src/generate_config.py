@@ -41,22 +41,24 @@ def config_generator_without_fix(template_config_path: str, filter_active: bool,
 
 if __name__ == "__main__":
     filtering = [True, False]
-    detectors = ["SW_ABSAD_MOD", "DeepAnt", "Physical_Outliers", "No_AD"]
+    detectors = ["SW_ABSAD_MOD", "DeepAnt", "Physical_Outliers", "No_AD", "ALAD"]
+    detectors = ["ALAD"]
     imputations = ["forward", "interpolate"]
-    fix_data = False
-    seed = 69
-    for filter_active in filtering:
-        for detector in detectors:
-            for imputation in imputations:
-                if detector == "No_AD":
-                    if fix_data:
-                        config_generator("config.yml", filter_active, seed, False)
+    fix_data = True
+    seeds = [42, 11]
+    for seed in seeds:
+        for filter_active in filtering:
+            for detector in detectors:
+                for imputation in imputations:
+                    if detector == "No_AD":
+                        if fix_data:
+                            config_generator("config.yml", filter_active, seed, False)
+                        else:
+                            config_generator_without_fix("config.yml", filter_active, seed)
                     else:
-                        config_generator_without_fix("config.yml", filter_active, seed)
-                else:
-                    if fix_data:
-                        config_generator("config.yml", filter_active, seed, True, detector, imputation)
-                    else:
-                        config_generator_without_fix("config.yml", filter_active, seed, detector, imputation)
+                        if fix_data:
+                            config_generator("config.yml", filter_active, seed, True, detector, imputation)
+                        else:
+                            config_generator_without_fix("config.yml", filter_active, seed, detector, imputation)
 
 
