@@ -77,12 +77,15 @@ class ModelEvaluation:
     def evaluate_timeseries_model(self, predictors, true_labels, stage: str, meta_data_training_set, meta_data_test_set, split_name: str =" split", ) -> None:
 
         eval_split_name = stage + split_name
-
+        if "patient_id" in predictors.columns:
+            eval_predictors = predictors.drop("patient_id", axis=1)
+        else:
+            eval_predictors = predictors
         if self.model.has_predict_proba():
-            self.model_eval_info.predicted_probas_test = self.model.predict_proba(predictors)[:, 1]
+            self.model_eval_info.predicted_probas_test = self.model.predict_proba(eval_predictors)[:, 1]
 
         else:
-            self.model_eval_info.predicted_labels_test = self.model.predict(predictors)
+            self.model_eval_info.predicted_labels_test = self.model.predict(eval_predictors)
 
         self.model_eval_info.true_labels_test = true_labels
         if self.config["process"]["perform_threshold_optimization"]:
@@ -130,7 +133,7 @@ class ModelEvaluation:
 
         for (train_set, test_set), i in zip(cross_validation.split(predictors, labels),
                                             range(self.evaluation.eval_info.n_splits)):
-
+            
             predictors_train = predictors.iloc[train_set]
             labels_train = labels.iloc[train_set]
             training_data_df = predictors_train.assign(ards=labels_train)
@@ -162,13 +165,20 @@ class ModelEvaluation:
                 self.model.name = model_name
                 self.model.save(save_path)
                 self.model.name = old_model_name
-
-            if self.model.has_predict_proba():
-                self.model_eval_info.predicted_probas_test = self.model.predict_proba(predictors_test)[:, 1]
-                self.model_eval_info.predicted_probas_training = self.model.predict_proba(predictors_train)[:, 1]
+            if "patient_id" in predictors_test.columns:
+                  eval_predictors_test = predictors_test.drop("patient_id", axis=1)
             else:
-                self.model_eval_info.predicted_labels_test = self.model.predict(predictors_test)
-                self.model_eval_info.predicted_labels_training = self.model.predict(predictors_train)
+                eval_predictors_test = predictors_test
+            if "patient_id" in predictors_train.columns:
+                  eval_predictors_train = predictors_train.drop("patient_id", axis=1)
+            else:
+                eval_predictors_train = predictors_train
+            if self.model.has_predict_proba():
+                self.model_eval_info.predicted_probas_test = self.model.predict_proba(eval_predictors_test)[:, 1]
+                self.model_eval_info.predicted_probas_training = self.model.predict_proba(eval_predictors_train)[:, 1]
+            else:
+                self.model_eval_info.predicted_labels_test = self.model.predict(eval_predictors_test)
+                self.model_eval_info.predicted_labels_training = self.model.predict(eval_predictors_train)
 
             self.model_eval_info.true_labels_test = labels_test
             self.model_eval_info.true_labels_training = labels_train

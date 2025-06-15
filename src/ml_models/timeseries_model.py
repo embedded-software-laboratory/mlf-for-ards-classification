@@ -37,6 +37,8 @@ class TimeSeriesModel(Model):
         model_evaluator = ModelEvaluation(config, self, None)
         training_data = training_dataset.content
         training_data_meta_data = training_dataset.meta_data
+        if "patient_id" in training_data:
+            training_data = training_data.drop("patient_id", axis=1)
         self.train_model(training_data)
         self.meta_data = ModelMetaDataFactory.factory_method(self, training_data_meta_data.dataset_location, training_data_meta_data.dataset_location)
         labels = training_data["ards"]

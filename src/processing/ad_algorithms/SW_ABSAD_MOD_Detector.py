@@ -97,6 +97,7 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
 
         return_dict = {"test": dataframe_detection}
         if save_data:
+            
             first_patient, last_patient = self._get_first_and_last_patient_id_for_name(dataframe_detection)
             save_path = f"{self.prepared_data_dir}/patient_{first_patient}_to_{last_patient}_test.pkl"
             self._save_file(return_dict, save_path, overwrite)
@@ -128,11 +129,10 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
 
 
     def _predict(self, dataframe: pd.DataFrame, **kwargs) -> dict:
-
         patient_list = dataframe["patient_id"].unique().tolist()
         anomaly_dfs = []
         anomaly_count_dict = {}
-
+        empty = False
         logger.info(patient_list)
         for patient_id in patient_list:
             logger.info(f"Running job for patient {patient_id}...")
@@ -149,8 +149,10 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
 
             else:
                 logger.info(f"Patient {patient_id} has not enough data for prediction.")
+                empty = True
                 continue
-
+        if empty:
+            logger.info("Left loop after empty")
         anomaly_df = pd.concat(anomaly_dfs).reset_index(drop=True)
         self._save_anomaly_df(anomaly_df)
         logger.info(f"Finished for patients: {patient_list}")
@@ -442,7 +444,8 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
                 '''
                 CL = self.calculate_control_limit(LOS_window)
                 if CL == -1:
-                    continue
+                    logger.info(f"Failed CL for {df['patient_id'].unique().tolist()}")
+                    return pd.DataFrame()
                 for current_point in range(self.window_length):
                     cl_complete_table[sample_counter + current_point] = CL
                 '''
@@ -600,7 +603,8 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
                         CL = self.calculate_control_limit(
                             LOS_complete[sample_counter - self.window_length:sample_counter + 1])
                     if CL == -1:
-                        continue
+                        logger.info(f"Failed CL for {df['patient_id'].unique().tolist()}")
+                        return pd.DataFrame()
                 else:
                     '''
                     Das neue CL wird berechnet, wenn der aktuelle Punkt innerhalb des CL liegt
@@ -609,7 +613,8 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
                     if LOS_complete[sample_counter] <= CL:
                         CL = self.calculate_control_limit(LOS_window)
                         if CL == -1:
-                            continue
+                            logger.info(f"Failed CL for {df['patient_id'].unique().tolist()}")
+                            return pd.DataFrame()
 
             cl_complete_table[sample_counter] = CL
             '''
@@ -795,7 +800,7 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
                 no_change_counter = no_change_counter + 1
                 if no_change_counter == 100:
                     logger.info("Failed to calculate CL")
-                    return CL
+                    return -1
             else:
                 CL = CL + 0.001
 
