@@ -1,0 +1,238 @@
+process:
+  load_models: False
+  load_timeseries_data: True
+  perform_imputation: True
+  perform_unit_conversion: True
+  calculate_missing_params: True
+  perform_ards_onset_detection: True
+  perform_filtering: True
+  perform_feature_selection: True
+  perform_data_segregation: True 
+  perform_timeseries_training: True
+  perform_timeseries_classification: True
+  perform_threshold_optimization: True
+  calculate_evaluation_metrics: True
+  perform_cross_validation: False
+  save_models: True
+
+  load_image_data: False
+  train_image_models: False
+  test_image_models: False
+
+models:
+    timeseries_models:
+        to_train:
+          AdaBoost:
+            Names: [ "BD_Strict_MIMICIV_Adaboost"]
+            Configs: [ "default"]
+            Active: True
+          #BayesianNetwork:
+          #  Names: [ ]
+          #  Configs: []
+          #  Active: False
+          LightGBM:
+            Names: [ "BD_Strict_MIMICIV_LGBM"]
+            Configs: [ "default"]
+            Active: True
+          LogisticRegression:
+            Names: [ "BD_Strict_MIMICIV_Log_RES"]
+            Configs: [ "default"]
+            Active: True
+          RandomForest:
+            Names: [ "BD_Strict_MIMICIV_RF"]
+            Configs: [ "default"]
+            Active: True
+          SupportVectorMachine:
+            Names: [ "BD_Strict_MIMICIV_SVM"]
+            Configs: [ "default"]
+            Active: True
+          XGBoost:
+            Names: [ "BD_Strict_MIMICIV_XGBoost"]
+            Configs: [ "default"]
+            Active: True
+
+        to_execute:
+          AdaBoost:
+            Names: ["BD_Strict_MIMICIV_Adaboost"]
+            Active: True
+          #BayesianNetwork:
+          #  Names: []
+          #  Active: False
+          LightGBM:
+            Names: ["BD_Strict_MIMICIV_LGBM"]
+            Active: True
+          LogisticRegression:
+            Names: ["BD_Strict_MIMICIV_LGBM"]
+            Active: True
+          RandomForest:
+            Names: ["BD_Strict_MIMICIV_RF"]
+            Active: True
+          SupportVectorMachine:
+            Names: ["BD_Strict_MIMICIV_SVM"]
+            Active: True
+          XGBoost:
+            Names: ["BD_Strict_MIMICIV_XGBoost"]
+            Active: True
+
+        to_evaluate:
+          AdaBoost:
+            Names: ["BD_Strict_MIMICIV_Adaboost"]
+            Active: True
+          #BayesianNetwork:
+          #  Names: []
+          #  Active: False
+          LightGBM:
+            Names: ["BD_Strict_MIMICIV_LGBM"]
+            Active: True
+          LogisticRegression:
+            Names: ["BD_Strict_MIMICIV_LGBM"]
+            Active: True
+          RandomForest:
+            Names: ["BD_Strict_MIMICIV_RF"]
+            Active: True
+          SupportVectorMachine:
+            Names: ["BD_Strict_MIMICIV_SVM"]
+            Active: True
+          XGBoost:
+            Names: ["BD_Strict_MIMICIV_XGBoost"]
+            Active: True
+
+        to_cross_validate:
+          AdaBoost:
+            Names: ["Default", "Test"]
+            Configs: ["default", "test.yaml"]
+            Active: False
+          ##BayesianNetwork:
+          ##  Names: [ ]
+          ##  Configs: [ ]
+          #  Active: False
+          LightGBM:
+            Names: [ ]
+            Configs: [ ]
+            Active: False
+          LogisticRegression:
+            Names: [ ]
+            Configs: [ ]
+            Active: False
+          RandomForest:
+            Names: [ ]
+            Configs: [ ]
+            Active: False
+          SupportVectorMachine:
+            Names: [ ]
+            Configs: [ ]
+            Active: False
+          XGBoost:
+            Names: [ ]
+            Configs: [ ]
+            Active: False
+        base_path_config:
+          to_train: "Data/Models/TimeSeriesModels/Config/Training/"
+          to_cross_validate: "Data/Models/TimeSeriesModels/Config/CrossValidation/"
+
+
+
+
+
+
+
+
+
+#image_models_to_execute:
+#  - VisionTransformerModel
+
+algorithm_base_path:
+  AdaBoost: "default"
+  #BayesianNet: "default"
+  LightGBM: "default"
+  LogisticRegression: "default"
+  RandomForest: "default"
+  SupportVectorMachine: "default"
+  XGBoost: "default"
+  RecurrentNeuralNetwork: "Save/Cross validation results/Recurrent neural network_1"
+
+
+storage_path: "src/Save/ExperimentResult"
+
+
+
+
+data:
+  timeseries_file_path: "/work/rwth1474/Data/time_series/MIMICIV_data_2024-06-12.npy"
+  database: "MIMIC4"
+  #image_file_path: "Data/Image_data"
+  pneumonia_dataset: "balanced"
+  ards_dataset: "weighted"
+
+preprocessing:
+  patients_per_process: 500
+  max_processes: 6
+  filtering:
+    filter:
+    - BD
+    - Strict
+
+  imputation: 
+    impute_empty_cells: True
+    default_imputation_method: "forward"
+    params_to_impute:
+      - ards, forward
+      - all
+
+  params_to_calculate:
+    - horovitz
+  ards_onset_detection:
+    detection_rule: "4h_50"
+    #eventuell verändern.. bsp. lowest horowitz
+    return_rule: "datapoint" 
+    series_start_point: -50000
+    series_end_point: 50000
+    remove_ards_patients_without_onset: False
+    impute_missing_rows: False
+    update_ards_values: False
+
+feature_selection:
+  method: "univariate"
+  variance: 0.16
+  k: 15
+
+data_segregation:
+  training_test_ratio: 0.8
+  percentage_of_ards_patients: 0.1
+  splitting_seed: 42
+
+evaluation:
+  cross_validation:
+    n_splits: 4
+    shuffle: True
+    random_state: 42
+  threshold_optimization_algorithms: ["Standard", "MaxTPR", "MaxTPRMinFPR", "GeometricRoot"]
+  evaluation_metrics: ["AUC", "Accuracy", "F1Score", "FPR", "MCC", "OptimalProbability", "Sensitivity", "Specificity", "TPR"]
+  evaluation_name: "Evaluation X"
+
+#image_model_parameters:
+#  method: last_block
+#  mode: mode1
+#  num_epochs_pneumonia: 1
+#  num_epochs_ards: 1
+#  batch_size_pneumonia: 32
+#  batch_size_ards: 32
+#  SEED_pneumonia: 123
+#  SEED_ards: 105
+#  learning_rate: 0.05
+#  k_folds: 2
+#  path: "Data/Image_data"
+
+supported_algorithms:
+  timeseries_models:
+    - AdaBoostModel
+    #- BayesianNetworkModel
+    - LightGBMModel
+    - LogisticRegressionModel
+    - RandomForestModel
+    - SupportVectorMachineModel
+    - XGBoostModel
+
+  #image_models:
+  #  - VisionTransformerModel
+  #  - ConvolutionalNeuralNetworkModel

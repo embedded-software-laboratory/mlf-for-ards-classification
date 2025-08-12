@@ -1,19 +1,20 @@
 process:
   load_models: False
   load_timeseries_data: True
-  perform_imputation: True
-  perform_unit_conversion: True
-  calculate_missing_params: True
-  perform_ards_onset_detection: True
-  perform_filtering: True
-  perform_feature_selection: True
-  perform_data_segregation: True 
-  perform_timeseries_training: True
-  perform_timeseries_classification: True
-  perform_threshold_optimization: True
-  calculate_evaluation_metrics: True
-  perform_cross_validation: True
-  save_models: True
+  perform_anomaly_detection: True
+  perform_imputation: False
+  perform_unit_conversion: False
+  calculate_missing_params: False
+  perform_ards_onset_detection: False
+  perform_filtering: False
+  perform_feature_selection: False
+  perform_data_segregation: False
+  perform_timeseries_training: False
+  perform_timeseries_classification: False
+  perform_threshold_optimization: False
+  calculate_evaluation_metrics: False
+  perform_cross_validation: False
+  save_models: False
 
   load_image_data: False
   train_image_models: False
@@ -23,13 +24,13 @@ models:
     timeseries_models:
         to_train:
           AdaBoost:
-            Names: [ "Test"]
-            Configs: [ "test.yaml"]
+            Names: [ "AdaBoost"]
+            Configs: [ "default"]
             Active: True
-          BayesianNetwork:
-            Names: [ ]
-            Configs: []
-            Active: False
+          #BayesianNetwork:
+          #  Names: [ ]
+          #  Configs: []
+          #  Active: False
           LightGBM:
             Names: [ ]
             Configs: []
@@ -39,25 +40,25 @@ models:
             Configs: []
             Active: False
           RandomForest:
-            Names: [ ]
-            Configs: []
-            Active: False
+            Names: [ "RandomForest"]
+            Configs: [ "default"]
+            Active: True
           SupportVectorMachine:
             Names: [ ]
             Configs: []
             Active: False
           XGBoost:
-            Names: [ ]
-            Configs: []
-            Active: False
+            Names: [ "XGBoost"]
+            Configs: [ "default"]
+            Active: True
 
         to_execute:
           AdaBoost:
-            Names: ["Default", "Test"]
+            Names: ["AdaBoost"]
             Active: True
-          BayesianNetwork:
-            Names: []
-            Active: False
+          #BayesianNetwork:
+          #  Names: []
+          #  Active: False
           LightGBM:
             Names: []
             Active: False
@@ -65,22 +66,22 @@ models:
             Names: []
             Active: False
           RandomForest:
-            Names: []
-            Active: False
+            Names: ["RandomForest"]
+            Active: True
           SupportVectorMachine:
             Names: []
             Active: False
           XGBoost:
-            Names: []
-            Active: False
+            Names: ["XGBoost"]
+            Active: True
 
         to_evaluate:
           AdaBoost:
-            Names: ["Default", "Test"]
+            Names: ["AdaBoost"]
             Active: True
-          BayesianNetwork:
-            Names: []
-            Active: False
+          #BayesianNetwork:
+          #  Names: []
+          #  Active: False
           LightGBM:
             Names: []
             Active: False
@@ -88,24 +89,24 @@ models:
             Names: []
             Active: False
           RandomForest:
-            Names: []
-            Active: False
+            Names: ["RandomForest"]
+            Active: True
           SupportVectorMachine:
             Names: []
             Active: False
           XGBoost:
-            Names: []
-            Active: False
+            Names: ["XGBoost"]
+            Active: True
 
         to_cross_validate:
           AdaBoost:
-            Names: ["Default", "Test"]
-            Configs: ["default", "test.yaml"]
+            Names: ["AdaBoost"]
+            Configs: ["default"]
             Active: True
-          BayesianNetwork:
-            Names: [ ]
-            Configs: [ ]
-            Active: False
+          ##BayesianNetwork:
+          ##  Names: [ ]
+          ##  Configs: [ ]
+          #  Active: False
           LightGBM:
             Names: [ ]
             Configs: [ ]
@@ -115,20 +116,20 @@ models:
             Configs: [ ]
             Active: False
           RandomForest:
-            Names: [ ]
-            Configs: [ ]
-            Active: False
+            Names: ["RandomForest"]
+            Configs: [ "default"]
+            Active: True
           SupportVectorMachine:
             Names: [ ]
             Configs: [ ]
             Active: False
           XGBoost:
-            Names: [ ]
-            Configs: [ ]
-            Active: False
+            Names: ["XGBoost" ]
+            Configs: ["default" ]
+            Active: True
         base_path_config:
-          to_train: "../Data/Models/TimeSeriesModels/Config/Training/"
-          to_cross_validate: "../Data/Models/TimeSeriesModels/Config/CrossValidation/"
+          to_train: "Data/Models/TimeSeriesModels/Config/Training/"
+          to_cross_validate: "Data/Models/TimeSeriesModels/Config/CrossValidation/"
 
 
 
@@ -138,12 +139,12 @@ models:
 
 
 
-image_models_to_execute:
-  - VisionTransformerModel
+#image_models_to_execute:
+#  - VisionTransformerModel
 
 algorithm_base_path:
   AdaBoost: "default"
-  BayesianNet: "default"
+  #BayesianNet: "default"
   LightGBM: "default"
   LogisticRegression: "default"
   RandomForest: "default"
@@ -152,25 +153,139 @@ algorithm_base_path:
   RecurrentNeuralNetwork: "Save/Cross validation results/Recurrent neural network_1"
 
 
-storage_path: "Save/ExperimentResult"
+storage_path: "../Data/ExperimentResult/Seeds"
 
 
 
 
 data:
-  timeseries_file_path: "../Data/uka_data_050623.npy"
+  timeseries_file_path: "/work/rwth1474/Data/time_series/uka_data_050623.npy"
   database: "UKA"
-  image_file_path: "Data/Image_data"
+  #image_file_path: "Data/Image_data"
   pneumonia_dataset: "balanced"
   ards_dataset: "weighted"
 
 preprocessing:
   patients_per_process: 500
-  max_processes: 6
+  max_processes: 2
+
+
+  anomaly_detection:
+    SW_ABSAD_MOD:
+      active: False
+      name: "SW_ABSAD_MOD"
+      columns_to_check: []
+      fix_algorithm: "interpolate"
+      handling_strategy: "delete_than_impute"
+      anomaly_threshold: 0.5
+      supported_stages:
+        - "prepare"
+        - "predict"
+        - "fix"
+      active_stages:
+        - "fix"
+      anomaly_data_dir: "/work/rwth1474/Data/AnomalyDetection/anomaly_data/SW_ABSAD_MOD"
+      prepared_data_dir: "/work/rwth1474/Data/AnomalyDetection/prepared_data/SW_ABSAD_MOD"
+      replace_zeros: False
+      replace_physical_outliers: True
+      use_cl_modification: False
+      retrain_after_gap: True
+      window_length: 7
+      variance_check: False
+      clea_training: False
+      variance_window: 7
+      confidence_level: 0.95
+      theta: 0.5
+      k: 5
+      s: 5
+    Physical_Outliers:
+      active: False
+      name: "Physical_Outliers"
+      columns_to_check: [ ]
+      fix_algorithm: "forward"
+      handling_strategy: "delete_than_impute"
+      anomaly_threshold: 0.5
+      supported_stages:
+        - "prepare"
+        - "predict"
+        - "fix"
+      active_stages:
+        - "fix"
+      anomaly_data_dir: "/work/rwth1474/Data/AnomalyDetection/anomaly_data/Physical_Outliers"
+      prepared_data_dir: "/work/rwth1474/Data/AnomalyDetection/prepared_data/Physical_Outliers"
+
+    DeepAnt:
+      active: False
+      name: "DeepAnt"
+      columns_to_check: []
+      fix_algorithm: "forward"
+      handling_strategy: "delete_than_impute"
+      anomaly_threshold: 0.5
+      supported_stages:
+        - "prepare"
+        - "train"
+        - "predict"
+        - "fix"
+      active_stages:
+        - "fix"
+      anomaly_data_dir: "/work/rwth1474/Data/AnomalyDetection/anomaly_data/DeepAnt"
+      prepared_data_dir: "/work/rwth1474/Data/AnomalyDetection/prepared_data/DeepAnt"
+      window_generator_config:
+        input_width: 10
+        output_width: 10
+      val_percentage: 0.1
+      train_percentage: 0.2
+      sk_seed: 42
+      learning_rate: 0.001
+      hidden_size: 256
+      max_epochs: 100
+      max_initial_epochs: 10
+      batch_size: 32
+      patience: 5
+      run_dir: "../Data/Models/AnomalyDetection/DeepAnt"
+      checkpoint_dir: "../Data/Models/AnomalyDetection/DeepAnt/checkpoints"
+
+      load_data: True
+      save_data: True
+      retrain_models: {}
+
+    ALAD:
+      active: True
+      name: "ALAD"
+      columns_to_check: [ ]
+      fix_algorithm: "interpolate"
+      handling_strategy: "delete_than_impute"
+      anomaly_threshold: 0.5
+      supported_stages:
+        - "prepare"
+        - "train"
+        - "predict"
+        - "fix"
+      active_stages:
+        - "prepare"
+        - "train"
+        - "predict"
+        - "fix"
+      anomaly_data_dir: "/work/rwth1474/Data/AnomalyDetection/anomaly_data/ALAD"
+      prepared_data_dir: "/work/rwth1474/Data/AnomalyDetection/prepared_data/ALAD"
+
+      train_percentage: 0.2
+      sk_seed: 42
+      hyperparameters: {}
+      run_dir: "../Data/Models/AnomalyDetection/DeepAnt"
+      checkpoint_dir: "../Data/Models/AnomalyDetection/DeepAnt/checkpoints"
+
+      load_data: True
+      save_data: True
+      retrain_models: { }
+
+
+
+
   filtering:
     filter:
     - BD
-    - Lite
+    - Strict
 
   imputation: 
     impute_empty_cells: True
@@ -182,7 +297,7 @@ preprocessing:
   params_to_calculate:
     - horovitz
   ards_onset_detection:
-    detection_rule: "lowest_horovitz"
+    detection_rule: "first_horovitz"
     #eventuell verändern.. bsp. lowest horowitz
     return_rule: "datapoint" 
     series_start_point: -50000
@@ -203,36 +318,36 @@ data_segregation:
 
 evaluation:
   cross_validation:
-    n_splits: 4
+    n_splits: 5
     shuffle: True
     random_state: 42
   threshold_optimization_algorithms: ["Standard", "MaxTPR", "MaxTPRMinFPR", "GeometricRoot"]
-  evaluation_metrics: ["AUC", "Accuracy", "F1Score", "FPR", "MCC", "OptimalProbability", "Sensitivity", "Specificity", "TPR"]
-  evaluation_name: "Evaluation X"
+  evaluation_metrics: ["AUC", "Accuracy", "F1Score", "FPR", "MCC", "OptimalProbability", "Sensitivity", "Specificity", "TPR","PPV", "NPV", "Precisions", "Recalls"]
+  evaluation_name: "Evaluation ALAD Test"
 
-image_model_parameters:
-  method: last_block
-  mode: mode1
-  num_epochs_pneumonia: 1
-  num_epochs_ards: 1
-  batch_size_pneumonia: 32
-  batch_size_ards: 32
-  SEED_pneumonia: 123
-  SEED_ards: 105
-  learning_rate: 0.05 
-  k_folds: 2
-  path: "Data/Image_data"
+#image_model_parameters:
+#  method: last_block
+#  mode: mode1
+#  num_epochs_pneumonia: 1
+#  num_epochs_ards: 1
+#  batch_size_pneumonia: 32
+#  batch_size_ards: 32
+#  SEED_pneumonia: 123
+#  SEED_ards: 105
+#  learning_rate: 0.05
+#  k_folds: 2
+#  path: "Data/Image_data"
 
 supported_algorithms:
   timeseries_models:
     - AdaBoostModel
-    - BayesianNetworkModel
+    #- BayesianNetworkModel
     - LightGBMModel
     - LogisticRegressionModel
     - RandomForestModel
     - SupportVectorMachineModel
     - XGBoostModel
 
-  image_models:
-    - VisionTransformerModel
-    - ConvolutionalNeuralNetworkModel
+  #image_models:
+  #  - VisionTransformerModel
+  #  - ConvolutionalNeuralNetworkModel

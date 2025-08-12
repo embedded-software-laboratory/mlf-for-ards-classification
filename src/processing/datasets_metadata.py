@@ -2,6 +2,19 @@ from typing import Union, Dict
 
 from pydantic import  BaseModel
 
+class AnomalyDetectionMetaData(BaseModel):
+    name: str
+    anomaly_detection_algorithm: str
+
+    anomaly_handling_strategy: str
+    anomaly_fixing_algorithm: Union[str, None] = None
+    anomaly_threshold: Union[float, None] = None
+    columns_checked: Union[list[dict[str, list[str]]], None] = None
+    anomaly_statistics: dict[str, dict[str, Union[int, float]]]
+    algorithm_specific_settings: dict[str, Union[str, int, float, bool, dict, list,  None]] = None
+
+
+
 class ImputationMetaData(BaseModel):
     impute_empty_cells: bool
     imputation_parameter_algorithm_dict: Union[Dict[str, str], None]
@@ -137,10 +150,10 @@ class TimeSeriesMetaDataManagement:
                                                dataset_location=path,
                                                dataset_type=dataset_type,
                                                additional_information=additional_information,
-                                               imputation=processing_meta_data["imputator"],
-                                               unit_conversion=processing_meta_data["unit_converter"],
-                                               parameter_calculation=processing_meta_data["param_calculator"],
-                                               onset_detection=processing_meta_data["onset_determiner"],
+                                               imputation=processing_meta_data["imputation"],
+                                               unit_conversion=processing_meta_data["unit_conversion"],
+                                               parameter_calculation=processing_meta_data["param_calculation"],
+                                               onset_detection=processing_meta_data["onset_determination"],
                                                filtering=processing_meta_data["filtering"],
                                                feature_selection=processing_meta_data["feature_selection"],
                                                percentage_of_ards=percentage_ards,
@@ -192,10 +205,10 @@ class TimeSeriesMetaDataManagement:
     @staticmethod
     def extract_procesing_meta_data(meta_data_dataset: TimeseriesMetaData) -> dict:
         processing_meta_data = {"database_name": meta_data_dataset.datasource,
-                                "imputator": meta_data_dataset.imputation,
-                                "unit_converter": meta_data_dataset.unit_conversion,
-                                "param_calculator": meta_data_dataset.parameter_calculation,
-                                "onset_determiner": meta_data_dataset.onset_detection,
+                                "imputation": meta_data_dataset.imputation,
+                                "unit_conversion": meta_data_dataset.unit_conversion,
+                                "param_calculation": meta_data_dataset.parameter_calculation,
+                                "onset_determination": meta_data_dataset.onset_detection,
                                 "filtering": meta_data_dataset.filtering,
                                 "feature_selection": meta_data_dataset.feature_selection}
         return processing_meta_data

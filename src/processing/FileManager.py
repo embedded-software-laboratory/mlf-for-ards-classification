@@ -4,10 +4,12 @@ from pathlib import Path
 import numpy as np
 import os
 import pandas as pd
+import logging
 from pydantic import ValidationError
 
 from processing.datasets_metadata import  TimeseriesMetaData
 
+logger = logging.getLogger(__name__)
 
 class DataFileManager:
 
@@ -17,6 +19,8 @@ class DataFileManager:
             dataset = self._load_csv_file(file_path)
         elif splitted_path[1] == ".npy":
             dataset = self._load_numpy_file(file_path)
+        elif splitted_path[1] == ".pkl":
+            dataset = self._load_pkl_file(file_path)
         else:
             raise RuntimeError("File type " + splitted_path[1] + " not supported!")
 
@@ -29,12 +33,16 @@ class DataFileManager:
                 dataset_metadata = TimeseriesMetaData.model_validate_json(file_content)
             except ValidationError as err:
                 dataset_metadata = None
-                print(f"Error reading dataset metadata: {err}")
+                logger.info(f"Error reading dataset metadata: {err}")
 
         return dataset, dataset_metadata
     @staticmethod
     def _load_csv_file(file_path) -> pd.DataFrame:
         return pd.read_csv(file_path)
+
+    @staticmethod
+    def _load_pkl_file(file_path) -> pd.DataFrame:
+        return pd.read_pickle(file_path)
 
     @staticmethod
     def _load_numpy_file(file_path) -> pd.DataFrame:

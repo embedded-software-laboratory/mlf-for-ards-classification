@@ -1,7 +1,7 @@
 
 
 import copy
-
+import logging
 from typing import Union
 from datetime import datetime
 
@@ -15,7 +15,7 @@ from metrics.ModelFactories import ExperimentResult, ModelResultFactory, ResultM
 from sklearn.model_selection import StratifiedKFold
 
 
-
+logger = logging.getLogger(__name__)
 
 
 
@@ -27,13 +27,13 @@ class Evaluation:
         self.model_results = {}
 
     def evaluate_timeseries_models(self, models_to_evaluate_dict: dict[str, list[Model]]) -> ExperimentResult:
-        print("Evaluating models")
+        logger.info("Evaluating models")
         for model_algorithm in models_to_evaluate_dict:
-            print(f"Evaluating models for algorithm {model_algorithm}")
+            logger.info(f"Evaluating models for algorithm {model_algorithm}")
             for timeseries_model in models_to_evaluate_dict[model_algorithm]:
-                print(f"Evaluating {timeseries_model.name}")
+                logger.info(f"Evaluating {timeseries_model.name}")
                 if not timeseries_model.trained:
-                    print(f"Skipping {timeseries_model.name} because it makes no sense to evaluate an untrained model")
+                    logger.info(f"Skipping {timeseries_model.name} because it makes no sense to evaluate an untrained model")
                     continue
                 else:
                     model_evaluation = ModelEvaluation(self.config, timeseries_model, self)
@@ -77,12 +77,15 @@ class ModelEvaluation:
     def evaluate_timeseries_model(self, predictors, true_labels, stage: str, meta_data_training_set, meta_data_test_set, split_name: str =" split", ) -> None:
 
         eval_split_name = stage + split_name
-
+        if "patient_id" in predictors.columns:
+            eval_predictors = predictors.drop("patient_id", axis=1)
+        else:
+            eval_predictors = predictors
         if self.model.has_predict_proba():
-            self.model_eval_info.predicted_probas_test = self.model.predict_proba(predictors)[:, 1]
+            self.model_eval_info.predicted_probas_test = self.model.predict_proba(eval_predictors)[:, 1]
 
         else:
-            self.model_eval_info.predicted_labels_test = self.model.predict(predictors)
+            self.model_eval_info.predicted_labels_test = self.model.predict(eval_predictors)
 
         self.model_eval_info.true_labels_test = true_labels
         if self.config["process"]["perform_threshold_optimization"]:
@@ -102,7 +105,7 @@ class ModelEvaluation:
     def cross_validate_timeseries_model(self, data: TimeSeriesDataset) -> None:
 
         if self.evaluation.eval_info is None:
-            print("Can not perform cross validation without evaluation information")
+            logger.info("Can not perform cross validation without evaluation information")
             return
 
         processing_meta_data = TimeSeriesMetaDataManagement.extract_procesing_meta_data(data.meta_data)
@@ -130,7 +133,7 @@ class ModelEvaluation:
 
         for (train_set, test_set), i in zip(cross_validation.split(predictors, labels),
                                             range(self.evaluation.eval_info.n_splits)):
-
+            
             predictors_train = predictors.iloc[train_set]
             labels_train = labels.iloc[train_set]
             training_data_df = predictors_train.assign(ards=labels_train)
@@ -162,13 +165,20 @@ class ModelEvaluation:
                 self.model.name = model_name
                 self.model.save(save_path)
                 self.model.name = old_model_name
-
-            if self.model.has_predict_proba():
-                self.model_eval_info.predicted_probas_test = self.model.predict_proba(predictors_test)[:, 1]
-                self.model_eval_info.predicted_probas_training = self.model.predict_proba(predictors_train)[:, 1]
+            if "patient_id" in predictors_test.columns:
+                  eval_predictors_test = predictors_test.drop("patient_id", axis=1)
             else:
-                self.model_eval_info.predicted_labels_test = self.model.predict(predictors_test)
-                self.model_eval_info.predicted_labels_training = self.model.predict(predictors_train)
+                eval_predictors_test = predictors_test
+            if "patient_id" in predictors_train.columns:
+                  eval_predictors_train = predictors_train.drop("patient_id", axis=1)
+            else:
+                eval_predictors_train = predictors_train
+            if self.model.has_predict_proba():
+                self.model_eval_info.predicted_probas_test = self.model.predict_proba(eval_predictors_test)[:, 1]
+                self.model_eval_info.predicted_probas_training = self.model.predict_proba(eval_predictors_train)[:, 1]
+            else:
+                self.model_eval_info.predicted_labels_test = self.model.predict(eval_predictors_test)
+                self.model_eval_info.predicted_labels_training = self.model.predict(eval_predictors_train)
 
             self.model_eval_info.true_labels_test = labels_test
             self.model_eval_info.true_labels_training = labels_train
