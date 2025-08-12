@@ -1,0 +1,18 @@
+{
+  "name": "ARDS-MLF",
+  "image": "haenfry/master_thesis:v0.5.4", // Replace with your image name and tag
+  "workspaceFolder": "/ml-framework", // Set your project's working directory inside the container
+  "customizations": {
+    "jetbrains": {
+      "plugins": [
+        // Optional: Add PyCharm plugins to be installed in the container
+        // e.g., "org.jetbrains.plugins.yaml", "com.jetbrains.lang.json"
+      ]
+    }
+  },
+  "forwardPorts": [
+    // Optional: List ports to forward from the container to your local machine
+    // e.g., 8000, 5000
+  ],
+  "postCreateCommand": "git config --global --add safe.directory ${containerWorkspaceFolder}"
+}

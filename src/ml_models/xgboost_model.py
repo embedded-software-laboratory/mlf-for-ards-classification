@@ -24,6 +24,7 @@ class XGBoostModel(TimeSeriesProbaModel):
 
         y_train = self.le.fit_transform(label)
         self.model = self.model.fit(predictors, y_train)
+        print(self.model.feature_importances_)
         self.trained = True
 
     def predict(self, patient_data): 

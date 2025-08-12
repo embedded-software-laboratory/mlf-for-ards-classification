@@ -4,6 +4,9 @@ from sklearn.linear_model import LogisticRegression
 import pickle
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 import pandas as pd
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class LogisticRegressionModel(TimeSeriesProbaModel):
@@ -76,7 +79,7 @@ class LogisticRegressionModel(TimeSeriesProbaModel):
     #Die Methode muss ein Array zurückgeben, welches für jede Zeile des Dataframes ein Array mit zwei Werten enthält. Der erste Wert gibt die Wahrscheinlichkeit an, dass es sich bei diesem Datensatz nicht um ARDS handelt, und der zweite gibt die Wahrscheinlichkeit an, dass es sich um ARDS handelt.
 
     def calculate_vif(self, data):
-        print("Calculating VIF...")
+        logger.info("Calculating VIF...")
         vif_data = pd.DataFrame()
         #create empty pandas dataframe
         #vif_data["Feature"] = data.predictors
@@ -85,7 +88,7 @@ class LogisticRegressionModel(TimeSeriesProbaModel):
         vif_data["VIF"] = [variance_inflation_factor(data.values, i) for i in range(data.shape[1])]
         #For each column index i, the VIF is calculated using the variance_inflation_factor function from the statsmodels.stats.outliers_influence module, applied to the entire input data (data.values) and the index i.
         vif_data.round(1)
-        print(vif_data)
+        logger.info(vif_data)
 
     def _init_lr(self) -> LogisticRegression:
         """Function that intializes the Random Forest"""
@@ -103,19 +106,4 @@ class LogisticRegressionModel(TimeSeriesProbaModel):
         file = open(filepath + f"{self.algorithm}_{self.name}.pkl", "rb")
         self.model = pickle.load(file)
 
-# Logistic_regression().save("../Save/Logistic_regression")
 
-
-# Laden
-
-# Logistic_regression().load("../Save/Logistic_regression")
-
-#Grid Search: In grid search, you define a grid of hyperparameter values that you want to search over. The algorithm then evaluates the model performance for each combination of hyperparameters and returns the combination that performs the best.
-
-#Continuous parameters or discretisiert in clusters like BN?
-
-# Durchführung der Grid-Suche
-#grid_search.fit(X_train, y_train)
-
-# Ausgabe der besten Hyperparameter-Kombination
-#print("Beste Hyperparameter-Kombination:", grid_search.best_params_)
