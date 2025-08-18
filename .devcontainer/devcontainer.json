@@ -1,6 +1,6 @@
 {
   "name": "ARDS-MLF",
-  "image": "haenfry/master_thesis:v0.5.4", // Replace with your image name and tag
+  "image": "registry.git-ce.rwth-aachen.de/smith-project/ards-mlp/ml-framework:latest", // Replace with your image name and tag
   "workspaceFolder": "/ml-framework", // Set your project's working directory inside the container
   "customizations": {
     "jetbrains": {
@@ -14,5 +14,5 @@
     // Optional: List ports to forward from the container to your local machine
     // e.g., 8000, 5000
   ],
-  "postCreateCommand": "git config --global --add safe.directory ${containerWorkspaceFolder}"
+  //"postCreateCommand": "git config --global --add safe.directory ${containerWorkspaceFolder}"
 }
