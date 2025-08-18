@@ -1,7 +1,6 @@
 {
   "name": "ARDS-MLF",
   "image": "registry.git-ce.rwth-aachen.de/smith-project/ards-mlp/ml-framework:latest", // Replace with your image name and tag
-  
   "customizations": {
     "jetbrains": {
       "plugins": [

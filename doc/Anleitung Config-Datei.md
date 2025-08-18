@@ -8,10 +8,11 @@ In diesem Abschnitt wird festgelegt, welche Schritte ausgeführt werden sollen. 
 
 1. **load_models**: Hierüber kann gesteuert werden, ob gespeicherte Modelle geladen werden sollen oder nicht. Falls dies auf True gesetzt wird, werden die unter dem Punkt "loading_paths" angegebenen Pfade für das Laden der Modelle verwendet.
 2. **load_timeseries_data**: Hierüber kann gesteuert werden, ob Zeitreihendaten geladen werden sollen. Falls dies auf True steht, wird die Datei, die unter dem Punkt "data" angegeben ist, geladen.
-3. **perform_imputation**: Falls True, werden fehlende Werte in den geladenen Daten imputiert. Im Bereich "data_processing/imputation" wird genauer eingestellt, wie die Imputation ablaufen soll. 
+3. **perform_anomaly_detection**: Falls True wird auf den geladenen Daten eine Anomalieerkennung durchgeführt. Die Einstellungen für die Anomalieerkennung werden unter [anomaly_detection](#anomaly_detection) erklärt.
+4. **perform_imputation**: Falls True, werden fehlende Werte in den geladenen Daten imputiert. Im Bereich "data_processing/imputation" wird genauer eingestellt, wie die Imputation ablaufen soll. 
 	Komplett leere Spalten können nicht imputiert werden und werden vom Framework automatisch entfernt.
 	Wenn in einigen Spalten keine Werte vorhanden sind, kann dies im weiteren Verlauf zu Abstürzen führen. Daher ist es vermutlich i.d.R. sinnvoll, diesen Punkt zu aktivieren und alle Parameter zu imputieren. 
-4. **perform_unit_conversion**: Falls True, wird das Framework versuchen, Einheiten von Parametern in die vom Catalog of Items vorgegebenen Einheiten umzurechnen. Dafür muss beim Punkt "data/database" die Datenbank angegeben werden, aus denen die geladenen Daten stammen. Das Framework nimmt dann an, dass jeder Parameter in der Einheit kommt, die in der Relevanztabelle für die entsprechende Datenbank angegeben ist.
+5. **perform_unit_conversion**: Falls True, wird das Framework versuchen, Einheiten von Parametern in die vom Catalog of Items vorgegebenen Einheiten umzurechnen. Dafür muss beim Punkt "data/database" die Datenbank angegeben werden, aus denen die geladenen Daten stammen. Das Framework nimmt dann an, dass jeder Parameter in der Einheit kommt, die in der Relevanztabelle für die entsprechende Datenbank angegeben ist.
 	Aktuell implementiert sind die folgenden Umrechnungen:
 	1. Datenbank eICU:
 		- Hämoglobin: g/dL nach mmol/L
@@ -29,22 +30,22 @@ In diesem Abschnitt wird festgelegt, welche Schritte ausgeführt werden sollen. 
 		- CRP: mg/L nach nmol/L
 	3. Datenbank MIMIC-4:
 		- Hämoglobin: g/dL nach mmol/L
-5. **calculate_missing_params**: Falls True, wird das Framework versuchen, fehlende Parameter aus den vorhandenen Daten zu berechnen. Unter "data_processing/params_to_calculate" wird angegeben, welche Parameter noch berechnet werden sollen.
-6. **perform_ards_onset_detection**: Falls True, wird das Framework zu jedem einzelnen Patienten in den Daten (identifiziert über die Spalte "patient_id" bestimmen, wann vermutlich ARDS erstmalig aufgetreten ist und diesen Zeitpunkt oder eine gewisse Zeitspanne darum herum zurückgeben. Nach welcher Regel genau der ARDS-Beginn bestimmt werden soll und welche Daten genau zurückgegeben werden sollen, kann im Punkt "data_processing/ards_onset_detection" festgelegt werden.
+6. **calculate_missing_params**: Falls True, wird das Framework versuchen, fehlende Parameter aus den vorhandenen Daten zu berechnen. Unter "data_processing/params_to_calculate" wird angegeben, welche Parameter noch berechnet werden sollen.
+7. **perform_ards_onset_detection**: Falls True, wird das Framework zu jedem einzelnen Patienten in den Daten (identifiziert über die Spalte "patient_id" bestimmen, wann vermutlich ARDS erstmalig aufgetreten ist und diesen Zeitpunkt oder eine gewisse Zeitspanne darum herum zurückgeben. Nach welcher Regel genau der ARDS-Beginn bestimmt werden soll und welche Daten genau zurückgegeben werden sollen, kann im Punkt "data_processing/ards_onset_detection" festgelegt werden.
 	Für die bessere Vergleichbarkeit wird der am ehesten passende Zeitpunkt auch bei den Nicht-ARDS-Patienten rausgesucht. 
-7. **perform_filtering**: Falls aktiviert, wird das Framework die im Preprocessing-Bereich unter "filtering" eingestellten Filter ausführen, um so Patienten zu filtern, die möglicherweise ein falsches ARDS-Label haben. Genauere Erklärungen, welche Filter es gibt, werden im Preprocessing-Bereich beschrieben. 
-8. **perform_feature_selection**: Um die Geschwindigkeit des Trainingsprozesses zu erhöhen, kann mithilfe der Feature Selection berechnet werden, welche Parameter einen besonderes hohen bzw. geringen Einfluss auf den Referenz-Parameter haben. Anschließend werden Parameter mit geringem Einfluss entfernt. Einstellungen zum Feature-Selection-Prozess werden unter "feature_selection" vorgenommen.
-9. **perform_data_segregation**: Mit diesem Schritt werden die geladenen Daten in einen Datensatz fürs Modelltraining und einen Datensatz für die Evaluation/Prediktion aufgeteilt. Unter "data_segregation" können weitere Einstellungen vorgenommen werden. 
+8. **perform_filtering**: Falls aktiviert, wird das Framework die im Preprocessing-Bereich unter "filtering" eingestellten Filter ausführen, um so Patienten zu filtern, die möglicherweise ein falsches ARDS-Label haben. Genauere Erklärungen, welche Filter es gibt, werden im Preprocessing-Bereich beschrieben. 
+9. **perform_feature_selection**: Um die Geschwindigkeit des Trainingsprozesses zu erhöhen, kann mithilfe der Feature Selection berechnet werden, welche Parameter einen besonderes hohen bzw. geringen Einfluss auf den Referenz-Parameter haben. Anschließend werden Parameter mit geringem Einfluss entfernt. Einstellungen zum Feature-Selection-Prozess werden unter "feature_selection" vorgenommen.
+10. **perform_data_segregation**: Mit diesem Schritt werden die geladenen Daten in einen Datensatz fürs Modelltraining und einen Datensatz für die Evaluation/Prediktion aufgeteilt. Unter "data_segregation" können weitere Einstellungen vorgenommen werden. 
 	Diese Schritt muss nur aktiviert werden, wenn in einem Durchlauf die Modelle trainiert und anschließend evaluiert werden sollen. Falls dieser Schritt deaktiviert wird, wird der komplette geladene Datensatz sowohl für die Klassifizierung und Evaluation als auch fürs Training verwendet; daher ergibt eine Deaktivierung der Aufteilung nur Sinn wenn entweder Klassifizierung/Evaluation oder Modell-Training durchgeführt werden soll. 
-10. **perform_timeseries_training**: Wenn dies aktiviert wird, werden alle unter dem Punkt "timeseries_models_to_execute" angegebenen Zeitreihenmodelle mit den geladenen Daten trainiert. Wenn im gleichen Durchlauf eine Evaluation durchgeführt werden soll, sollte der Punkt "perform_data_segregation" ebenfalls aktiviert werden. 
-11. **perform_timeseries_classification**: Falls aktiviert, werden werden alle verfügbaren Zeitreihenmodelle die geladenen Daten klassifizieren und für jede Zeile entsprechend 1 für "ARDS" oder 0 für "Nicht ARDS" ausgeben.
-12. **perform_threshold_optimization**: Falls aktiviert und für das ausgewählte Modell möglich, wird nach unterschiedlichen Algorithmen die optimale Entscheidungsgrenze bestimmt, welche Algorithmen dafür verwendet werden wird unter evaluation threshold_optimization_algorithms festgelegt.
-13. **calculate_evaluation_metrics**: Falls aktiviert, wird das Framework die geladenen Testdaten dazu verwenden, die Modelle diese klassifizieren zu lassen und zu berechnen, wie gut die Ergebnisse der Modelle sind. Dafür werden verschiedene Metriken berechnet. 
-14. **perform_cross_validation**: Falls aktiviert, werden die Modelle mit den geladenen Daten kreuzvalidiert. Hierfür können unter "evaluation" noch einige Parameter eingestellt werden. 
-15. **save_models**: Falls True, werden alle trainierten Modelle im Ordner "Save" gespeichert. 
-16. **load_image_data**: Hierüber kann gesteuert werden, ob Bilddaten für das Training der Röntgenbild-Modelle geladen werden sollen. Falls True, werden die Bilder von dem unter data/image_file_path angegebenem Dateipfad geladen.
-17. **train_image_models**: Falls aktiviert, werden die unter "image_models_to_execute" angegebenen Modelle für Röntenbilder trainiert. Dies umfasst das Training für die Erkennung von Lungenentzündungen sowie das Transfer-Learning zu ARDS. 
-18. **test_image_models**: Falls aktiviert,w erden die trainierten Bilddaten-Modelle mit dem geladenen ARDS-Bilddatensatz evaluiert. 
+11. **perform_timeseries_training**: Wenn dies aktiviert wird, werden alle unter dem Punkt "timeseries_models_to_execute" angegebenen Zeitreihenmodelle mit den geladenen Daten trainiert. Wenn im gleichen Durchlauf eine Evaluation durchgeführt werden soll, sollte der Punkt "perform_data_segregation" ebenfalls aktiviert werden. 
+12. **perform_timeseries_classification**: Falls aktiviert, werden werden alle verfügbaren Zeitreihenmodelle die geladenen Daten klassifizieren und für jede Zeile entsprechend 1 für "ARDS" oder 0 für "Nicht ARDS" ausgeben.
+13. **perform_threshold_optimization**: Falls aktiviert und für das ausgewählte Modell möglich, wird nach unterschiedlichen Algorithmen die optimale Entscheidungsgrenze bestimmt, welche Algorithmen dafür verwendet werden wird unter evaluation threshold_optimization_algorithms festgelegt.
+14. **calculate_evaluation_metrics**: Falls aktiviert, wird das Framework die geladenen Testdaten dazu verwenden, die Modelle diese klassifizieren zu lassen und zu berechnen, wie gut die Ergebnisse der Modelle sind. Dafür werden verschiedene Metriken berechnet. 
+15. **perform_cross_validation**: Falls aktiviert, werden die Modelle mit den geladenen Daten kreuzvalidiert. Hierfür können unter "evaluation" noch einige Parameter eingestellt werden. 
+16. **save_models**: Falls True, werden alle trainierten Modelle im Ordner "Save" gespeichert. 
+17. **load_image_data**: Hierüber kann gesteuert werden, ob Bilddaten für das Training der Röntgenbild-Modelle geladen werden sollen. Falls True, werden die Bilder von dem unter data/image_file_path angegebenem Dateipfad geladen.
+18. **train_image_models**: Falls aktiviert, werden die unter "image_models_to_execute" angegebenen Modelle für Röntenbilder trainiert. Dies umfasst das Training für die Erkennung von Lungenentzündungen sowie das Transfer-Learning zu ARDS. 
+19. **test_image_models**: Falls aktiviert,w erden die trainierten Bilddaten-Modelle mit dem geladenen ARDS-Bilddatensatz evaluiert. 
 
 ## models
 In diesem Abschnitt werden die Modelle, die in den unterschiedlichen Schritten des Frameworks verwendet werden sollen festgelgt.
@@ -95,14 +96,58 @@ Unter "image_file_path" wird angegeben, wo die Datensätze für die Bilddaten-Mo
 Mit den Unterpunkten "pneumonia_dataset" bzw. "ards_dataset" wird angegeben, welche Datensets genau für das Pneumonie-Training bzw. das ARDS-Training verwendet werden solle. (Hier gibt es verschiedene, da in den Vorarbeiten mehrere Datensets mit jeweils unterschiedlichen Gewichtungen und Balancierungen erzeugt wurden). Es muss der Name des Ordners, in dem das Datenset liegt, angegeben werden. 
 
 
-## data_processing
+## preprocessing
 
 In diesem Bereich werden einige Einstellungen vorgenommen, die genau festlegen, wie genau das Data-Preprocessing abläuft.
 
-1. **filtering**: Hier wird festgelegt, welche Filter zum Filtern von Patienten, die möglicherweise ein falsches ARDS-Label haben, aktiviert werden sollen. Möglich sind die Filter Strict, Lite und BD (jeweils als eigener Stichpunkt unter dem Punkt "filter").
-	- **Strict**: Filter Strict entfernt alle Patienten aus den Daten, die angeblich kein ARDS haben, bei denen aber ein Horovitz-Quotient unter 200 mmHg aufgezeichnet wurde.
-	- **Lite**: Filter Lite entfernt alle Patienten aus den Daten, die angeblich kein ARDS haben und zusätzlich weder Hypervolämie, noch ein Lungenödem noch Herzversagen, die aber trotzdem einen Horovitz-Quotienten unter 200 mmHg aufweisen. Filter Strict und Lite sollten sinnvollerweise nicht gleichzeitig verwendet werden, da Filter Lite ähnlich zu Strict ist, nur etwas weniger restriktiv.
-	- **BD**: Filter BD (Berlin Definition) entfernt alle Patienten aus den Daten, die angeblich ARDS haben, aber bei denen nie ein Horovitz-Quotient unter 300 mmHg gemessen wurde (widerspricht der ARDS-Definition). 
+* **patients_per_process**: Gibt an wie viele Patienten in einem Prozess verarbeitet werden sollen
+* **max_processes**: Gibt an wie viele Prozesse maximal parallel laufen sollen
+
+### anomaly_detection
+Hier wird der zu verwendende Anomalieerkennungsalgorithmus konfiguriert. Jeder Algorithmus hat seinen eigenen Abschnitt. Aktuell werden folgende Algorithmen unterstützt:
+* Physiological Limits (fälschlicherweise Physical Limits genannt)
+* SW-ABSAD-MOD
+* DeepAnt
+* ALAD
+
+Jeder dieser Algorithmen hat die folgenden Einstellungsmöglichkeiten:
+* **active**: Gibt an ob der Algorithmus zur Anomalieerkennung verwendet werden soll. Es wird immer der erste Algorithmus verwendet bei dem active auf True steht
+* **name**: Name des Algorithmus wie er in den Metadaten auftauchen soll
+* **columns_to_check**: Liste welche Spalten auf Anomalien überprüft werden soll. Je nach verwendetem AD-Algorithmus werden hier andere Eingaben erwartet. Für Details bitte in die Implementierung gucken. Ist [] gesetzt werden alle Spalten bis auf patient_id und timestamp überprüft.
+* **handling_strategy**: Wie sollen erkannte Anomalien behandelt werden. Mögliche Werte sind:
+    * delete_value: Löscht den Wert der als Anomalie erkannt wurde
+	* delete_than_impute: Löscht den Wert und imputiert ihn dann so wie es unter **fix_algorithm** beschrieben ist
+	* delete_row_if_any_anomaly: Löscht die gesamte Zeile, wenn ein Wert als Anomalie markiert wird
+	* delete_row_if_many_anomalies: Löscht die gesamte Zeile, wenn die Anzahl der Werte die als Anomalie markiert wurden **anomaly_threshold** übersteigt. Sollte die Zeile nicht gelöscht werden, werden Werte die als Anomalie erkannt wurden mit dem unter **fix_algorithm** angegeben Algorithmus imputiert
+* **fix_algorithm**: Gibt an wie Werte, die wegen AD gelöscht wurden, imputiert werden. Mögliche Werte sind:
+	* **forward**: Letzter nicht gelöschter Wert wird aufgefüllt
+	* **backward**: Nächster nicht gelöschter Wert wird aufgefüllt
+	* **interpolate**: Lineare Interpolation zwischen letztem und nächsten Wert. Achtung: Wert wird durch die Anzahl der fehldenden Datenpunkte beeinflusst
+* **anomaly_threshold**: Relative Anzahl an Anomalien ab der eine Zeile gelöscht wird wenn **delete_row_if_many_anomalies** ausgewählt ist
+* **supported_stages** Gibt an welche Arbeitsschritte vom AD-Algorithmus unterstützt werden. Dieser Eintrag sollte nur verändert werden, wenn für ein Modell zusätzliche Arbeitsschritte implementiert oder Arbeitsschritte entfernt werden. Mögliche Werte sind:
+	* **prepare**: Arbeitsschritt, der die Daten für die Verarbeitung durch den Algorithmus vorbereitet
+	* **train**: Arbeitsschritt, der die DeepLearning Modelle trainiert
+	* **predict**: Arbeitsschritt, der die Anomalien auf Grundlage des gewählten Algorithmus erkennt
+	* **fix**: Arbeitsschritt, der die erkannten Anomalien mit dem unter **handling_strategy** angegebenen Algorithmus behandelt
+* **active_stages**: Arbeitsschritte, die ausgeführt werden sollen wenn der gewählte Algorithmus ausgeführt wird. Es handelt sich hier um eine Liste. Mögliche Einträge sind unter **supported_stages** beschrieben.
+* **anomaly_data_dir**: Ordner in dem die Ergebnisse des **predict** Schritts gespeichert werden
+* **prepared_data_dir**: Ordner, in dem die Ergebnisse des **prepare** Schritts gespeichert werden
+
+Danach folgen Algorithmen spezifische Einstellungen. Für eine Erklärung dieser entweder in die Implementierung oder original Paper gucken.
+DeepLearning Ansätze haben darüber hinaus folgenden Einstellungen:
+
+* **run_dir**: Hier werden logs von Training und AD-Schritt gespeichert
+* **checkpoint_dir**: Hier werden Models für die im Code angegebenen Checkpoints gespeichert
+* **load_data**: Gibt an, ob im Prepare Schritt existierende Daten genutzt werden sollen oder nicht
+* **save_data**: Gibt an, ob die im Prepare Schritt erzeugten Trainings/Test/Eval Datensätze bereits existierende Datensätze überschreiben sollen
+* **retrain_models**: Dictionary, das angibt ob bereits existierende Modelle genutzt werden sollen oder neue Modelle trainiert werden sollen. Für mögliche Werte bitte Implementierung checken.
+
+### filtering
+Hier wird festgelegt, welche Filter zum Filtern von Patienten, die möglicherweise ein falsches ARDS-Label haben, aktiviert werden sollen. Möglich sind die Filter Strict, Lite und BD (jeweils als eigener Stichpunkt unter dem Punkt "filter").
+
+* **Strict**: Filter Strict entfernt alle Patienten aus den Daten, die angeblich kein ARDS haben, bei denen aber ein Horovitz-Quotient unter 200 mmHg aufgezeichnet wurde.
+* **Lite**: Filter Lite entfernt alle Patienten aus den Daten, die angeblich kein ARDS haben und zusätzlich weder Hypervolämie, noch ein Lungenödem noch Herzversagen, die aber trotzdem einen Horovitz-Quotienten unter 200 mmHg aufweisen. Filter Strict und Lite sollten sinnvollerweise nicht gleichzeitig verwendet werden, da Filter Lite ähnlich zu Strict ist, nur etwas weniger restriktiv.
+* **BD**: Filter BD (Berlin Definition) entfernt alle Patienten aus den Daten, die angeblich ARDS haben, aber bei denen nie ein Horovitz-Quotient unter 300 mmHg gemessen wurde (widerspricht der ARDS-Definition). 
 
 2. **imputation**: Hier wird festgelegt, bei welchen Parametern fehlende Daten imputiert werden sollen und welcher Imputationsalgorithmus für jeden Paramter verwendet werden soll. Zur Verfügung stehen die folgenden Algorithmen:
 	- **forward**: Fehlende Werte werden mit dem letzten bekannten Wert aufgefüllt. Falls ganz zu Beginn fehlende Werte auftauchen, es also keinen vorherigen bekannten Wert gibt, wird der erste vorhandene Wert für diese Lücken verwendet.
