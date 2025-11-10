@@ -1,4 +1,4 @@
-# MLP Framwork
+# ML Framwork
 
 This repository contains a software which can be used to
 * train new machine learning models for the automated detection of ARDS,
