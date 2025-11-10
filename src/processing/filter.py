@@ -1,5 +1,9 @@
 from processing.datasets_metadata import FilteringMetaData
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 class Filter:
     def __init__(self, config) -> None:
         self.filter = []
@@ -39,7 +43,7 @@ class Filter:
         # Keep patients with ARDS or without all of the conditions (Horovitz < 200 and no comorbidities)
         required_columns = ["hypervolemia", "pulmonary-edema", "heart-failure"]
         if not all(col in dataframe.columns for col in required_columns):
-            print("Skipping filter b since not all necessary columns are present")
+            logger.info("Skipping filter b since not all necessary columns are present")
             return dataframe
 
         ards_mask = dataframe.groupby("patient_id")[

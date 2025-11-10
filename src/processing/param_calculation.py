@@ -1,7 +1,9 @@
+import logging
+
 import numpy as np
 import pandas as pd
 from processing.datasets_metadata import ParamCalculationMetaData
-
+logger = logging.getLogger(__name__)
 class ParamCalculator:
 
     def __init__(self, params_to_calculate):
@@ -14,12 +16,12 @@ class ParamCalculator:
         self.meta_data = None
 
     def calculate_missing_params(self, dataframe, job_number: int, total_job_count: int) -> pd.DataFrame:
-        print("Start unit conversion for job " + str(job_number) + f" of {total_job_count} jobs...")
+        logger.info("Start unit conversion for job " + str(job_number) + f" of {total_job_count} jobs...")
 
 
         for param in self.params_to_calculate:
             if param in dataframe.columns:
-                print(f"Skipping calculation of {param} since it already exists in the given dataset")
+                logger.info(f"Skipping calculation of {param} since it already exists in the given dataset")
             else:
                 if param == "delta-p":
                     dataframe = self.calculate_delta_p(dataframe)
@@ -39,17 +41,17 @@ class ParamCalculator:
                 self.calculated_params.add(param)
 
 
-        print("Finished unit conversion for job " + str(job_number) + f" of {total_job_count} jobs...")
+        logger.info("Finished unit conversion for job " + str(job_number) + f" of {total_job_count} jobs...")
         return dataframe
 
-    def create_metadata(self):
+    def create_meta_data(self):
         if len(list(self.calculated_params)) > 0:
             self.meta_data = ParamCalculationMetaData(calculated_parameters=list(self.calculated_params))
 
     @staticmethod
     def calculate_delta_p(dataframe):
         if "delta-p" in dataframe.columns:
-            print("Skipping calculation of delta P since it already exists in the given dataset")
+            logger.info("Skipping calculation of delta P since it already exists in the given dataset")
             return dataframe
         if "p-ei" not in dataframe.columns:
             raise RuntimeError(
@@ -66,7 +68,7 @@ class ParamCalculator:
     @staticmethod
     def calculate_individual_tv(dataframe):
         if "tidal-vol-per-kg" in dataframe.columns:
-            print("Skipping calculation of individual tidal volume since it already exists in the given dataset")
+            logger.info("Skipping calculation of individual tidal volume since it already exists in the given dataset")
             return dataframe
         if "height" not in dataframe.columns:
             raise RuntimeError("Body height is required to calculate individual tidal volume, but this parameter"
@@ -91,7 +93,7 @@ class ParamCalculator:
     @staticmethod
     def calculate_fluid_balance(dataframe):
         if "liquid-balance" in dataframe.columns:
-            print("Skipping calculation of fluid balance since it already exists in the given dataset")
+            logger.info("Skipping calculation of fluid balance since it already exists in the given dataset")
             return dataframe
         if "liquid-input" not in dataframe.columns:
             raise RuntimeError("Fluid input is required to calculate fluid balance, but this parameter "
@@ -128,7 +130,7 @@ class ParamCalculator:
     @staticmethod
     def calculate_absolute_lymphocytes(dataframe):
         if "lymphocytes_abs" in dataframe.columns:
-            print("Skipping calculation of lymphocytes since it already exists in the given dataset")
+            logger.info("Skipping calculation of lymphocytes since it already exists in the given dataset")
             return dataframe
         if "lymphocytes (percentage)" not in dataframe.columns:
             raise RuntimeError("Lymphocyte percentage is required to calculate absolute number of lymphocytes, "
@@ -145,7 +147,7 @@ class ParamCalculator:
     @staticmethod
     def calculate_horovitz(dataframe):
         if "horovitz" in dataframe.columns:
-            print("Skipping calculation of horovitz since it already exists in the given dataset")
+            logger.info("Skipping calculation of horovitz since it already exists in the given dataset")
             return dataframe
         if "pao2" not in dataframe.columns:
             raise RuntimeError("PaO2 is required to calculate horovitz, but this parameter is missing in the "
@@ -170,7 +172,7 @@ class ParamCalculator:
     @staticmethod
     def calculate_ie_ratio(dataframe):
         if "i-e" in dataframe.columns:
-            print("Skipping calculation of I:E ratio since it already exists in the given dataset")
+            logger.info("Skipping calculation of I:E ratio since it already exists in the given dataset")
             return dataframe
         if "inspiry-time" not in dataframe.columns:
             raise RuntimeError("Inspiratory time is required to calculate I:E ratio, "
@@ -187,7 +189,7 @@ class ParamCalculator:
     @staticmethod
     def calculate_lymphocyte_percentage(dataframe):
         if "lymphocytes (relative)" in dataframe.columns:
-            print("Skipping calculation of lymphocyte percentage since it already exists in the given dataset")
+            logger.info("Skipping calculation of lymphocyte percentage since it already exists in the given dataset")
             return dataframe
         if "lymphocytes_abs" not in dataframe.columns:
             raise RuntimeError("absolute number of lymphocytes is required to calculate lymphocyte percentage, "

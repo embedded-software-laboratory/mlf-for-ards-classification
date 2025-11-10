@@ -1,0 +1,17 @@
+{
+  "name": "ARDS-MLF",
+  "image": "registry.git-ce.rwth-aachen.de/smith-project/ards-mlp/ml-framework:latest", // Replace with your image name and tag
+  "customizations": {
+    "jetbrains": {
+      "plugins": [
+        // Optional: Add PyCharm plugins to be installed in the container
+        // e.g., "org.jetbrains.plugins.yaml", "com.jetbrains.lang.json"
+      ]
+    }
+  },
+  "forwardPorts": [
+    // Optional: List ports to forward from the container to your local machine
+    // e.g., 8000, 5000
+  ],
+  
+}

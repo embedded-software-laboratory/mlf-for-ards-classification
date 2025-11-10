@@ -1,7 +1,10 @@
 import numpy as np
 import pandas as pd
+import logging
 
 from processing.datasets_metadata import ImputationMetaData
+
+logger = logging.getLogger(__name__)
 
 class DataImputator:
     def __init__(self, config) -> None:
@@ -26,7 +29,7 @@ class DataImputator:
 
     def impute_missing_data(self, dataframe: pd.DataFrame, job_number: int, total_job_count: int) -> pd.DataFrame:
         # TODO log how many values were imputed
-        print("Start imputation for job " + str(job_number) + f" of {total_job_count} jobs...")
+        logger.info("Start imputation for job " + str(job_number) + f" of {total_job_count} jobs...")
         columns = dataframe.columns
 
         for column in columns:
@@ -60,15 +63,18 @@ class DataImputator:
                         frame.interpolate(method="linear", limit_direction="both"))], ignore_index=True)
                 dataframe[column] = temp_dataframe
 
-        dataframe.dropna(subset=['ards'], inplace=True, ignore_index=True, how="any", axis=0)
+        dataframe.dropna(subset=['ards'], inplace=True, how="any", axis=0)
+        dataframe.reset_index(drop=True, inplace=True)
         if not self.impute_empty_cells:
             dataframe.dropna(how="all", axis=1, ignore_index=True, inplace=True)
+            dataframe.reset_index(drop=True, inplace=True)
             dataframe.dropna(how="any", axis=0, ignore_index=True, inplace=True)
+            dataframe.reset_index(drop=True, inplace=True)
         else:
             dataframe.fillna(value=-100000, axis=1, inplace=True)
         if len(dataframe.index) == 0:
             dataframe = pd.DataFrame(columns=columns)
-        print("Finished imputation for job " + str(job_number) + f" of {total_job_count} jobs...")
+        logger.info("Finished imputation for job " + str(job_number) + f" of {total_job_count} jobs...")
         return dataframe
 
     def create_meta_data(self):
