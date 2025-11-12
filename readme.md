@@ -51,14 +51,14 @@ In order to clone the repository via https. You first need to create an personal
 The recommended way to setup the development environment for this project is the devcontainer setup. Although conda environments were used for earlier version the environment.yml is not updated any more. 
 
 #### Devcontainer
-In order for the dev container to work you need to have docker installed. A guide on how to install docker can be found [here] ("https://docs.docker.com/desktop/").
+In order for the dev container to work you need to have docker installed. A guide on how to install docker can be found [here]("https://docs.docker.com/desktop").
 After docker is installed you need to have a personal access token which you can use to download the needed docker image. The process is described [here](#creating-access-tokens). Watch out to set the correct scopes.
 Then follow the next steps:
 * Open the terminal on your local machine
 * Type "docker login registry.git-ce.rwth-aachen.de" and then login with your git-ce username and access token.
 
 For VS-Code:
-* Install the devcontainer plugin [here]("vscode:extension/ms-vscode-remote.remote-containers").
+* Install the devcontainer plugin here: "vscode:extension/ms-vscode-remote.remote-containers".
 * Open the folder containing the repository
 * Press "Ctrl+Shift+P" and select "Dev Containers: Rebuild and Reopen in Container"
 * Wait for the image to Download (This may take some time)
@@ -67,7 +67,7 @@ For VS-Code:
 For PyCharm:
 
 * If you have an open project: Close the project
-* Make sure you have the [Dev Containers Plugin]("https://plugins.jetbrains.com/plugin/21962-dev-containers") installed 
+* Make sure you have the Dev Containers Plugin installed: "https://plugins.jetbrains.com/plugin/21962-dev-containers"
 * On the welcome to PyCharm screen go to "Remote Development" and then "Dev Containers"
 * Click on "New Dev Container
 * Select "From Local Project"
@@ -88,7 +88,7 @@ Then follow the steps described below:
  * The last command will open a shell in the container you may start the ARDS-MLF as you normally do via the command line. 
 
 ## Creating Access Tokens
-Acess Tokens are created [here]("https://git-ce.rwth-aachen.de/-/user_settings/personal_access_tokens").
+Acess Tokens are created under User -> Prefernces -> Personal access tokens.
 If you want to clone the repository via https make sure the token has the following scopes:
  * read_repository
  * write_repository
