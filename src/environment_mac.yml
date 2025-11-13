@@ -1,4 +1,4 @@
-name: mlp_framework_mac
+name: ml_framework_mac
 channels:
   - defaults
   - conda-forge

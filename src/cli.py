@@ -3,9 +3,9 @@ from argparse import ArgumentParser
 
 def make_parser() -> ArgumentParser:
     parser = ArgumentParser(
-        prog='mlp-framework',
-        description='A framework for the development of models used in the ' +
-        'ARDS machine learning pipeline',
+        prog='ml-framework',
+        description='A framework for the development of AI models used for ' +
+        'ARDS classification',
     )
 
     config_group = parser.add_mutually_exclusive_group(required=True)

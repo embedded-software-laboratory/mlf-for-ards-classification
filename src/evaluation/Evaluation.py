@@ -18,8 +18,6 @@ from sklearn.model_selection import StratifiedKFold
 logger = logging.getLogger(__name__)
 
 
-
-
 class Evaluation:
     def __init__(self, config, dataset_training: TimeSeriesDataset, dataset_test: TimeSeriesDataset):
         self.config = config

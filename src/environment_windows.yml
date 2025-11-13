@@ -1,4 +1,4 @@
-name: mlp_framework
+name: ml_framework
 channels:
   - defaults
   - conda-forge

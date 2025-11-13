@@ -130,14 +130,6 @@ models:
           to_train: "Data/Models/TimeSeriesModels/Config/Training/"
           to_cross_validate: "Data/Models/TimeSeriesModels/Config/CrossValidation/"
 
-
-
-
-
-
-
-
-
 #image_models_to_execute:
 #  - VisionTransformerModel
 
@@ -151,11 +143,7 @@ algorithm_base_path:
   XGBoost: "default"
   RecurrentNeuralNetwork: "Save/Cross validation results/Recurrent neural network_1"
 
-
 storage_path: "src/Save/ExperimentResult"
-
-
-
 
 data:
   timeseries_file_path: "/work/rwth1474/Data/time_series/uka_data_050623.npy"

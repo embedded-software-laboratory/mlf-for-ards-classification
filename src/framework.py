@@ -1,5 +1,5 @@
 from cli import make_parser
-from processing import DataFileManager, DataProcessor, FeatureSelection, DataSegregator,  TimeSeriesDatasetManagement, TimeSeriesDataset
+from processing import DataFileManager, DataProcessor, FeatureSelection, DataSegregator, TimeSeriesDatasetManagement, TimeSeriesDataset
 from ml_models import *
 from evaluation import Evaluation
 from metrics import ResultManagement
@@ -50,10 +50,6 @@ class Framework:
         self.timeseries_evaluations_result = None
         self.timeseries_cross_validation_result = None
         self.processing_meta_data = {}
-
-
-
-
 
         self.dataProcessor = DataProcessor(config["preprocessing"], config["data"]["database"], config["process"])
         self.feature_selector = FeatureSelection(config["feature_selection"])
@@ -291,11 +287,11 @@ class Framework:
 
         if self.process["load_image_data"]:
             logger.info("Currently not supported")
-            #self.load_image_data()
+            self.load_image_data()
 
         if self.process["train_image_models"]:
             logger.info("Currently not supported")
-            #self.learn_image_models()
+            self.learn_image_models()
 
         if self.process["test_image_models"]:
             logger.info("Currently not supported")
