@@ -7,3 +7,5 @@ Runscripts
 .idea
 *.ipynb_checkpoints/
 src/Testing/*
+Fragen zum Framework.pdf
+settings.json
