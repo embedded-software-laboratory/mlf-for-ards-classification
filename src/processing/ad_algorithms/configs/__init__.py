@@ -1,1 +1,1 @@
-from processing.ad_algorithms.configs.PhysiologicalLimits import physical_limits_database_dict
+from processing.ad_algorithms.configs.PhysiologicalLimits import physiological_limits_database_dict
