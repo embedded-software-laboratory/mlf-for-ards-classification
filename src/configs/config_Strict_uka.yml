@@ -184,6 +184,7 @@ preprocessing:
       theta: 0.5
       k: 5
       s: 5
+
     Physiological_Outliers:
       active: True
       name: "Physiological_Outliers"
@@ -230,7 +231,6 @@ preprocessing:
       patience: 5
       run_dir: "../Data/Models/AnomalyDetection/DeepAnt"
       checkpoint_dir: "../Data/Models/AnomalyDetection/DeepAnt/checkpoints"
-
       load_data: True
       save_data: True
       retrain_models: {}
@@ -254,13 +254,11 @@ preprocessing:
         - "fix"
       anomaly_data_dir: "/work/rwth1474/Data/AnomalyDetection/anomaly_data/ALAD"
       prepared_data_dir: "/work/rwth1474/Data/AnomalyDetection/prepared_data/ALAD"
-
       train_percentage: 0.2
       sk_seed: 42
       hyperparameters: {}
       run_dir: "../Data/Models/AnomalyDetection/DeepAnt"
       checkpoint_dir: "../Data/Models/AnomalyDetection/DeepAnt/checkpoints"
-
       load_data: True
       save_data: True
       retrain_models: { }
@@ -279,6 +277,7 @@ preprocessing:
 
   params_to_calculate:
     - horovitz
+    
   ards_onset_detection:
     detection_rule: "4h_50"
     #eventuell verändern.. bsp. lowest horowitz
