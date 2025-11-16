@@ -155,6 +155,116 @@ data:
 preprocessing:
   patients_per_process: 500
   max_processes: 6
+
+  anomaly_detection:
+    SW_ABSAD_MOD:
+      active: False
+      name: "SW_ABSAD_MOD"
+      columns_to_check: []
+      fix_algorithm: "interpolate"
+      handling_strategy: "delete_than_impute"
+      anomaly_threshold: 0.5
+      supported_stages:
+        - "prepare"
+        - "predict"
+        - "fix"
+      active_stages:
+        - "fix"
+      anomaly_data_dir: "/work/rwth1474/Data/AnomalyDetection/anomaly_data/SW_ABSAD_MOD"
+      prepared_data_dir: "/work/rwth1474/Data/AnomalyDetection/prepared_data/SW_ABSAD_MOD"
+      replace_zeros: False
+      replace_physical_outliers: True
+      use_cl_modification: False
+      retrain_after_gap: True
+      window_length: 7
+      variance_check: False
+      clea_training: False
+      variance_window: 7
+      confidence_level: 0.95
+      theta: 0.5
+      k: 5
+      s: 5
+    Physiological_Outliers:
+      active: True
+      name: "Physiological_Outliers"
+      columns_to_check: [ ]
+      fix_algorithm: "forward"
+      handling_strategy: "delete_than_impute"
+      anomaly_threshold: 0.5
+      supported_stages:
+        - "prepare"
+        - "predict"
+        - "fix"
+      active_stages:
+        - "fix"
+      anomaly_data_dir: "/work/rwth1474/Data/AnomalyDetection/anomaly_data/Physiological_Outliers"
+      prepared_data_dir: "/work/rwth1474/Data/AnomalyDetection/prepared_data/Physiological_Outliers"
+
+    DeepAnt:
+      active: False
+      name: "DeepAnt"
+      columns_to_check: []
+      fix_algorithm: "forward"
+      handling_strategy: "delete_than_impute"
+      anomaly_threshold: 0.5
+      supported_stages:
+        - "prepare"
+        - "train"
+        - "predict"
+        - "fix"
+      active_stages:
+        - "fix"
+      anomaly_data_dir: "/work/rwth1474/Data/AnomalyDetection/anomaly_data/DeepAnt"
+      prepared_data_dir: "/work/rwth1474/Data/AnomalyDetection/prepared_data/DeepAnt"
+      window_generator_config:
+        input_width: 10
+        output_width: 10
+      val_percentage: 0.1
+      train_percentage: 0.2
+      sk_seed: 42
+      learning_rate: 0.001
+      hidden_size: 256
+      max_epochs: 100
+      max_initial_epochs: 10
+      batch_size: 32
+      patience: 5
+      run_dir: "../Data/Models/AnomalyDetection/DeepAnt"
+      checkpoint_dir: "../Data/Models/AnomalyDetection/DeepAnt/checkpoints"
+
+      load_data: True
+      save_data: True
+      retrain_models: {}
+
+    ALAD:
+      active: False
+      name: "ALAD"
+      columns_to_check: [ ]
+      fix_algorithm: "interpolate"
+      handling_strategy: "delete_than_impute"
+      anomaly_threshold: 0.5
+      supported_stages:
+        - "prepare"
+        - "train"
+        - "predict"
+        - "fix"
+      active_stages:
+        - "prepare"
+        - "train"
+        - "predict"
+        - "fix"
+      anomaly_data_dir: "/work/rwth1474/Data/AnomalyDetection/anomaly_data/ALAD"
+      prepared_data_dir: "/work/rwth1474/Data/AnomalyDetection/prepared_data/ALAD"
+
+      train_percentage: 0.2
+      sk_seed: 42
+      hyperparameters: {}
+      run_dir: "../Data/Models/AnomalyDetection/DeepAnt"
+      checkpoint_dir: "../Data/Models/AnomalyDetection/DeepAnt/checkpoints"
+
+      load_data: True
+      save_data: True
+      retrain_models: { }
+
   filtering:
     filter:
     - BD

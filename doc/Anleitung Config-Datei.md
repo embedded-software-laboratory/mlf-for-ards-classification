@@ -105,7 +105,7 @@ In diesem Bereich werden einige Einstellungen vorgenommen, die genau festlegen, 
 
 ### anomaly_detection
 Hier wird der zu verwendende Anomalieerkennungsalgorithmus konfiguriert. Jeder Algorithmus hat seinen eigenen Abschnitt. Aktuell werden folgende Algorithmen unterstützt:
-* Physiological Limits (fälschlicherweise Physical Limits genannt)
+* Physiological Limits
 * SW-ABSAD-MOD
 * DeepAnt
 * ALAD

@@ -1,5 +1,5 @@
 
-physical_limits_database_dict = {
+physiological_limits_database_dict = {
     "UKA": {'af': {'max': 52.0, 'min': 4.0},
             'albumin': {'max': 42.88, 'min': 0.5},
             'be': {'max': 21.7, 'min': -21.0},

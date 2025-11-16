@@ -185,9 +185,9 @@ preprocessing:
       theta: 0.5
       k: 5
       s: 5
-    Physical_Outliers:
+    Physiological_Outliers:
       active: False
-      name: "Physical_Outliers"
+      name: "Physiological_Outliers"
       columns_to_check: [ ]
       fix_algorithm: "forward"
       handling_strategy: "delete_than_impute"

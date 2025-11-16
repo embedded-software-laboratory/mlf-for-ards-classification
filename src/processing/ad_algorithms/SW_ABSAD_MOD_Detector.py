@@ -13,7 +13,7 @@ from scipy.spatial import distance
 import json
 
 from processing.ad_algorithms.BaseAnomalyDetector import BaseAnomalyDetector
-from processing.ad_algorithms.PhysicalLimitsDetector import PhysicalLimitsDetector
+from processing.ad_algorithms.PhysiologicalLimitsDetector import PhysiologicalLimitsDetector
 from processing.ad_algorithms.torch_utils import check_directory
 from processing.datasets_metadata import AnomalyDetectionMetaData
 

@@ -8,11 +8,11 @@ from processing.ad_algorithms.torch_utils import check_directory
 from processing.datasets_metadata import AnomalyDetectionMetaData
 
 from processing.ad_algorithms.BaseAnomalyDetector import BaseAnomalyDetector
-from processing.ad_algorithms.configs import physical_limits_database_dict
+from processing.ad_algorithms.configs import physiological_limits_database_dict
 
 
 logger = logging.getLogger(__name__)
-class PhysicalLimitsDetector(BaseAnomalyDetector):
+class PhysiologicalLimitsDetector(BaseAnomalyDetector):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -30,7 +30,7 @@ class PhysicalLimitsDetector(BaseAnomalyDetector):
         for key, value in kwargs.items():
             if key in self.__dict__.keys():
                 setattr(self, key, value)
-        self.physical_limits_dict = physical_limits_database_dict[self.database]
+        self.physiological_limits_dict = physiological_limits_database_dict[self.database]
 
     #def run(self, dataframe_detection: pd.DataFrame, job_count: int, total_jobs: int) -> tuple[pd.DataFrame, dict[str, dict[str, int]]]:
 #

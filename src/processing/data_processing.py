@@ -5,7 +5,7 @@ from processing.data_imputator import DataImputator
 from processing.param_calculation import ParamCalculator
 from processing.onset_determiner import OnsetDeterminer
 from processing.datasets_metadata import TimeseriesMetaData
-from processing.ad_algorithms import PhysicalLimitsDetector, SW_ABSAD_Mod_Detector, DeepAntDetector, BaseAnomalyDetector, ALADDetector
+from processing.ad_algorithms import PhysiologicalLimitsDetector, SW_ABSAD_Mod_Detector, DeepAntDetector, BaseAnomalyDetector, ALADDetector
 from processing.processing_utils import prepare_multiprocessing, get_processing_meta_data
 
 import pandas as pd
@@ -66,9 +66,9 @@ class DataProcessor:
                 del value["active"]
                 value["max_processes"] = self.max_processes
                 
-                if key == "Physical_Outliers":
-                    detector = PhysicalLimitsDetector(**value)
-                    logger.info("Physical Limits Detector initialized")
+                if key == "Physiological_Outliers":
+                    detector = PhysiologicalLimitsDetector(**value)
+                    logger.info("Physiological Limits Detector initialized")
                     return detector
                     
                 if key == "SW_ABSAD_MOD":
