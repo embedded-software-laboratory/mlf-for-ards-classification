@@ -1,0 +1,309 @@
+algorithm_base_path:
+  AdaBoost: default
+  LightGBM: default
+  LogisticRegression: default
+  RandomForest: default
+  RecurrentNeuralNetwork: Save/Cross validation results/Recurrent neural network_1
+  SupportVectorMachine: default
+  XGBoost: default
+data:
+  ards_dataset: weighted
+  database: UKA
+  pneumonia_dataset: balanced
+  timeseries_file_path: /work/rwth1474/Data/time_series/Evaluation_Strict_Physical_Outliers_forward_11_Lowest_Horovitz_data_complete_same_patients.pkl
+data_segregation:
+  percentage_of_ards_patients: 0.1
+  splitting_seed: 42
+  training_test_ratio: 10
+evaluation:
+  cross_validation:
+    n_splits: 5
+    random_state: 11
+    shuffle: true
+  evaluation_metrics:
+  - AUC
+  - Accuracy
+  - F1Score
+  - FPR
+  - MCC
+  - OptimalProbability
+  - Sensitivity
+  - Specificity
+  - TPR
+  - PPV
+  - NPV
+  - Precisions
+  - Recalls
+  evaluation_name: Evaluation Strict Physical_Outliers forward 11 Lowest Horovitz
+  threshold_optimization_algorithms:
+  - Standard
+  - MaxTPR
+  - MaxTPRMinFPR
+  - GeometricRoot
+feature_selection:
+  k: 15
+  method: univariate
+  variance: 0.16
+models:
+  timeseries_models:
+    base_path_config:
+      to_cross_validate: Data/Models/TimeSeriesModels/Config/CrossValidation/
+      to_train: Data/Models/TimeSeriesModels/Config/Training/
+    to_cross_validate:
+      AdaBoost:
+        Active: true
+        Configs:
+        - default
+        Names:
+        - AdaBoost
+      LightGBM:
+        Active: false
+        Configs: []
+        Names: []
+      LogisticRegression:
+        Active: false
+        Configs: []
+        Names: []
+      RandomForest:
+        Active: true
+        Configs:
+        - default
+        Names:
+        - RandomForest
+      SupportVectorMachine:
+        Active: false
+        Configs: []
+        Names: []
+      XGBoost:
+        Active: true
+        Configs:
+        - default
+        Names:
+        - XGBoost
+    to_evaluate:
+      AdaBoost:
+        Active: true
+        Names:
+        - AdaBoost
+      LightGBM:
+        Active: false
+        Names: []
+      LogisticRegression:
+        Active: false
+        Names: []
+      RandomForest:
+        Active: true
+        Names:
+        - RandomForest
+      SupportVectorMachine:
+        Active: false
+        Names: []
+      XGBoost:
+        Active: true
+        Names:
+        - XGBoost
+    to_execute:
+      AdaBoost:
+        Active: true
+        Names:
+        - AdaBoost
+      LightGBM:
+        Active: false
+        Names: []
+      LogisticRegression:
+        Active: false
+        Names: []
+      RandomForest:
+        Active: true
+        Names:
+        - RandomForest
+      SupportVectorMachine:
+        Active: false
+        Names: []
+      XGBoost:
+        Active: true
+        Names:
+        - XGBoost
+    to_train:
+      AdaBoost:
+        Active: true
+        Configs:
+        - default
+        Names:
+        - AdaBoost
+      LightGBM:
+        Active: false
+        Configs: []
+        Names: []
+      LogisticRegression:
+        Active: false
+        Configs: []
+        Names: []
+      RandomForest:
+        Active: true
+        Configs:
+        - default
+        Names:
+        - RandomForest
+      SupportVectorMachine:
+        Active: false
+        Configs: []
+        Names: []
+      XGBoost:
+        Active: true
+        Configs:
+        - default
+        Names:
+        - XGBoost
+preprocessing:
+  anomaly_detection:
+    ALAD:
+      active: false
+      active_stages:
+      - fix
+      anomaly_data_dir: /work/rwth1474/Data/AnomalyDetection/anomaly_data/ALAD
+      anomaly_threshold: 0.5
+      checkpoint_dir: ../Data/Models/AnomalyDetection/DeepAnt/checkpoints
+      columns_to_check: []
+      fix_algorithm: interpolate
+      handling_strategy: delete_than_impute
+      hyperparameters: {}
+      load_data: true
+      name: ALAD
+      prepared_data_dir: /work/rwth1474/Data/AnomalyDetection/prepared_data/ALAD
+      retrain_models: {}
+      run_dir: ../Data/Models/AnomalyDetection/DeepAnt
+      save_data: true
+      sk_seed: 42
+      supported_stages:
+      - prepare
+      - train
+      - predict
+      - fix
+      train_percentage: 0.0
+    DeepAnt:
+      active: false
+      active_stages:
+      - fix
+      anomaly_data_dir: /work/rwth1474/Data/AnomalyDetection/anomaly_data/DeepAnt
+      anomaly_threshold: 0.5
+      batch_size: 32
+      checkpoint_dir: ../Data/Models/AnomalyDetection/DeepAnt/checkpoints
+      columns_to_check: []
+      fix_algorithm: forward
+      handling_strategy: delete_than_impute
+      hidden_size: 256
+      learning_rate: 0.001
+      load_data: true
+      max_epochs: 100
+      max_initial_epochs: 10
+      name: DeepAnt
+      patience: 5
+      prepared_data_dir: /work/rwth1474/Data/AnomalyDetection/prepared_data/DeepAnt
+      retrain_models: {}
+      run_dir: ../Data/Models/AnomalyDetection/DeepAnt
+      save_data: true
+      sk_seed: 42
+      supported_stages:
+      - prepare
+      - train
+      - predict
+      - fix
+      train_percentage: 0.2
+      val_percentage: 0.1
+      window_generator_config:
+        input_width: 10
+        output_width: 10
+    Physiological_Outliers:
+      active: True
+      active_stages:
+      - fix
+      anomaly_data_dir: /work/rwth1474/Data/AnomalyDetection/anomaly_data/Physiological_Outliers
+      anomaly_threshold: 0.5
+      columns_to_check: []
+      fix_algorithm: forward
+      handling_strategy: delete_than_impute
+      name: Physiological_Outliers
+      prepared_data_dir: /work/rwth1474/Data/AnomalyDetection/prepared_data/Physiological_Outliers
+      supported_stages:
+      - prepare
+      - predict
+      - fix
+    SW_ABSAD_MOD:
+      active: false
+      active_stages:
+      - fix
+      anomaly_data_dir: /work/rwth1474/Data/AnomalyDetection/anomaly_data/SW_ABSAD_MOD
+      anomaly_threshold: 0.5
+      clea_training: false
+      columns_to_check: []
+      confidence_level: 0.95
+      fix_algorithm: interpolate
+      handling_strategy: delete_than_impute
+      k: 5
+      name: SW_ABSAD_MOD
+      prepared_data_dir: /work/rwth1474/Data/AnomalyDetection/prepared_data/SW_ABSAD_MOD
+      replace_physical_outliers: true
+      replace_zeros: false
+      retrain_after_gap: true
+      s: 5
+      supported_stages:
+      - prepare
+      - predict
+      - fix
+      theta: 0.5
+      use_cl_modification: false
+      variance_check: false
+      variance_window: 7
+      window_length: 7
+  ards_onset_detection:
+    detection_rule: first_horovitz
+    impute_missing_rows: false
+    remove_ards_patients_without_onset: false
+    return_rule: datapoint
+    series_end_point: 50000
+    series_start_point: -50000
+    update_ards_values: false
+  filtering:
+    filter:
+    - BD
+    - Strict
+  imputation:
+    default_imputation_method: forward
+    impute_empty_cells: true
+    params_to_impute:
+    - ards, forward
+    - all
+  max_processes: 18
+  params_to_calculate:
+  - horovitz
+  patients_per_process: 500
+process:
+  calculate_evaluation_metrics: false
+  calculate_missing_params: false
+  load_image_data: false
+  load_models: false
+  load_timeseries_data: true
+  perform_anomaly_detection: false
+  perform_ards_onset_detection: false
+  perform_cross_validation: true
+  perform_data_segregation: false
+  perform_feature_selection: false
+  perform_filtering: false
+  perform_imputation: false
+  perform_threshold_optimization: false
+  perform_timeseries_classification: false
+  perform_timeseries_training: false
+  perform_unit_conversion: false
+  save_models: false
+  test_image_models: false
+  train_image_models: false
+storage_path: ../Data/ExperimentResult/EvalFinalSameTraining
+supported_algorithms:
+  timeseries_models:
+  - AdaBoostModel
+  - LightGBMModel
+  - LogisticRegressionModel
+  - RandomForestModel
+  - SupportVectorMachineModel
+  - XGBoostModel
