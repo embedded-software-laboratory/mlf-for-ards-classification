@@ -22,7 +22,7 @@ class PhysiologicalLimitsDetector(BaseAnomalyDetector):
             kwargs.get("prepared_data_dir", "/work/rwth1474/Data/AnomalyDetection/windowed_data"))
         check_directory(self.anomaly_data_dir)
         check_directory(self.prepared_data_dir)
-        self.type = "PhysicalLimits"
+        self.type = "PhysiologicalLimits"
         self.model = None
         self.physical_limits_dict = None
         self.needs_full_data = False

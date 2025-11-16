@@ -87,9 +87,9 @@ class SW_ABSAD_Mod_Detector(BaseAnomalyDetector):
 
 
         if self.replace_physical_outliers:
-            # TODO handle metadata from PhysicalLimitsDetector
-            physicalADDetector = PhysicalLimitsDetector(name="PhysicalLimitsDetectorSWABSABMOD", columns_to_check=self.columns_to_check, database=self.database, handling_strategy="delete_value", max_processes=1,
-                                                        anomaly_data_dir=self.anomaly_data_dir + "/PhysicalLimitsDetector", prepared_data_dir=self.prepared_data_dir + "/PhysicalLimitsDetector", active_stages=self.active_stages)
+            # TODO handle metadata from PhysiologicalLimitsDetector
+            physicalADDetector = PhysiologicalLimitsDetector(name="PhysiologicalLimitsDetectorSWABSABMOD", columns_to_check=self.columns_to_check, database=self.database, handling_strategy="delete_value", max_processes=1,
+                                                        anomaly_data_dir=self.anomaly_data_dir + "/PhysiologicalLimitsDetector", prepared_data_dir=self.prepared_data_dir + "/PhysiologicalLimitsDetector", active_stages=self.active_stages)
             _, _, dataframe_detection = physicalADDetector.execute_handler([dataframe_detection], 1, True)
 
         if self.replace_zeros:
