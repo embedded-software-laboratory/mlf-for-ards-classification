@@ -1,5 +1,5 @@
 from processing.ad_algorithms.BaseAnomalyDetector import BaseAnomalyDetector
-from processing.ad_algorithms.PhysicalLimitsDetector import PhysicalLimitsDetector
+from processing.ad_algorithms.PhysiologicalLimitsDetector import PhysiologicalLimitsDetector
 from processing.ad_algorithms.SW_ABSAD_MOD_Detector import SW_ABSAD_Mod_Detector
 from processing.ad_algorithms.pytorch_DeepAnt import DeepAntDetector
 from processing.ad_algorithms.ALADDetector import ALADDetector
