@@ -146,7 +146,7 @@ algorithm_base_path:
 storage_path: "src/Save/ExperimentResult"
 
 data:
-  timeseries_file_path: "/hpcwork/rwth1474/Data/time_series/uka_data_050623.npy"
+  timeseries_file_path: "/work/rwth1474/Data/time_series/uka_data_050623.npy"
   database: "UKA"
   #image_file_path: "Data/Image_data"
   pneumonia_dataset: "balanced"
