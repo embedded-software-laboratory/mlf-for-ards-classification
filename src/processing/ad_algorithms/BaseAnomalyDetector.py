@@ -141,7 +141,7 @@ class BaseAnomalyDetector:
         else:
             logger.info("Starting multiprocessed execution")
             fixed_df = self.execute_multiprocessing(self.active_stages, process_pool_data_list, patients_per_process, no_multi_processing)
-        process_pool_data_list, n_jobs = prepare_multiprocessing(fixed_df, patients_per_process)
+        process_pool_data_list, n_jobs = prepare_multiprocessing(fixed_df, patients_per_process, self.max_processes)
         return process_pool_data_list, n_jobs, fixed_df
 
 
@@ -218,10 +218,10 @@ class BaseAnomalyDetector:
             elif stage == "train" and self.trainable:
                 if not prepared_data_list:
                     train_data = self._load_prepared_data(self.prepared_data_dir, "train")
-                    train_data_list = prepare_multiprocessing(train_data, patients_per_process)
+                    train_data_list = prepare_multiprocessing(train_data, patients_per_process, self.max_processes)
 
                     val_data = self._load_prepared_data(self.prepared_data_dir, "val")
-                    val_data_list = prepare_multiprocessing(val_data, patients_per_process)
+                    val_data_list = prepare_multiprocessing(val_data, patients_per_process, self.max_processes)
                     prepared_data_list = [{"train": train_data, "val": val_data} for train_data, val_data in zip(train_data_list, val_data_list)]
                 with Pool(processes=self.max_processes) as pool:
 
@@ -231,7 +231,7 @@ class BaseAnomalyDetector:
             elif stage == "predict":
                 if not prepared_data_list:
                     test_data = self._load_prepared_data(self.prepared_data_dir, "test")
-                    test_data_list, _ = prepare_multiprocessing(test_data, patients_per_process)
+                    test_data_list, _ = prepare_multiprocessing(test_data, patients_per_process, self.max_processes)
                     prepared_data_list = [{"test": test_data} for test_data in test_data_list]
                 with Pool(processes=self.max_processes) as pool:
                     predict_data_list = [result_dict["test"] for result_dict in prepared_data_list]
