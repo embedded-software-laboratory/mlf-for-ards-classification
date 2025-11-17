@@ -211,7 +211,7 @@ class DataProcessor:
             else:
                 logger.info("ARDS onset already detected in previous run. Skipping...")
         else:
-            logger.info("STEP 5: ARDS Onset Detection - SKIPPED (disabled in config)")
+            logger.info("SUBSTEP 5: ARDS Onset Detection - SKIPPED (disabled in config)")
 
         # Step 6: Data Filtering
         if self.process["perform_filtering"]:
