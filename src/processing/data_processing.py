@@ -107,7 +107,7 @@ class DataProcessor:
         logger.info(f"Number of unique patients: {dataframe['patient_id'].nunique() if 'patient_id' in dataframe.columns else 'Unknown'}")
         
         # Prepare data for multiprocessing
-        process_pool_data_list, n_jobs = prepare_multiprocessing(dataframe, self.patients_per_process)
+        process_pool_data_list, n_jobs = prepare_multiprocessing(dataframe, self.patients_per_process, self.max_processes)
         logger.info(f"Data split into {n_jobs} jobs for parallel processing")
 
         # Step 1: Anomaly Detection

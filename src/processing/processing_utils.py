@@ -5,7 +5,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def prepare_multiprocessing(dataframe: pd.DataFrame, patients_per_process: int) -> (list[pd.DataFrame], int):
+def prepare_multiprocessing(dataframe: pd.DataFrame, patients_per_process: int, max_processes: int) -> (list[pd.DataFrame], int):
     """
     Prepares data for multiprocessing by splitting the DataFrame into chunks based on patient IDs.
     Each chunk contains complete patient data (all records from first to last timestamp).
@@ -28,6 +28,11 @@ def prepare_multiprocessing(dataframe: pd.DataFrame, patients_per_process: int) 
     # Calculate number of jobs needed
     n_jobs = math.ceil(num_patients / patients_per_process)
     logger.info(f"Number of jobs to create: {n_jobs}")
+
+    # Compare to set maximum of processes
+    if n_jobs > max_processes:
+        logger.warning(f"Calculated number of jobs ({n_jobs}) exceeds max processes ({max_processes}). Capping to max processes.")
+        n_jobs = max_processes
 
     # Build dictionary mapping each patient to their min and max time indices
     logger.debug("Building patient time range dictionary...")
