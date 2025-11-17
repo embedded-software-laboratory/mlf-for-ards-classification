@@ -33,8 +33,8 @@ class FeatureSelection:
         self.variance = config["variance"]
         self.k = config["k"]
         self.meta_data = None
-        logger.info(f"Feature selection method set to: {self.feature_selection_method}")
         logger.info(f"Variance threshold: {self.variance}, K value: {self.k}")
+        logger.info("FeatureSelection initialized successfully.")
 
     def create_meta_data(self):
         """

@@ -16,7 +16,6 @@ class Filter:
         self.available_filter = ["Strict", "Lite", "BD"]
         self.set_filter(config["filter"])
         self.meta_data = None
-        logger.info(f"Filters set: {self.filter}")
 
     def create_meta_data(self):
         """
