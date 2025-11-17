@@ -113,7 +113,7 @@ class DataProcessor:
         # Step 1: Anomaly Detection
         if self.process["perform_anomaly_detection"]:
             logger.info("-" * 80)
-            logger.info("STEP 1: Anomaly Detection")
+            logger.info("SUBSTEP 1: Anomaly Detection")
             logger.info("-" * 80)
             logger.info(f"Starting anomaly detection with {self.anomaly_detector.__class__.__name__}...")
             process_pool_data_list, n_jobs, dataframe = self.anomaly_detector.execute_handler(
@@ -122,12 +122,12 @@ class DataProcessor:
             self.anomaly_detector.create_meta_data()
             logger.info(f"Anomaly detection completed. Data shape: {dataframe.shape}")
         else:
-            logger.info("STEP 1: Anomaly Detection - SKIPPED (disabled in config)")
+            logger.info("SUBSTEP 1: Anomaly Detection - SKIPPED (disabled in config)")
 
         # Step 2: Data Imputation
         if self.process["perform_imputation"]:
             logger.info("-" * 80)
-            logger.info("STEP 2: Data Imputation (Missing Data Handling)")
+            logger.info("SUBSTEP 2: Data Imputation (Missing Data Handling)")
             logger.info("-" * 80)
             logger.info("Starting data imputation using multiprocessing...")
             with Pool(processes=self.max_processes) as pool:
@@ -140,12 +140,12 @@ class DataProcessor:
             self.data_imputator.create_meta_data()
             logger.info(f"Imputation completed successfully. Data shape: {dataframe.shape}")
         else:
-            logger.info("STEP 2: Data Imputation - SKIPPED (disabled in config)")
+            logger.info("SUBSTEP 2: Data Imputation - SKIPPED (disabled in config)")
 
         # Step 3: Unit Conversion
         if self.process["perform_unit_conversion"]:
             logger.info("-" * 80)
-            logger.info("STEP 3: Unit Conversion")
+            logger.info("SUBSTEP 3: Unit Conversion")
             logger.info("-" * 80)
             
             if not dataset_metadata or (dataset_metadata and not dataset_metadata.unit_conversion):
@@ -170,12 +170,12 @@ class DataProcessor:
             else:
                 logger.info("Data already converted in previous run. Skipping unit conversion...")
         else:
-            logger.info("STEP 3: Unit Conversion - SKIPPED (disabled in config)")
+            logger.info("SUBSTEP 3: Unit Conversion - SKIPPED (disabled in config)")
 
         # Step 4: Parameter Calculation
         if self.process["calculate_missing_params"]:
             logger.info("-" * 80)
-            logger.info("STEP 4: Missing Parameter Calculation")
+            logger.info("SUBSTEP 4: Missing Parameter Calculation")
             logger.info("-" * 80)
             logger.info("Calculating missing clinical parameters...")
 
@@ -189,12 +189,12 @@ class DataProcessor:
             self.param_calculator.create_meta_data()
             logger.info(f"Parameter calculation completed. Data shape: {dataframe.shape}")
         else:
-            logger.info("STEP 4: Missing Parameter Calculation - SKIPPED (disabled in config)")
+            logger.info("SUBSTEP 4: Missing Parameter Calculation - SKIPPED (disabled in config)")
 
         # Step 5: ARDS Onset Detection
         if self.process["perform_ards_onset_detection"]:
             logger.info("-" * 80)
-            logger.info("STEP 5: ARDS Onset Detection")
+            logger.info("SUBSTEP 5: ARDS Onset Detection")
             logger.info("-" * 80)
             
             if not dataset_metadata or (dataset_metadata and not dataset_metadata.onset_detection):
@@ -216,14 +216,14 @@ class DataProcessor:
         # Step 6: Data Filtering
         if self.process["perform_filtering"]:
             logger.info("-" * 80)
-            logger.info("STEP 6: Data Filtering")
+            logger.info("SUBSTEP 6: Data Filtering")
             logger.info("-" * 80)
             logger.info("Applying filtering criteria...")
             dataframe = self.filter.filter_data(dataframe)
             self.filter.create_meta_data()
             logger.info(f"Filtering completed. Data shape after filtering: {dataframe.shape}")
         else:
-            logger.info("STEP 6: Data Filtering - SKIPPED (disabled in config)")
+            logger.info("SUBSTEP 6: Data Filtering - SKIPPED (disabled in config)")
 
         logger.info("=" * 80)
         logger.info("DATA PREPROCESSING PIPELINE COMPLETED SUCCESSFULLY")
