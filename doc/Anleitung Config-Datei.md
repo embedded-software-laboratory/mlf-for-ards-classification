@@ -38,7 +38,7 @@ In diesem Abschnitt wird festgelegt, welche Schritte ausgeführt werden sollen. 
 10. **perform_data_segregation**: Mit diesem Schritt werden die geladenen Daten in einen Datensatz fürs Modelltraining und einen Datensatz für die Evaluation/Prediktion aufgeteilt. Unter "data_segregation" können weitere Einstellungen vorgenommen werden. 
 	Diese Schritt muss nur aktiviert werden, wenn in einem Durchlauf die Modelle trainiert und anschließend evaluiert werden sollen. Falls dieser Schritt deaktiviert wird, wird der komplette geladene Datensatz sowohl für die Klassifizierung und Evaluation als auch fürs Training verwendet; daher ergibt eine Deaktivierung der Aufteilung nur Sinn wenn entweder Klassifizierung/Evaluation oder Modell-Training durchgeführt werden soll. 
 11. **perform_timeseries_training**: Wenn dies aktiviert wird, werden alle unter dem Punkt "timeseries_models_to_execute" angegebenen Zeitreihenmodelle mit den geladenen Daten trainiert. Wenn im gleichen Durchlauf eine Evaluation durchgeführt werden soll, sollte der Punkt "perform_data_segregation" ebenfalls aktiviert werden. 
-12. **perform_timeseries_classification**: Falls aktiviert, werden werden alle verfügbaren Zeitreihenmodelle die geladenen Daten klassifizieren und für jede Zeile entsprechend 1 für "ARDS" oder 0 für "Nicht ARDS" ausgeben.
+12. **perform_timeseries_classification**: Falls aktiviert, werden alle verfügbaren Zeitreihenmodelle die geladenen Daten klassifizieren und für jede Zeile entsprechend 1 für "ARDS" oder 0 für "Nicht ARDS" ausgeben.
 13. **perform_threshold_optimization**: Falls aktiviert und für das ausgewählte Modell möglich, wird nach unterschiedlichen Algorithmen die optimale Entscheidungsgrenze bestimmt, welche Algorithmen dafür verwendet werden wird unter evaluation threshold_optimization_algorithms festgelegt.
 14. **calculate_evaluation_metrics**: Falls aktiviert, wird das Framework die geladenen Testdaten dazu verwenden, die Modelle diese klassifizieren zu lassen und zu berechnen, wie gut die Ergebnisse der Modelle sind. Dafür werden verschiedene Metriken berechnet. 
 15. **perform_cross_validation**: Falls aktiviert, werden die Modelle mit den geladenen Daten kreuzvalidiert. Hierfür können unter "evaluation" noch einige Parameter eingestellt werden. 
@@ -79,7 +79,7 @@ Sollte dieser Eintrag nicht gesetzt sein, so wird das Standard-Output-Verzeichni
 
 Hier wird definiert, wo die Patientendaten liegen, die geladen werden und zum Training oder zur Klassifizierung / Evaluation verwendet werden sollen. 
 Mit dem Unterpunkt "file_path" wird der Dateipfad für die Zeitreihenmodelle angegeben. Aktuell werden npy-Dateien und csv-Dateien unterstützt in dem Format, dass vom [Data-Extractor](https://git-ce.rwth-aachen.de/smith-project/ARDS-MLP/data-basis/data-extraction) erzeugt wird. Falls npy verwendet wird, muss ebenfalls die dazugehörige vars-Datei, die vom Data-Extractor beim Download erzeugt wird, im gleichen Ordner liegen.
-Im Unterpunkt "database" wird angegeben, aus welcher Datenbank die Daten kommen. Dies ist für die Umrechnung der Einheiten relevant, s.o. Aktuell unterstützt werden "eICU", "MIMIC3", "MIMIC4" und "UKA".
+Im Unterpunkt "database" wird angegeben, aus welcher Datenbank die Daten kommen. Dies ist für die Umrechnung der Einheiten relevant, s.o. Aktuell unterstützt werden "eICU", "MIMIC3", "MIMIC4" und "UKA", "CALIBRATION", "CONTROL".
 Unter "image_file_path" wird angegeben, wo die Datensätze für die Bilddaten-Modelle liegen. Dies muss ein Ordner sein, der die folgenden Elemente enthält:
 	- Einen Ordner "chexpert" und einen Ordner "mimic", der jeweils die Trainings-, und im Falle von mimic den ARDS-Testdatensatz enthält. Jeder Datensatz besteht aus einem Ordner, der die Bilder enthält ("image") und einem Ordner, der die Label enthält ("label"). 
 	- Einen Ordner "models", der die trainierten Modelle speichert. Für jedes Modell muss ein Ordner vorhanden sein, und jeder dieser Modell-Ordner muss zwei Unterordner enthalten: Einen für das Modell für die Lungenentzündung ("pneumonia") und einen für die Erkennung von ARDS ("ards"). In jedem dieser Ordner muss noch ein Ordner "main" eingefügt werden.
@@ -220,6 +220,7 @@ Hier kann das Verfahren gewählt werden, welches für die Feature-Selection verw
 Hier wird festgelegt, wie genau die geladenen Daten in Trainings- und Testdaten aufgeteilt werden sollen. 
 - **training_test_ratio**: Hier wird angegeben, welcher Anteil der Daten für das Training verwendet werden soll. Wenn also 0.8 angegeben wird, werden 80% der Patienten fürs Training und 20% fürs Testen verwendet.
 - **percentage_of_ards_patients**: Hierüber wird angegeben, wie hoch der Anteil der ARDS-Patienten sein soll. Dies gilt sowohl für den Trainingsdatensatz als auch für den Testdatensatz. Diese Einstellung führt voraussichtlich dazu, dass Daten entfernt werden müssen, um das geforderte Verhältnis zu erreichen.
+- **splitting_seed**: Gibt einen Seed an, welcher für die Aufteilung der Daten genutzt wird. Erlaubt Reproduzierbarkeit.
 
 ## evaluation: 
 
