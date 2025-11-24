@@ -76,6 +76,7 @@ class Framework:
         self.process = config["process"]
         self.model_base_paths = config["algorithm_base_path"]
         self.timeseries_file_path = config["data"]["timeseries_file_path"]
+        self.timeseries_import_type = config["data"]["import_type"]
 
         self.outdir = config["storage_path"] if config["storage_path"] else "./Save/" + str(
             datetime.now().strftime("%Y-%m-%d_%H-%M-%S")) + "/"
@@ -119,8 +120,8 @@ class Framework:
         logger.info("STEP 1: Loading and Processing Timeseries Data")
         logger.info("=" * 80)
         
-        logger.info(f"Loading timeseries data from: {self.timeseries_file_path}")
-        dataframe, dataset_metadata = self.loader.load_file(self.timeseries_file_path)
+        logger.info(f"Loading timeseries data from: {self.timeseries_file_path} with type: {self.timeseries_import_type}")
+        dataframe, dataset_metadata = self.loader.load_file(self.timeseries_file_path, self.timeseries_import_type)
         logger.info(f"Successfully loaded data with shape: {dataframe.shape}")
 
         if dataset_metadata:

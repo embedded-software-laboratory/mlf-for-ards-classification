@@ -17,14 +17,15 @@ class UnitConverter:
         """
         logger.info("Initializing UnitConverter...")
         self._conversion_formulas = {
-            "eICU": {"hemoglobin": self.convert_hemoglobin, "creatinine": self.convert_creatinine,
-                     "albumin": self.convert_albumin, "crp": self.convert_crp,
-                     "bilirubin": self.convert_bilirubin, "etco2": self.convert_etco2},
-            "MIMIC3": {"hemoglobin": self.convert_hemoglobin, "Harnstoff": self.convert_harnstoff,
-                       "creatinine": self.convert_creatinine, "albumin": self.convert_albumin, "crp": self.convert_crp,
-                       "bilirubin": self.convert_bilirubin},
-            "MIMIC4": {"hemoglobin": self.convert_hemoglobin},
-            "UKA": {}}
+            "eICU": {"creatinine": self.convert_creatinine, "crp": self.convert_crp,
+                     "bilirubin": self.convert_bilirubin, "etco2": self.convert_etco2, "bnp": self.convert_bnp},
+            "MIMIC3": {"Harnstoff": self.convert_harnstoff,
+                       "creatinine": self.convert_creatinine, "crp": self.convert_crp,
+                       "bilirubin": self.convert_bilirubin, "bnp": self.convert_bnp},
+            "MIMIC4": {"creatinine": self.convert_creatinine, "crp": self.convert_crp, "bnp": self.convert_bnp},
+            "UKA": {"hemoglobin": self.convert_hemoglobin, "albumin": self.convert_albumin, "bnp": self.convert_bnp, "crp": self.convert_crp},
+            "CALIBRATION": {"fio2": self.convert_fio2, "hemoglobin": self.convert_hemoglobin, "albumin": self.convert_albumin, "bnp": self.convert_bnp, "crp": self.convert_crp},
+            "CONTROL": {"hemoglobin": self.convert_hemoglobin, "albumin": self.convert_albumin, "bnp": self.convert_bnp, "crp": self.convert_crp}}
         self._columns_to_convert = None
         self.meta_data = None
         logger.info("UnitConverter initialized successfully.")
@@ -105,6 +106,19 @@ class UnitConverter:
         return self._conversion_formulas
 
     @staticmethod
+    def convert_bnp(value):
+        """
+        Converts B-type natriuretic peptide (BNP) using factor 0.1182 (from pg/dL to pmol/L).
+        
+        Args:
+            value: BNP value to convert
+            
+        Returns:
+            Converted BNP value
+        """
+        return value * 0.1182
+
+    @staticmethod
     def convert_hemoglobin(value):
         """
         Converts hemoglobin from g/dL to g/L using factor 0.6206.
@@ -115,12 +129,12 @@ class UnitConverter:
         Returns:
             Converted hemoglobin value
         """
-        return value * 0.6206
+        return value * 0.0621
 
     @staticmethod
     def convert_creatinine(value):
         """
-        Converts creatinine from mg/dL to mmol/L using factor 0.1665.
+        Converts creatinine from mg/dL to µmol/L using factor * 88.4017
         
         Args:
             value: Creatinine value to convert
@@ -128,7 +142,7 @@ class UnitConverter:
         Returns:
             Converted creatinine value
         """
-        return value * 0.1665
+        return value * 88.4017
 
     @staticmethod
     def convert_harnstoff(value):
@@ -154,7 +168,7 @@ class UnitConverter:
         Returns:
             Converted albumin value
         """
-        return value * 151.5152
+        return value * 0.06646
 
     @staticmethod
     def convert_crp(value):
@@ -194,6 +208,21 @@ class UnitConverter:
             Converted EtCO2 value
         """
         return value * 1.7
+    
+    @staticmethod
+    def convert_fio2(value):
+        """
+        Converts fraction of inspired oxygen (FiO2) checking for lower values.
+        
+        Args:
+            value: FiO2 value to convert
+            
+        Returns:
+            Converted FiO2 value
+        """
+        if value <= 1.0:
+            value = value * 100.0
+        return value
 
     @property
     def columns_to_convert(self):

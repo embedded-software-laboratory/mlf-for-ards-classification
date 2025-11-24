@@ -32,7 +32,6 @@ if __name__ == '__main__':
     try:
         # Initialize and run the framework
         framework = framework.Framework()
-        logger.info("Framework initialized successfully")
         
         # Execute the main workflow
         framework.run()
