@@ -128,7 +128,7 @@ class DataFileManager:
         """
         logger.debug(f"Loading split data file: {file_path}")
         logger.info(f"Loading patient characteristics data")
-        folder = os.path.join(file_path, "patient_characteristics")
+        folder = os.path.join(file_path, "patient_characteristics/")
         files = glob.glob(os.path.join(folder, "*.csv")) + glob.glob(os.path.join(folder, "*.parquet"))
         if not files:
             logger.warning(f"No files found in {folder}")
@@ -149,7 +149,7 @@ class DataFileManager:
         logger.info(f"Number of unique patients in demographic data: {demographic_df['identifier'].nunique()}")
 
         logger.info(f"Loading clinical measurements data")
-        folder = os.path.join(file_path, "clinical_measurements")
+        folder = os.path.join(file_path, "clinical_measurements/")
         files = glob.glob(os.path.join(folder, "*.csv")) + glob.glob(os.path.join(folder, "*.parquet"))
         if not files:
             logger.warning(f"No files found in {folder}")
