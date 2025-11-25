@@ -6,6 +6,10 @@ import logging
 import glob
 from pydantic import ValidationError
 from processing.datasets_metadata import TimeseriesMetaData
+import tempfile
+import pyarrow as pa
+import pyarrow.parquet as pq
+import pyarrow.dataset as ds
 
 logger = logging.getLogger(__name__)
 
@@ -116,59 +120,113 @@ class DataFileManager:
         return dataframe
 
     @staticmethod
-    def _load_split_file(file_path) -> pd.DataFrame:
+    def _load_split_file(file_path, return_parquet_path: bool = False, csv_chunksize: int = 100_000) -> pd.DataFrame:
         """
-        Loads a split data file directly into a DataFrame.
-        
-        Args:
-            file_path: Path to the split data file
-            
-        Returns:
-            DataFrame containing the loaded data
+        Memory efficiently loads split data from a directory containing demographics and clinical measurements.
         """
-        logger.debug(f"Loading split data file: {file_path}")
-        logger.info(f"Loading patient characteristics data")
-        folder = os.path.join(file_path, "patient_characteristics/")
-        files = glob.glob(os.path.join(folder, "*.csv")) + glob.glob(os.path.join(folder, "*.parquet"))
-        if not files:
-            logger.warning(f"No files found in {folder}")
+        logger.info(f"Loading split data (memory-efficient) from: {file_path}")
+        # --- load demographics (likely small) ---
+        demog_folder = os.path.join(file_path, "patient_characteristics/")
+        demog_files = glob.glob(os.path.join(demog_folder, "*.csv")) + glob.glob(os.path.join(demog_folder, "*.parquet"))
+        if not demog_files:
+            logger.warning(f"No files found in {demog_folder}")
             return pd.DataFrame()
-        dfs = []
-        for f in files:
-            ext = os.path.splitext(f)[1].lower()
-            if ext == ".csv":
-                dfs.append(pd.read_csv(f))
-            elif ext == ".parquet":
-                dfs.append(pd.read_parquet(f))
-            else:
-                logger.warning(f"Unsupported file format: {f}")
-        if dfs:
-            demographic_df = pd.concat(dfs, ignore_index=True)
-            logger.info(f"Loaded {len(demographic_df)} rows and {len(demographic_df.columns)} columns from patient_characteristics")
-            logger.debug(f"Columns in patient_characteristics: {demographic_df.columns.tolist()}")
-        logger.info(f"Number of unique patients in demographic data: {demographic_df['identifier'].nunique()}")
 
-        logger.info(f"Loading clinical measurements data")
-        folder = os.path.join(file_path, "clinical_measurements/")
-        files = glob.glob(os.path.join(folder, "*.csv")) + glob.glob(os.path.join(folder, "*.parquet"))
-        if not files:
-            logger.warning(f"No files found in {folder}")
-            return pd.DataFrame()
-        dfs = []
-        for f in files:
+        demog_dfs = []
+        for f in demog_files:
             ext = os.path.splitext(f)[1].lower()
             if ext == ".csv":
-                dfs.append(pd.read_csv(f))
+                demog_dfs.append(pd.read_csv(f))
             elif ext == ".parquet":
-                dfs.append(pd.read_parquet(f))
+                demog_dfs.append(pd.read_parquet(f))
+        demographic_df = pd.concat(demog_dfs, ignore_index=True)
+        logger.info(f"Loaded demographics: rows={len(demographic_df)}, cols={len(demographic_df.columns)}")
+        logger.debug(f"Demographic columns: {demographic_df.columns.tolist()}")
+
+        # reduce memory: set identifier to categorical if present
+        if "identifier" in demographic_df.columns:
+            demographic_df["identifier"] = demographic_df["identifier"].astype("category")
+
+        # --- prepare on-disk output (parquet) ---
+        temp_dir = tempfile.mkdtemp(prefix="split_combined_")
+        combined_parquet_path = os.path.join(temp_dir, "combined.parquet")
+        writer = None
+        total_rows = 0
+
+        # --- process clinical measurements in a memory-friendly way ---
+        meas_folder = os.path.join(file_path, "clinical_measurements/")
+        meas_files = glob.glob(os.path.join(meas_folder, "*.csv")) + glob.glob(os.path.join(meas_folder, "*.parquet"))
+        if not meas_files:
+            logger.warning(f"No files found in {meas_folder}")
+            return pd.DataFrame()
+
+        for f in meas_files:
+            ext = os.path.splitext(f)[1].lower()
+            logger.info(f"Processing measurements file {f}")
+            if ext == ".parquet":
+                # read parquet in row groups via pyarrow to limit memory (if large)
+                try:
+                    parquet_file = pq.ParquetFile(f)
+                    for rg in range(parquet_file.num_row_groups):
+                        table = parquet_file.read_row_group(rg)
+                        chunk_df = table.to_pandas()
+                        # merge chunk with demographics on 'identifier' if present
+                        if "identifier" in chunk_df.columns and "identifier" in demographic_df.columns:
+                            # ensure same dtype
+                            chunk_df["identifier"] = chunk_df["identifier"].astype(demographic_df["identifier"].dtype)
+                            merged = chunk_df.merge(demographic_df, on="identifier", how="left")
+                        else:
+                            merged = chunk_df
+                        table_out = pa.Table.from_pandas(merged, preserve_index=False)
+                        if writer is None:
+                            writer = pq.ParquetWriter(combined_parquet_path, table_out.schema)
+                        writer.write_table(table_out)
+                        total_rows += len(merged)
+                except Exception as e:
+                    logger.warning(f"Parquet row-group read failed, falling back to pandas.read_parquet: {e}")
+                    chunk_df = pd.read_parquet(f)
+                    if "identifier" in chunk_df.columns and "identifier" in demographic_df.columns:
+                        chunk_df["identifier"] = chunk_df["identifier"].astype(demographic_df["identifier"].dtype)
+                        merged = chunk_df.merge(demographic_df, on="identifier", how="left")
+                    else:
+                        merged = chunk_df
+                    table_out = pa.Table.from_pandas(merged, preserve_index=False)
+                    if writer is None:
+                        writer = pq.ParquetWriter(combined_parquet_path, table_out.schema)
+                    writer.write_table(table_out)
+                    total_rows += len(merged)
+
+            elif ext == ".csv":
+                # iterate CSV in chunks
+                for chunk in pd.read_csv(f, chunksize=csv_chunksize):
+                    if "identifier" in chunk.columns and "identifier" in demographic_df.columns:
+                        # ensure same dtype to speed merge
+                        chunk["identifier"] = chunk["identifier"].astype(demographic_df["identifier"].dtype)
+                        merged = chunk.merge(demographic_df, on="identifier", how="left")
+                    else:
+                        merged = chunk
+                    table_out = pa.Table.from_pandas(merged, preserve_index=False)
+                    if writer is None:
+                        writer = pq.ParquetWriter(combined_parquet_path, table_out.schema)
+                    writer.write_table(table_out)
+                    total_rows += len(merged)
             else:
-                logger.warning(f"Unsupported file format: {f}")
-        if dfs:
-            measurements_df = pd.concat(dfs, ignore_index=True)
-            logger.info(f"Loaded {len(measurements_df)} rows and {len(measurements_df.columns)} columns from clinical_measurements")
-            logger.debug(f"Columns in clinical_measurements: {measurements_df.columns.tolist()}")
-        logger.info(f"Number of unique patients in vital data: {measurements_df['identifier'].nunique()}")
-        logger.info(f"Combining patient characteristics and measurements")
-        combined_df = pd.merge(measurements_df, demographic_df, on="identifier", how="left")
+                logger.warning(f"Unsupported file format: {f}. Skipping.")
+                continue
+
+        if writer is not None:
+            writer.close()
+        logger.info(f"Wrote combined dataset to on-disk parquet: {combined_parquet_path} (rows ~ {total_rows})")
+
+        if return_parquet_path:
+            # Return the parquet file path so caller can use out-of-core reading (pyarrow.dataset, dask, etc.)
+            return combined_parquet_path
+
+        # By default, return pandas DataFrame (note: will load full dataset into memory)
+        logger.info("Loading combined parquet into memory as pandas.DataFrame (this will use memory proportional to dataset size)")
+        dataset = ds.dataset(combined_parquet_path, format="parquet")
+        combined_table = dataset.to_table()
+        combined_df = combined_table.to_pandas()
+        logger.info(f"Returning combined DataFrame with rows={len(combined_df)}")
         return combined_df
-    
+
