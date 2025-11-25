@@ -117,74 +117,206 @@ class OnsetDeterminer:  # Class to determine the ARDS onset in a given dataset
             DataFrame containing the results of the onset detection
         """
         logger.info(f"Start onset detection for job {job_number} of {total_job_count} jobs...")
+        logger.debug(f"Input dataframe shape: {dataframe.shape}")
+        logger.debug(f"Input dataframe columns: {dataframe.columns.tolist()}")
+        
+        # Validate and convert critical columns to correct dtypes
+        logger.debug("Validating and converting column dtypes...")
+        
+        # Validate horovitz column
+        if "horovitz" not in dataframe.columns:
+            logger.error("Column 'horovitz' not found in dataframe")
+            raise ValueError("Column 'horovitz' is required for ARDS onset detection")
+        
+        current_horovitz_dtype = dataframe["horovitz"].dtype
+        logger.debug(f"Current 'horovitz' dtype: {current_horovitz_dtype}")
+        
+        if not pd.api.types.is_numeric_dtype(dataframe["horovitz"]):
+            logger.warning(f"'horovitz' column has non-numeric dtype: {current_horovitz_dtype}. Converting to float64...")
+            try:
+                dataframe["horovitz"] = pd.to_numeric(dataframe["horovitz"], errors="coerce")
+                logger.info("Successfully converted 'horovitz' to numeric (float64)")
+            except Exception as e:
+                logger.error(f"Failed to convert 'horovitz' to numeric: {e}")
+                raise
+        
+        # Validate peep column
+        if "peep" not in dataframe.columns:
+            logger.error("Column 'peep' not found in dataframe")
+            raise ValueError("Column 'peep' is required for ARDS onset detection")
+        
+        current_peep_dtype = dataframe["peep"].dtype
+        logger.debug(f"Current 'peep' dtype: {current_peep_dtype}")
+        
+        if not pd.api.types.is_numeric_dtype(dataframe["peep"]):
+            logger.warning(f"'peep' column has non-numeric dtype: {current_peep_dtype}. Converting to float64...")
+            try:
+                dataframe["peep"] = pd.to_numeric(dataframe["peep"], errors="coerce")
+                logger.info("Successfully converted 'peep' to numeric (float64)")
+            except Exception as e:
+                logger.error(f"Failed to convert 'peep' to numeric: {e}")
+                raise
+        
+        # Validate time column
+        if "time" not in dataframe.columns:
+            logger.error("Column 'time' not found in dataframe")
+            raise ValueError("Column 'time' is required for ARDS onset detection")
+        
+        current_time_dtype = dataframe["time"].dtype
+        logger.debug(f"Current 'time' dtype: {current_time_dtype}")
+        
+        if not pd.api.types.is_numeric_dtype(dataframe["time"]):
+            logger.warning(f"'time' column has non-numeric dtype: {current_time_dtype}. Converting to numeric...")
+            try:
+                dataframe["time"] = pd.to_numeric(dataframe["time"], errors="coerce")
+                logger.info("Successfully converted 'time' to numeric")
+            except Exception as e:
+                logger.error(f"Failed to convert 'time' to numeric: {e}")
+                raise
+        
+        # Validate patient_id column
+        if "patient_id" not in dataframe.columns:
+            logger.error("Column 'patient_id' not found in dataframe")
+            raise ValueError("Column 'patient_id' is required for ARDS onset detection")
+        
+        current_patient_id_dtype = dataframe["patient_id"].dtype
+        logger.debug(f"Current 'patient_id' dtype: {current_patient_id_dtype}")
+        
+        # Validate ards column
+        if "ards" not in dataframe.columns:
+            logger.error("Column 'ards' not found in dataframe")
+            raise ValueError("Column 'ards' is required for ARDS onset detection")
+        
+        current_ards_dtype = dataframe["ards"].dtype
+        logger.debug(f"Current 'ards' dtype: {current_ards_dtype}")
+        
+        if not pd.api.types.is_numeric_dtype(dataframe["ards"]):
+            logger.warning(f"'ards' column has non-numeric dtype: {current_ards_dtype}. Converting to int64...")
+            try:
+                dataframe["ards"] = pd.to_numeric(dataframe["ards"], errors="coerce").astype("int64")
+                logger.info("Successfully converted 'ards' to numeric (int64)")
+            except Exception as e:
+                logger.error(f"Failed to convert 'ards' to numeric: {e}")
+                raise
+        
+        logger.info("All column dtypes validated and converted successfully")
+        logger.debug(f"Final dtypes - horovitz: {dataframe['horovitz'].dtype}, peep: {dataframe['peep'].dtype}, "
+                    f"time: {dataframe['time'].dtype}, ards: {dataframe['ards'].dtype}")
+        
         return_dataframe = pd.DataFrame()
-        for patientid in set(dataframe["patient_id"].to_list()):
-            logger.debug(f"Processing patient ID: {patientid}")
+        unique_patients = set(dataframe["patient_id"].tolist())
+        logger.debug(f"Processing {len(unique_patients)} unique patients")
+        
+        for patient_count, patientid in enumerate(unique_patients, 1):
+            logger.debug(f"Processing patient {patient_count}/{len(unique_patients)}: ID={patientid}")
+            patient_mask = dataframe["patient_id"] == patientid
+            patient_data = dataframe[patient_mask]
+            logger.debug(f"  Patient data shape: {patient_data.shape}")
+            
             if self.detection_rule == "first_horovitz":
+                logger.debug(f"  Using detection rule: first_horovitz")
                 horovitz_index = -1
-                for index in dataframe[dataframe["patient_id"] == patientid].index:
-                    if dataframe["horovitz"][index] < 300 and dataframe["peep"][index] >= 5:
+                for index in patient_data.index:
+                    horovitz_val = dataframe.loc[index, "horovitz"]
+                    peep_val = dataframe.loc[index, "peep"]
+                    logger.debug(f"    Index {index}: horovitz={horovitz_val}, peep={peep_val}")
+                    
+                    if horovitz_val < 300 and peep_val >= 5:
                         horovitz_index = index
+                        logger.debug(f"    Found onset at index {index}")
                         break
+                
                 if horovitz_index != -1:
                     return_dataframe = self.add_return_data(return_dataframe, dataframe, horovitz_index)
                 else:
-                    if (dataframe["ards"][dataframe[dataframe["patient_id"] == patientid].index[0]] == 0
-                            or not self.remove_ards_patients_without_onset):
-                        horovitz_index = (dataframe[dataframe["patient_id"] == patientid])["horovitz"].idxmin()
+                    logger.debug(f"  No valid onset found via first_horovitz. Checking fallback conditions...")
+                    ards_value = dataframe.loc[patient_data.index[0], "ards"]
+                    if (ards_value == 0 or not self.remove_ards_patients_without_onset):
+                        horovitz_index = patient_data["horovitz"].idxmin()
+                        logger.debug(f"    Using fallback: minimum horovitz at index {horovitz_index}")
                         return_dataframe = self.add_return_data(return_dataframe, dataframe, horovitz_index)
+                    else:
+                        logger.debug(f"    Patient has ARDS=1 and remove_ards_patients_without_onset=True. Skipping patient.")
 
             elif self.detection_rule == "lowest_horovitz":
-                horovitz_index = (dataframe[dataframe["patient_id"] == patientid])["horovitz"].idxmin()
-                return_dataframe = self.add_return_data(return_dataframe, dataframe, horovitz_index)
+                logger.debug(f"  Using detection rule: lowest_horovitz")
+                try:
+                    horovitz_index = patient_data["horovitz"].idxmin()
+                    horovitz_value = dataframe.loc[horovitz_index, "horovitz"]
+                    logger.debug(f"  Minimum horovitz value: {horovitz_value} at index {horovitz_index}")
+                    return_dataframe = self.add_return_data(return_dataframe, dataframe, horovitz_index)
+                except Exception as e:
+                    logger.error(f"  Error finding lowest horovitz for patient {patientid}: {e}")
+                    raise
 
             elif self.detection_rule in ["4h", "12h", "24h"]:
-                return_dataframe = self.get_low_horovitz_period_start(dataframe, 
-                                                                      {"4h": 14400, "12h": 43200, "24h": 86400}[self.detection_rule],
+                logger.debug(f"  Using detection rule: {self.detection_rule}")
+                period_seconds = {"4h": 14400, "12h": 43200, "24h": 86400}[self.detection_rule]
+                logger.debug(f"  Period length: {period_seconds} seconds")
+                return_dataframe = self.get_low_horovitz_period_start(dataframe, period_seconds,
                                                                       patientid, return_dataframe)
 
             elif self.detection_rule == "4h_50":
+                logger.debug(f"  Using detection rule: 4h_50")
                 horovitz_index = -1
                 start_index_of_closest_series = -1
                 horovitz_percentage_of_closest_series = 0
-                for index in dataframe[dataframe["patient_id"] == patientid].index:
-                    if dataframe["horovitz"][index] < 300 and dataframe["peep"][index] >= 5:
+                
+                for index in patient_data.index:
+                    horovitz_val = dataframe.loc[index, "horovitz"]
+                    peep_val = dataframe.loc[index, "peep"]
+                    
+                    if horovitz_val < 300 and peep_val >= 5:
                         horovitz_index = index
-                        start_timestamp = dataframe["time"][index]
+                        start_timestamp = dataframe.loc[index, "time"]
                         second_index = index
                         number_of_low_horovitz = 1
                         total_number_of_rows = 1
                         fulfilled = True
-                        while (dataframe["patient_id"][second_index] == patientid
-                               and dataframe["time"][second_index] - start_timestamp <= 14400):
+                        
+                        while (second_index < len(dataframe) and
+                               dataframe.loc[second_index, "patient_id"] == patientid and
+                               dataframe.loc[second_index, "time"] - start_timestamp <= 14400):
                             total_number_of_rows += 1
-                            if dataframe["horovitz"][second_index] < 300:
+                            if dataframe.loc[second_index, "horovitz"] < 300:
                                 number_of_low_horovitz += 1
                             second_index += 1
-                            if second_index >= len(dataframe):
-                                fulfilled = False
-                                break
-                        if number_of_low_horovitz / total_number_of_rows <= 0.5:
+                        
+                        percentage = number_of_low_horovitz / total_number_of_rows
+                        logger.debug(f"    Index {index}: low horovitz percentage = {percentage:.2%}")
+                        
+                        if percentage <= 0.5:
                             fulfilled = False
-                            if number_of_low_horovitz / total_number_of_rows > horovitz_percentage_of_closest_series:
-                                horovitz_percentage_of_closest_series = number_of_low_horovitz / total_number_of_rows
+                            if percentage > horovitz_percentage_of_closest_series:
+                                horovitz_percentage_of_closest_series = percentage
                                 start_index_of_closest_series = horovitz_index
+                        
                         if fulfilled:
+                            logger.debug(f"    Found valid 4h_50 onset at index {horovitz_index}")
                             break
+                        else:
+                            horovitz_index = -1
+                
                 if horovitz_index != -1:
                     return_dataframe = self.add_return_data(return_dataframe, dataframe, horovitz_index)
                 elif start_index_of_closest_series != -1:
-                    if (dataframe["ards"][dataframe[dataframe["patient_id"] == patientid].index[0]] == 0
-                            or not self.remove_ards_patients_without_onset):
+                    ards_value = dataframe.loc[patient_data.index[0], "ards"]
+                    if (ards_value == 0 or not self.remove_ards_patients_without_onset):
+                        logger.debug(f"    Using closest series as fallback at index {start_index_of_closest_series}")
                         return_dataframe = self.add_return_data(return_dataframe, dataframe, start_index_of_closest_series)
                 else:
-                    if (dataframe["ards"][dataframe[dataframe["patient_id"] == patientid].index[0]] == 0
-                            or not self.remove_ards_patients_without_onset):
-                        horovitz_index = (dataframe[dataframe["patient_id"] == patientid])["horovitz"].idxmin()
+                    ards_value = dataframe.loc[patient_data.index[0], "ards"]
+                    if (ards_value == 0 or not self.remove_ards_patients_without_onset):
+                        horovitz_index = patient_data["horovitz"].idxmin()
+                        logger.debug(f"    Using minimum horovitz as final fallback at index {horovitz_index}")
                         return_dataframe = self.add_return_data(return_dataframe, dataframe, horovitz_index)
 
         if len(return_dataframe.index) == 0:
+            logger.warning(f"No onset data found for any patients in job {job_number}")
             return_dataframe = pd.DataFrame(columns=dataframe.columns)
+        else:
+            logger.info(f"Onset detection complete for job {job_number}: {len(return_dataframe)} rows detected")
+        
         logger.info(f"Finished onset detection for job {job_number} of {total_job_count} jobs...")
         return return_dataframe
 
