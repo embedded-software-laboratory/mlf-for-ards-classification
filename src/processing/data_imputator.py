@@ -28,6 +28,24 @@ class DataImputator:
         self.meta_data = None
         self.total_imputed_values = 0
 
+    @staticmethod
+    def _fast_fillna_numeric(df: pd.DataFrame, fill_value: float = -100000) -> None:
+        """
+        Fast in-place fill of NaNs for numeric columns using numpy arrays.
+        This avoids the overhead of pandas.fillna across the whole frame when only
+        numeric columns need the sentinel value.
+        """
+        numeric_cols = df.select_dtypes(include=[np.number]).columns
+        if len(numeric_cols) == 0:
+            return
+        arr = df[numeric_cols].to_numpy(copy=False)
+        # create mask and fill (np.isnan works fast on numeric numpy arrays)
+        mask = np.isnan(arr)
+        if mask.any():
+            arr[mask] = fill_value
+            # assign back (works because arr is a view when copy=False and dtypes compatible)
+            df[numeric_cols] = arr
+
     def impute_missing_data(self, dataframe: pd.DataFrame, job_number: int, total_job_count: int) -> pd.DataFrame:
         """
         Imputes missing data in the DataFrame according to configured imputation methods.
@@ -104,13 +122,24 @@ class DataImputator:
         
         if not self.impute_empty_cells:
             logger.debug(f"Job {job_number}: Dropping rows and columns with remaining NaN values...")
-            dataframe.dropna(how="all", axis=1, ignore_index=True, inplace=True)
+            dataframe.dropna(how="all", axis=1, inplace=True)
             dataframe.reset_index(drop=True, inplace=True)
-            dataframe.dropna(how="any", axis=0, ignore_index=True, inplace=True)
+            dataframe.dropna(how="any", axis=0, inplace=True)
             dataframe.reset_index(drop=True, inplace=True)
         else:
-            logger.debug(f"Job {job_number}: Filling remaining empty cells with -100000...")
-            dataframe.fillna(value=-100000, axis=1, inplace=True)
+            logger.debug(f"Job {job_number}: Filling remaining empty cells with -100000 (numeric columns only for speed)...")
+            # Fast path: only fill numeric columns with the sentinel using numpy to speed up large frames
+            try:
+                self._fast_fillna_numeric(dataframe, fill_value=-100000)
+                # If you also want to force-fill non-numeric columns (may coerce dtypes),
+                # do it with pandas but only if necessary and expect it to be slower:
+                non_numeric_cols = dataframe.columns.difference(dataframe.select_dtypes(include=[np.number]).columns)
+                if len(non_numeric_cols) > 0:
+                    # Use pandas.fillna on the subset (still faster than filling whole df repeatedly)
+                    dataframe[non_numeric_cols] = dataframe[non_numeric_cols].fillna(value=-100000)
+            except Exception as e:
+                logger.warning(f"Fast numeric fill failed, falling back to pandas.fillna: {e}")
+                dataframe.fillna(value=-100000, inplace=True)
         
         if len(dataframe.index) == 0:
             logger.warning(f"Job {job_number}: All rows were dropped during imputation, returning empty DataFrame")
@@ -155,14 +184,47 @@ class DataImputator:
         Returns:
             DataFrame with imputed rows
         """
-        while dataframe["time"][dataframe.index[0]] > target_start_time:
-            empty_data = pd.DataFrame({col: [np.nan for _ in range(1)] for col in dataframe.columns})
-            dataframe = pd.concat([empty_data, dataframe], ignore_index=True)
-            dataframe["time"].interpolate(method="spline", order=1, inplace=True, limit_direction="both")
-            dataframe.fillna(value=-100000, axis=1, inplace=True)
-        while dataframe["time"][dataframe.index[len(dataframe.index) - 1]] < target_end_time:
-            empty_data = pd.DataFrame({col: [np.nan for _ in range(1)] for col in dataframe.columns})
-            dataframe = pd.concat([dataframe, empty_data], ignore_index=True)
-            dataframe["time"].interpolate(method="spline", order=1, inplace=True, limit_direction="both")
-            dataframe.fillna(value=-100000, axis=1, inplace=True)
+        # avoid repeated small concats: compute how many rows to add at once
+        if len(dataframe) == 0:
+            return dataframe
+
+        # start
+        first_time = dataframe["time"].iat[0]
+        if first_time > target_start_time:
+            # estimate reasonable number of rows to add using median delta (fallback to 1)
+            if len(dataframe) > 1:
+                deltas = dataframe["time"].diff().dropna()
+                median_delta = deltas.median() if not deltas.empty else 1
+                if median_delta <= 0 or np.isnan(median_delta):
+                    median_delta = 1
+                n_add = int(np.ceil((first_time - target_start_time) / median_delta))
+            else:
+                n_add = 1
+            if n_add > 0:
+                empty_block = pd.DataFrame(np.nan, index=range(n_add), columns=dataframe.columns)
+                dataframe = pd.concat([empty_block, dataframe], ignore_index=True)
+
+        # end
+        last_time = dataframe["time"].iat[len(dataframe.index) - 1]
+        if last_time < target_end_time:
+            if len(dataframe) > 1:
+                deltas = dataframe["time"].diff().dropna()
+                median_delta = deltas.median() if not deltas.empty else 1
+                if median_delta <= 0 or np.isnan(median_delta):
+                    median_delta = 1
+                n_add_end = int(np.ceil((target_end_time - last_time) / median_delta))
+            else:
+                n_add_end = 1
+            if n_add_end > 0:
+                empty_block = pd.DataFrame(np.nan, index=range(n_add_end), columns=dataframe.columns)
+                dataframe = pd.concat([dataframe, empty_block], ignore_index=True)
+
+        # single interpolation call (less overhead)
+        dataframe["time"].interpolate(method="spline", order=1, inplace=True, limit_direction="both")
+        # fast numeric fill of remaining NaNs
+        DataImputator._fast_fillna_numeric(dataframe, fill_value=-100000)
+        # for any non-numeric columns that still have NaN, fallback to pandas fill
+        non_numeric_cols = dataframe.columns.difference(dataframe.select_dtypes(include=[np.number]).columns)
+        if len(non_numeric_cols) > 0:
+            dataframe[non_numeric_cols] = dataframe[non_numeric_cols].fillna(value=-100000)
         return dataframe
