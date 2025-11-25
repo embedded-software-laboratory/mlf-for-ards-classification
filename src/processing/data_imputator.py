@@ -82,7 +82,7 @@ class DataImputator:
                 logger.error(f"Invalid imputation method '{self.imputation_method}' for binary variable '{column}'")
                 raise RuntimeError("Please use only forward or backward fill as imputation method for binary variables!")
 
-            logger.debug(f"Job {job_number}: Imputing column '{column}' using method '{self.imputation_method}'")
+            # logger.debug(f"Job {job_number}: Imputing column '{column}' using method '{self.imputation_method}'")
             
             # Count NaN values before imputation for this column
             nan_count_before = dataframe[column].isna().sum()
@@ -116,7 +116,8 @@ class DataImputator:
         # Handle rows with missing ARDS values
         rows_with_ards_na = dataframe["ards"].isna().sum()
         dataframe.dropna(subset=['ards'], inplace=True, how="any", axis=0)
-        logger.debug(f"Job {job_number}: Dropped {rows_with_ards_na} rows with missing 'ards' values")
+        if rows_with_ards_na > 0:
+            logger.debug(f"Job {job_number}: Dropped {rows_with_ards_na} rows with missing 'ards' values")
 
         dataframe.reset_index(drop=True, inplace=True)
         
@@ -152,6 +153,7 @@ class DataImputator:
         
         # Accumulate total imputed values across all jobs
         self.total_imputed_values += job_imputed_values
+        logger.debug(f"Job {job_number}: Accumulated total imputed values: {self.total_imputed_values}")
         
         return dataframe
 

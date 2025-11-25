@@ -120,50 +120,115 @@ class DataFileManager:
     @staticmethod
     def _check_and_transform_dtypes(dataframe: pd.DataFrame) -> pd.DataFrame:
         """
-        Checks and transforms the dtypes of the DataFrame to ensure compatibility
-        with calculations in the framework. Converts 'gender' to binary and ensures
-        numeric columns are of type float64.
-        
-        Args:
-            dataframe: DataFrame to check and transform
-            
-        Returns:
-            DataFrame with updated dtypes
+        Optimize dtypes for memory and numeric operations.
+
+        Strategy:
+        - Convert 'gender' (M/F) to nullable Int8 with NaNs preserved.
+        - Detect integer-like columns and downcast to the smallest
+          suitable pandas nullable integer type (Int8/Int16/Int32/Int64 or UInt8/...).
+        - Convert floating columns to pandas nullable Float32 where possible.
+        - Try to coerce object columns that are mostly numeric before inference.
+        - Leave non-numeric / string columns as-is (optionally could convert to category).
         """
-        logger.info("Checking and transforming DataFrame dtypes...")
-        
-        # Convert 'gender' column to binary (0/1)
+        logger.info("Optimizing DataFrame dtypes for memory and numeric operations")
+
+        if dataframe is None or dataframe.empty:
+            logger.debug("DataFrame is empty; nothing to transform")
+            return dataframe
+
+        # 1) Handle gender specially: map 'M'/'F' -> 1/0, keep NaNs, use nullable Int8
         if 'gender' in dataframe.columns:
-            logger.debug("Transforming 'gender' column to binary (0/1)")
-            
-            # Count NaN values before conversion
-            nan_count = dataframe['gender'].isna().sum()
-            total_count = len(dataframe)
-            logger.debug(f"Gender column contains {nan_count}/{total_count} NaN values")
-            
-            # Map only non-NaN values, keeping NaN as NaN
+            logger.debug("Mapping 'gender' values to nullable Int8 (M->1, F->0)")
             dataframe['gender'] = dataframe['gender'].map({'M': 1, 'F': 0})
-            
-            # Count converted values
-            converted_m_count = (dataframe['gender'] == 1).sum()
-            converted_f_count = (dataframe['gender'] == 0).sum()
-            logger.debug(f"Converted: {converted_m_count} males (1), {converted_f_count} females (0), {nan_count} NaN values retained")
-            
-            # Convert to int8, but only for non-NaN values
-            # Use nullable integer type to preserve NaN values
-            dataframe['gender'] = dataframe['gender'].astype('Int8')
-            logger.info("Transformed 'gender' to binary (0/1) with Int8 dtype (nullable integer)")
-        
-        # Convert all numeric columns to float64
-        numeric_cols = dataframe.select_dtypes(include=['int', 'float']).columns
-        for col in numeric_cols:
-            if dataframe[col].dtype != 'float64':
-                logger.debug(f"Converting column '{col}' to float64")
-                dataframe[col] = dataframe[col].astype('float64')
-        
-        logger.info("DataFrame dtypes checked and transformed successfully.")
-        logger.debug(f"Updated DataFrame dtypes:\n{dataframe.dtypes}")
-        
+            try:
+                dataframe['gender'] = dataframe['gender'].astype('Int8')
+                logger.debug(f"  gender dtype -> {dataframe['gender'].dtype}")
+            except Exception as e:
+                logger.warning(f"  Failed to cast 'gender' to Int8: {e}")
+
+        # helper: choose smallest nullable integer dtype for range
+        def _select_nullable_int_dtype(min_v: int, max_v: int) -> str:
+            # prefer unsigned if all values >= 0
+            if min_v >= 0:
+                if max_v <= 255:
+                    return 'UInt8'
+                if max_v <= 65535:
+                    return 'UInt16'
+                if max_v <= 4294967295:
+                    return 'UInt32'
+                return 'UInt64'
+            else:
+                if -128 <= min_v and max_v <= 127:
+                    return 'Int8'
+                if -32768 <= min_v and max_v <= 32767:
+                    return 'Int16'
+                if -2147483648 <= min_v and max_v <= 2147483647:
+                    return 'Int32'
+                return 'Int64'
+
+        # Columns to skip (already handled)
+        skip_cols = {'gender'}
+
+        # 2) Iterate columns and infer best dtype
+        for col in dataframe.columns:
+            if col in skip_cols:
+                continue
+
+            ser = dataframe[col]
+
+            # If object, attempt a safe numeric coercion if majority numeric
+            if pd.api.types.is_object_dtype(ser):
+                coerced = pd.to_numeric(ser, errors='coerce')
+                non_null = coerced.notna().sum()
+                if non_null > 0 and non_null / max(1, len(coerced)) >= 0.5:
+                    # use coerced for inference but keep original values for assignment
+                    ser_to_check = coerced
+                    logger.debug(f"Column '{col}': object mostly numeric -> using coerced values for inference")
+                else:
+                    # leave non-numeric object column as-is
+                    continue
+            else:
+                ser_to_check = ser
+
+            # Drop NA for inference
+            non_null_ser = ser_to_check.dropna()
+            if non_null_ser.empty:
+                logger.debug(f"Column '{col}': only NaNs, skipping dtype optimisation")
+                continue
+
+            # Check if integer-like: either integer dtype or floats with no fractional part
+            is_int_like = False
+            try:
+                if pd.api.types.is_integer_dtype(non_null_ser):
+                    is_int_like = True
+                elif pd.api.types.is_float_dtype(non_null_ser):
+                    arr = non_null_ser.to_numpy()
+                    # fractional part check
+                    frac = np.modf(arr)[0]
+                    if np.all(frac == 0):
+                        is_int_like = True
+            except Exception:
+                is_int_like = False
+
+            if is_int_like:
+                min_v = int(non_null_ser.min())
+                max_v = int(non_null_ser.max())
+                target_dtype = _select_nullable_int_dtype(min_v, max_v)
+                try:
+                    dataframe[col] = dataframe[col].astype(target_dtype)
+                    logger.debug(f"Column '{col}' integer-like -> converted to {target_dtype}")
+                except Exception as e:
+                    logger.debug(f"Column '{col}' integer cast to {target_dtype} failed ({e}), leaving original dtype {dataframe[col].dtype}")
+            else:
+                # Not integer-like: try to downcast to pandas nullable Float32
+                try:
+                    dataframe[col] = dataframe[col].astype('Float32')
+                    logger.debug(f"Column '{col}' converted to Float32")
+                except Exception as e:
+                    logger.debug(f"Column '{col}' Float32 cast failed ({e}), leaving dtype {dataframe[col].dtype}")
+
+        logger.info("Dtype optimization complete")
+        logger.debug(f"Resulting dtypes:\n{dataframe.dtypes}")
         return dataframe
 
     @staticmethod
@@ -172,13 +237,13 @@ class DataFileManager:
         Loads a split data file directly into a DataFrame.
         
         Args:
-            file_path: Path to the split data file
+            file_path: Path to the split data directory
             
         Returns:
             DataFrame containing the loaded data
         """
         logger.debug(f"Loading split data file: {file_path}")
-        logger.info(f"Loading patient characteristics data")
+        logger.info("Loading patient characteristics data")
         folder = os.path.join(file_path, "patient_characteristics/")
         files = glob.glob(os.path.join(folder, "*.csv")) + glob.glob(os.path.join(folder, "*.parquet"))
         if not files:
@@ -199,7 +264,7 @@ class DataFileManager:
             logger.debug(f"Columns in patient_characteristics: {demographic_df.columns.tolist()}")
         logger.info(f"Number of unique patients in demographic data: {demographic_df['identifier'].nunique()}")
 
-        logger.info(f"Loading clinical measurements data")
+        logger.info("Loading clinical measurements data")
         folder = os.path.join(file_path, "clinical_measurements/")
         files = glob.glob(os.path.join(folder, "*.csv")) + glob.glob(os.path.join(folder, "*.parquet"))
         if not files:
@@ -219,17 +284,17 @@ class DataFileManager:
             logger.info(f"Loaded {len(measurements_df)} rows and {len(measurements_df.columns)} columns from clinical_measurements")
             logger.debug(f"Columns in clinical_measurements: {measurements_df.columns.tolist()}")
         logger.info(f"Number of unique patients in vital data: {measurements_df['identifier'].nunique()}")
-        logger.info(f"Combining patient characteristics and measurements")
+        logger.info("Combining patient characteristics and measurements")
         combined_df = pd.merge(measurements_df, demographic_df, on="identifier", how="left")
 
-         # Rename 'identifier' column to 'patient_id'
+        # Rename 'identifier' column to 'patient_id'
         if "identifier" in combined_df.columns:
             combined_df = combined_df.rename(columns={"identifier": "patient_id"})
             logger.info("Renamed column 'identifier' to 'patient_id'")
         else:
             logger.warning("Column 'identifier' not found in combined dataframe")
 
-        # Rename 'identifier' column to 'patient_id'
+        # Rename 'timestamp' column to 'time'
         if "timestamp" in combined_df.columns:
             combined_df = combined_df.rename(columns={"timestamp": "time"})
             logger.info("Renamed column 'timestamp' to 'time'")

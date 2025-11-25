@@ -210,7 +210,6 @@ class SplitFactory:
                 optimal_threshold_training = training_result.contained_metrics["OptimalProbability"].metric_value
                 prediction_labels = (evaluation.predicted_probas_test > optimal_threshold_training).astype(int)
             else:
-                logger.debug("Calculating optimal threshold for training stage")
                 optimal_threshold = OptimalProbability().calculate_metric(metric_information, stage)
                 prediction_labels = (evaluation.predicted_probas_test > optimal_threshold).astype(int)
         else:
@@ -221,10 +220,8 @@ class SplitFactory:
         metric_information["true_labels"] = evaluation.true_labels_test
 
         for metric in evaluation.contained_metrics:
-            logger.debug(f"Calculating metric: {metric}")
             metric_obj = eval(metric + "()")
             contained_metrics_dict[metric] = metric_obj.calculate_metric(metric_information, stage)
-            logger.debug(f"Metric '{metric}' calculated: {contained_metrics_dict[metric].metric_value}")
         logger.info(f"GenericSplit '{split_name}' created with {len(contained_metrics_dict)} metrics")
         return GenericSplit(split_name=split_name, contained_metrics=contained_metrics_dict)
 

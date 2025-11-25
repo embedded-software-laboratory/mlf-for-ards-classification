@@ -155,12 +155,11 @@ class OnsetDeterminer:  # Class to determine the ARDS onset in a given dataset
         logger.debug(f"Processing {len(unique_patients)} unique patients")
         
         for patient_count, patientid in enumerate(unique_patients, 1):
-            logger.debug(f"Processing patient {patient_count}/{len(unique_patients)}: ID={patientid}")
             patient_mask = dataframe["patient_id"] == patientid
             patient_data = dataframe[patient_mask]
             
             if self.detection_rule == "first_horovitz":
-                logger.debug(f"  Using detection rule: first_horovitz")
+                # logger.debug(f"  Using detection rule: first_horovitz")
                 horovitz_index = -1
                 for index in patient_data.index:
                     horovitz_val = dataframe.loc[index, "horovitz"]
@@ -183,7 +182,7 @@ class OnsetDeterminer:  # Class to determine the ARDS onset in a given dataset
                         logger.debug(f"    Patient has ARDS=1 and remove_ards_patients_without_onset=True. Skipping patient.")
 
             elif self.detection_rule == "lowest_horovitz":
-                logger.debug(f"  Using detection rule: lowest_horovitz")
+                # logger.debug(f"  Using detection rule: lowest_horovitz")
                 try:
                     horovitz_index = patient_data["horovitz"].idxmin()
                     horovitz_value = dataframe.loc[horovitz_index, "horovitz"]
@@ -194,14 +193,14 @@ class OnsetDeterminer:  # Class to determine the ARDS onset in a given dataset
                     raise
 
             elif self.detection_rule in ["4h", "12h", "24h"]:
-                logger.debug(f"  Using detection rule: {self.detection_rule}")
+                # logger.debug(f"  Using detection rule: {self.detection_rule}")
                 period_seconds = {"4h": 14400, "12h": 43200, "24h": 86400}[self.detection_rule]
-                logger.debug(f"  Period length: {period_seconds} seconds")
+                # logger.debug(f"  Period length: {period_seconds} seconds")
                 return_dataframe = self.get_low_horovitz_period_start(dataframe, period_seconds,
                                                                       patientid, return_dataframe)
 
             elif self.detection_rule == "4h_50":
-                logger.debug(f"  Using detection rule: 4h_50")
+                # logger.debug(f"  Using detection rule: 4h_50")
                 horovitz_index = -1
                 start_index_of_closest_series = -1
                 horovitz_percentage_of_closest_series = 0
@@ -294,7 +293,7 @@ class OnsetDeterminer:  # Class to determine the ARDS onset in a given dataset
                 for i in new_dataframe.index:
                     new_dataframe["ards"][i] = 0 if i < index else 1
             return_dataframe = pd.concat([return_dataframe, new_dataframe], axis=0, ignore_index=True)
-            logger.debug("Return data added as a series.")
+            # logger.debug("Return data added as a series.")
             return return_dataframe
 
         elif self.return_rule == "data_series_as_point":
@@ -317,7 +316,7 @@ class OnsetDeterminer:  # Class to determine the ARDS onset in a given dataset
                 temp_dataframe = pd.concat([temp_dataframe, temp_dataframe2], axis=1)
                 counter += 1
             return_dataframe = pd.concat([return_dataframe, temp_dataframe], axis=0)
-            logger.debug("Return data added as a series of points.")
+            # logger.debug("Return data added as a series of points.")
             return return_dataframe
 
     def get_low_horovitz_period_start(self, dataframe, period_length, patientid, return_dataframe):

@@ -37,8 +37,8 @@ class Filter:
             Filtered DataFrame
         """
         logger.info("Starting data filtering process...")
+        logger.debug(f"Number of patients in dataframe: {dataframe['patient_id'].nunique()}")
         for filter_to_apply in self.filter:
-            logger.debug(f"Applying filter: {filter_to_apply}")
             if filter_to_apply == "Strict":
                 dataframe = self.filter_strict(dataframe)
             if filter_to_apply == "Lite":

@@ -105,10 +105,10 @@ class DataSegregator:
         data.drop(["time", "patient_id"], axis=1, inplace=True)
         
         # Split into training and test sets with stratification
-        logger.info(f"Splitting data into training ({(1-self.training_test_ratio)*100:.1f}%) and test ({self.training_test_ratio*100:.1f}%) sets...")
+        logger.info(f"Splitting data into training ({(self.training_test_ratio)*100:.1f}%) and test ({(1-self.training_test_ratio)*100:.1f}%) sets...")
         training_data, test_data = train_test_split(
             data, 
-            test_size=self.training_test_ratio, 
+            test_size=1 - self.training_test_ratio, 
             random_state=self.random_state, 
             shuffle=True, 
             stratify=data["ards"]
