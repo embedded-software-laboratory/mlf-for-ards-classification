@@ -42,6 +42,8 @@ class DataFileManager:
         elif import_type == "split":
             logger.debug("Detected split data format. Loading directly as DataFrame.")
             dataset = self._load_split_file(file_path)
+            # After loading and merging, check and transform dtypes
+            dataset = self._check_and_transform_dtypes(dataset)
         else:
             logger.error(f"Unsupported file format: {import_type}")
             raise RuntimeError(f"Unsupported file format: {import_type}")
@@ -113,6 +115,39 @@ class DataFileManager:
         
         dataframe = pd.DataFrame(data, columns=variables)
         logger.info("NumPy file loaded successfully.")
+        return dataframe
+
+    @staticmethod
+    def _check_and_transform_dtypes(dataframe: pd.DataFrame) -> pd.DataFrame:
+        """
+        Checks and transforms the dtypes of the DataFrame to ensure compatibility
+        with calculations in the framework. Converts 'gender' to binary and ensures
+        numeric columns are of type float64.
+        
+        Args:
+            dataframe: DataFrame to check and transform
+            
+        Returns:
+            DataFrame with updated dtypes
+        """
+        logger.info("Checking and transforming DataFrame dtypes...")
+        
+        # Convert 'gender' column to binary (0/1)
+        if 'gender' in dataframe.columns:
+            logger.debug("Transforming 'gender' column to binary (0/1)")
+            dataframe['gender'] = dataframe['gender'].map({'M': 1, 'F': 0}).astype('int8')
+            logger.info("Transformed 'gender' to binary (0/1)")
+        
+        # Convert all numeric columns to float64
+        numeric_cols = dataframe.select_dtypes(include=['int', 'float']).columns
+        for col in numeric_cols:
+            if dataframe[col].dtype != 'float64':
+                logger.debug(f"Converting column '{col}' to float64")
+                dataframe[col] = dataframe[col].astype('float64')
+        
+        logger.info("DataFrame dtypes checked and transformed successfully.")
+        logger.debug(f"Updated DataFrame dtypes:\n{dataframe.dtypes}")
+        
         return dataframe
 
     @staticmethod

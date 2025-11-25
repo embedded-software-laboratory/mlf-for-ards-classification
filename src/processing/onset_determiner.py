@@ -120,88 +120,35 @@ class OnsetDeterminer:  # Class to determine the ARDS onset in a given dataset
         logger.debug(f"Input dataframe shape: {dataframe.shape}")
         logger.debug(f"Input dataframe columns: {dataframe.columns.tolist()}")
         
-        # Validate and convert critical columns to correct dtypes
-        logger.debug("Validating and converting column dtypes...")
+        # Validate critical columns
+        logger.debug("Validating critical columns...")
         
         # Validate horovitz column
         if "horovitz" not in dataframe.columns:
             logger.error("Column 'horovitz' not found in dataframe")
             raise ValueError("Column 'horovitz' is required for ARDS onset detection")
         
-        current_horovitz_dtype = dataframe["horovitz"].dtype
-        logger.debug(f"Current 'horovitz' dtype: {current_horovitz_dtype}")
-        
-        if not pd.api.types.is_numeric_dtype(dataframe["horovitz"]):
-            logger.warning(f"'horovitz' column has non-numeric dtype: {current_horovitz_dtype}. Converting to float64...")
-            try:
-                dataframe["horovitz"] = pd.to_numeric(dataframe["horovitz"], errors="coerce")
-                logger.info("Successfully converted 'horovitz' to numeric (float64)")
-            except Exception as e:
-                logger.error(f"Failed to convert 'horovitz' to numeric: {e}")
-                raise
-        
         # Validate peep column
         if "peep" not in dataframe.columns:
             logger.error("Column 'peep' not found in dataframe")
             raise ValueError("Column 'peep' is required for ARDS onset detection")
-        
-        current_peep_dtype = dataframe["peep"].dtype
-        logger.debug(f"Current 'peep' dtype: {current_peep_dtype}")
-        
-        if not pd.api.types.is_numeric_dtype(dataframe["peep"]):
-            logger.warning(f"'peep' column has non-numeric dtype: {current_peep_dtype}. Converting to float64...")
-            try:
-                dataframe["peep"] = pd.to_numeric(dataframe["peep"], errors="coerce")
-                logger.info("Successfully converted 'peep' to numeric (float64)")
-            except Exception as e:
-                logger.error(f"Failed to convert 'peep' to numeric: {e}")
-                raise
         
         # Validate time column
         if "time" not in dataframe.columns:
             logger.error("Column 'time' not found in dataframe")
             raise ValueError("Column 'time' is required for ARDS onset detection")
         
-        current_time_dtype = dataframe["time"].dtype
-        logger.debug(f"Current 'time' dtype: {current_time_dtype}")
-        
-        if not pd.api.types.is_numeric_dtype(dataframe["time"]):
-            logger.warning(f"'time' column has non-numeric dtype: {current_time_dtype}. Converting to numeric...")
-            try:
-                dataframe["time"] = pd.to_numeric(dataframe["time"], errors="coerce")
-                logger.info("Successfully converted 'time' to numeric")
-            except Exception as e:
-                logger.error(f"Failed to convert 'time' to numeric: {e}")
-                raise
-        
         # Validate patient_id column
         if "patient_id" not in dataframe.columns:
             logger.error("Column 'patient_id' not found in dataframe")
             raise ValueError("Column 'patient_id' is required for ARDS onset detection")
-        
-        current_patient_id_dtype = dataframe["patient_id"].dtype
-        logger.debug(f"Current 'patient_id' dtype: {current_patient_id_dtype}")
         
         # Validate ards column
         if "ards" not in dataframe.columns:
             logger.error("Column 'ards' not found in dataframe")
             raise ValueError("Column 'ards' is required for ARDS onset detection")
         
-        current_ards_dtype = dataframe["ards"].dtype
-        logger.debug(f"Current 'ards' dtype: {current_ards_dtype}")
-        
-        if not pd.api.types.is_numeric_dtype(dataframe["ards"]):
-            logger.warning(f"'ards' column has non-numeric dtype: {current_ards_dtype}. Converting to int64...")
-            try:
-                dataframe["ards"] = pd.to_numeric(dataframe["ards"], errors="coerce").astype("int64")
-                logger.info("Successfully converted 'ards' to numeric (int64)")
-            except Exception as e:
-                logger.error(f"Failed to convert 'ards' to numeric: {e}")
-                raise
-        
-        logger.info("All column dtypes validated and converted successfully")
-        logger.debug(f"Final dtypes - horovitz: {dataframe['horovitz'].dtype}, peep: {dataframe['peep'].dtype}, "
-                    f"time: {dataframe['time'].dtype}, ards: {dataframe['ards'].dtype}")
+        logger.info("All critical columns validated successfully.")
         
         return_dataframe = pd.DataFrame()
         unique_patients = set(dataframe["patient_id"].tolist())
