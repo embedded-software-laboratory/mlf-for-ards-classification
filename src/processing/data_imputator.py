@@ -64,7 +64,7 @@ class DataImputator:
                 logger.error(f"Invalid imputation method '{self.imputation_method}' for binary variable '{column}'")
                 raise RuntimeError("Please use only forward or backward fill as imputation method for binary variables!")
 
-            logger.debug(f"Imputing column '{column}' using method '{self.imputation_method}'")
+            logger.debug(f"Job {job_number}: Imputing column '{column}' using method '{self.imputation_method}'")
             
             # Count NaN values before imputation for this column
             nan_count_before = dataframe[column].isna().sum()
@@ -94,25 +94,22 @@ class DataImputator:
             nan_count_after = dataframe[column].isna().sum()
             values_imputed = nan_count_before - nan_count_after
             job_imputed_values += values_imputed
-            
-            if values_imputed > 0:
-                logger.debug(f"  Column '{column}': {values_imputed} values imputed")
 
         # Handle rows with missing ARDS values
         rows_with_ards_na = dataframe["ards"].isna().sum()
         dataframe.dropna(subset=['ards'], inplace=True, how="any", axis=0)
-        logger.debug(f"Dropped {rows_with_ards_na} rows with missing 'ards' values")
+        logger.debug(f"Job {job_number}: Dropped {rows_with_ards_na} rows with missing 'ards' values")
 
         dataframe.reset_index(drop=True, inplace=True)
         
         if not self.impute_empty_cells:
-            logger.debug("Dropping rows and columns with remaining NaN values...")
+            logger.debug(f"Job {job_number}: Dropping rows and columns with remaining NaN values...")
             dataframe.dropna(how="all", axis=1, ignore_index=True, inplace=True)
             dataframe.reset_index(drop=True, inplace=True)
             dataframe.dropna(how="any", axis=0, ignore_index=True, inplace=True)
             dataframe.reset_index(drop=True, inplace=True)
         else:
-            logger.debug("Filling remaining empty cells with -100000...")
+            logger.debug(f"Job {job_number}: Filling remaining empty cells with -100000...")
             dataframe.fillna(value=-100000, axis=1, inplace=True)
         
         if len(dataframe.index) == 0:
