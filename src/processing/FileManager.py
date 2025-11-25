@@ -170,4 +170,13 @@ class DataFileManager:
         logger.info(f"Number of unique patients in vital data: {measurements_df['identifier'].nunique()}")
         logger.info(f"Combining patient characteristics and measurements")
         combined_df = pd.merge(measurements_df, demographic_df, on="identifier", how="left")
+
+         # Rename 'identifier' column to 'patient_id'
+        if "identifier" in combined_df.columns:
+            combined_df = combined_df.rename(columns={"identifier": "patient_id"})
+            logger.info("Renamed column 'identifier' to 'patient_id'")
+            logger.debug(f"Updated columns: {combined_df.columns.tolist()}")
+        else:
+            logger.warning("Column 'identifier' not found in combined dataframe")
+            
         return combined_df
