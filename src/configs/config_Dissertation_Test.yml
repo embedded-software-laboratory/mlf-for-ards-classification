@@ -162,7 +162,7 @@ data:
   ards_dataset: weighted
   database: CALIBRATION
   pneumonia_dataset: balanced
-  timeseries_file_path: /hpcwork/rwth1474/Data/time_series/Calibration/Base50
+  timeseries_file_path: /work/rwth1474/Data/time_series/Calibration/Base50
   import_type: split # Options: numpy, csv, pkl, split
   image_file_path: # TODO: placeholder for image data path
   
