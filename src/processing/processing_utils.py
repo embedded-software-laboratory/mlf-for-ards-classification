@@ -21,7 +21,14 @@ def prepare_multiprocessing(dataframe: pd.DataFrame, patients_per_process: int, 
             - int: Number of jobs (chunks) created
     """
     logger.info("Preparing data for multiprocessing...")
-    patient_ids = dataframe["patient_id"].unique().tolist()
+    if dataframe is None or dataframe.empty:
+        logger.warning("Input dataframe is empty")
+        return [], 0
+
+    # preserve original dataframe index and order
+    df = dataframe
+    grouped = df.groupby("patient_id", sort=False)
+    patient_ids = list(grouped.groups.keys())
     num_patients = len(patient_ids)
     logger.info(f"Total number of patients: {num_patients}")
     logger.info(f"Requested patients per process: {patients_per_process}")
@@ -42,18 +49,20 @@ def prepare_multiprocessing(dataframe: pd.DataFrame, patients_per_process: int, 
         patients_per_process = math.ceil(num_patients / n_jobs) if n_jobs > 0 else num_patients
         logger.info(f"Recalculated patients_per_process to {patients_per_process} to use {n_jobs} jobs")
 
-    # Build dictionary mapping each patient to their min and max time indices
-    logger.debug("Building patient time range dictionary...")
+    # Build dictionary mapping each patient to their min and max positional indices (use positional iloc indices)
+    logger.debug("Building patient time/position dictionary...")
     patient_pos_dict = {}
-    patient_max_time_df = dataframe.groupby("patient_id")["time"].idxmax().reset_index(drop=True)
-    patient_min_time_df = dataframe.groupby("patient_id")["time"].idxmin().reset_index(drop=True)
-
-    for i in range(len(patient_ids)):
-        patient_pos_dict[patient_ids[i]] = (int(patient_min_time_df[i]), int(patient_max_time_df[i]))
+    for pid, idx in grouped.groups.items():
+        # idx is an Index of labels; map labels to positional integer locations
+        min_label = int(idx.min())
+        max_label = int(idx.max())
+        min_pos = df.index.get_indexer([min_label])[0]
+        max_pos = df.index.get_indexer([max_label])[0]
+        patient_pos_dict[pid] = (min_pos, max_pos)
 
     logger.debug(f"Patient position dictionary created with {len(patient_pos_dict)} entries")
 
-    # Split data into chunks using recalculated patients_per_process
+    # Split data into chunks using recalculated patients_per_process (use positional slicing with iloc)
     logger.info("Splitting data into chunks...")
     process_pool_data_list = []
 
@@ -62,14 +71,14 @@ def prepare_multiprocessing(dataframe: pd.DataFrame, patients_per_process: int, 
         first_patient = patient_ids[start_idx]
         last_patient = patient_ids[end_idx - 1]
 
-        first_patient_begin_index = patient_pos_dict[first_patient][0]
-        last_patient_end_index = patient_pos_dict[last_patient][1]
+        first_patient_begin_pos = patient_pos_dict[first_patient][0]
+        last_patient_end_pos = patient_pos_dict[last_patient][1]
 
-        # Use .loc to slice by original index labels (inclusive)
-        split_dataframe = dataframe.loc[first_patient_begin_index:last_patient_end_index].copy()
+        # Use .iloc to slice by positional indices (inclusive of last)
+        split_dataframe = df.iloc[first_patient_begin_pos:last_patient_end_pos + 1].copy()
         process_pool_data_list.append(split_dataframe)
 
-        chunk_patient_count = len(split_dataframe["patient_id"].unique())
+        chunk_patient_count = split_dataframe["patient_id"].nunique()
         chunk_row_count = len(split_dataframe)
         logger.debug(f"Chunk covering patients {start_idx + 1}-{end_idx}: {chunk_patient_count} patients, {chunk_row_count} rows")
 
