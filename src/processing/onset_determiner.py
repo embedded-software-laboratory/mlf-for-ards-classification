@@ -158,7 +158,6 @@ class OnsetDeterminer:  # Class to determine the ARDS onset in a given dataset
             logger.debug(f"Processing patient {patient_count}/{len(unique_patients)}: ID={patientid}")
             patient_mask = dataframe["patient_id"] == patientid
             patient_data = dataframe[patient_mask]
-            logger.debug(f"  Patient data shape: {patient_data.shape}")
             
             if self.detection_rule == "first_horovitz":
                 logger.debug(f"  Using detection rule: first_horovitz")
@@ -166,11 +165,9 @@ class OnsetDeterminer:  # Class to determine the ARDS onset in a given dataset
                 for index in patient_data.index:
                     horovitz_val = dataframe.loc[index, "horovitz"]
                     peep_val = dataframe.loc[index, "peep"]
-                    logger.debug(f"    Index {index}: horovitz={horovitz_val}, peep={peep_val}")
                     
                     if horovitz_val < 300 and peep_val >= 5:
                         horovitz_index = index
-                        logger.debug(f"    Found onset at index {index}")
                         break
                 
                 if horovitz_index != -1:
