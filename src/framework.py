@@ -41,7 +41,6 @@ class Framework:
         self.config = config
         self.loader = DataFileManager()
         self.supported_timeseries_models = self.config['supported_algorithms']['timeseries_models']
-        logger.info(f"Supported timeseries models: {self.supported_timeseries_models}")
 
         self.available_timeseries_models = {}
 
@@ -55,11 +54,6 @@ class Framework:
         self.timeseries_models_to_evaluate = self.create_needed_models(self.timeseries_model_use_config, 'to_evaluate')
         self.timeseries_models_to_execute = self.create_needed_models(self.timeseries_model_use_config, 'to_execute')
         self.timeseries_models_to_cross_validate = self.create_needed_models(self.timeseries_model_use_config, 'to_cross_validate')
-
-        logger.info(f"Models to train: {list(self.timeseries_models_to_train.keys())}")
-        logger.info(f"Models to evaluate: {list(self.timeseries_models_to_evaluate.keys())}")
-        logger.info(f"Models to execute: {list(self.timeseries_models_to_execute.keys())}")
-        logger.info(f"Models to cross-validate: {list(self.timeseries_models_to_cross_validate.keys())}")
 
         self.timeseries_training_set = None
         self.timeseries_test_set = None
@@ -128,7 +122,6 @@ class Framework:
             self.dataProcessor.database_name = dataset_metadata.datasource
             logger.info(f"Dataset source: {dataset_metadata.datasource}")
 
-        logger.info("Starting data preprocessing...")
         dataframe = self.dataProcessor.process_data(dataframe, dataset_metadata)
         processing_meta_data = self.dataProcessor.processing_meta_data()
         logger.info(f"Data preprocessing completed. Shape after preprocessing: {dataframe.shape}")

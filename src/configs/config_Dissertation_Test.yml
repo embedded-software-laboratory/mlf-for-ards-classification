@@ -15,7 +15,7 @@ process:
   perform_threshold_optimization: true
   calculate_evaluation_metrics: false
   perform_cross_validation: true
-  save_models: false
+  save_models: true
   load_image_data: false
   train_image_models: false
   test_image_models: false
@@ -152,7 +152,7 @@ algorithm_base_path:
   RandomForest: default
   RecurrentNeuralNetwork: Save/Cross validation results/Recurrent neural network_1
   SupportVectorMachine: default
-  XGBoost: defaul
+  XGBoost: default
 
 # Path to store or load the results of the experiments
 storage_path: ../Data/ExperimentResult/EvalFinalSameTraining

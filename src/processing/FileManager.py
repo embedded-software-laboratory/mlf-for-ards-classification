@@ -226,7 +226,6 @@ class DataFileManager:
         if "identifier" in combined_df.columns:
             combined_df = combined_df.rename(columns={"identifier": "patient_id"})
             logger.info("Renamed column 'identifier' to 'patient_id'")
-            logger.debug(f"Updated columns: {combined_df.columns.tolist()}")
         else:
             logger.warning("Column 'identifier' not found in combined dataframe")
 
@@ -234,7 +233,6 @@ class DataFileManager:
         if "timestamp" in combined_df.columns:
             combined_df = combined_df.rename(columns={"timestamp": "time"})
             logger.info("Renamed column 'timestamp' to 'time'")
-            logger.debug(f"Updated columns: {combined_df.columns.tolist()}")
         else:
             logger.warning("Column 'timestamp' not found in combined dataframe")
 

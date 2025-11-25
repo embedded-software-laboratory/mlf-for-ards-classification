@@ -133,7 +133,6 @@ class Filter:
         Raises:
             RuntimeError: If any filter in the list is not available
         """
-        logger.info("Setting filters...")
         for filter_to_apply in filter_list:
             if filter_to_apply not in self.available_filter:
                 error_msg = f"Filter {filter_to_apply} not available. Available filters are: {self.available_filter}"

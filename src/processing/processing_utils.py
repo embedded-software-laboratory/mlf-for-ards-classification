@@ -13,6 +13,7 @@ def prepare_multiprocessing(dataframe: pd.DataFrame, patients_per_process: int, 
     Args:
         dataframe: Input DataFrame containing patient timeseries data with 'patient_id' and 'time' columns
         patients_per_process: Number of patients to process per job
+        max_processes: Maximum allowed parallel processes
 
     Returns:
         Tuple containing:
@@ -23,16 +24,23 @@ def prepare_multiprocessing(dataframe: pd.DataFrame, patients_per_process: int, 
     patient_ids = dataframe["patient_id"].unique().tolist()
     num_patients = len(patient_ids)
     logger.info(f"Total number of patients: {num_patients}")
-    logger.info(f"Patients per process: {patients_per_process}")
+    logger.info(f"Requested patients per process: {patients_per_process}")
 
-    # Calculate number of jobs needed
-    n_jobs = math.ceil(num_patients / patients_per_process)
-    logger.info(f"Number of jobs to create: {n_jobs}")
+    if patients_per_process <= 0:
+        logger.warning("patients_per_process <= 0, defaulting to 1")
+        patients_per_process = 1
 
-    # Compare to set maximum of processes
+    # Calculate initial number of jobs needed
+    n_jobs = math.ceil(num_patients / patients_per_process) if num_patients > 0 else 0
+    logger.info(f"Initial number of jobs to create: {n_jobs}")
+
+    # Cap to max_processes and recompute patients_per_process so all patients are covered
     if n_jobs > max_processes:
         logger.warning(f"Calculated number of jobs ({n_jobs}) exceeds max processes ({max_processes}). Capping to max processes.")
         n_jobs = max_processes
+        # Recalculate patients_per_process to evenly distribute patients across the capped number of jobs
+        patients_per_process = math.ceil(num_patients / n_jobs) if n_jobs > 0 else num_patients
+        logger.info(f"Recalculated patients_per_process to {patients_per_process} to use {n_jobs} jobs")
 
     # Build dictionary mapping each patient to their min and max time indices
     logger.debug("Building patient time range dictionary...")
@@ -45,31 +53,31 @@ def prepare_multiprocessing(dataframe: pd.DataFrame, patients_per_process: int, 
 
     logger.debug(f"Patient position dictionary created with {len(patient_pos_dict)} entries")
 
-    # Split data into chunks
+    # Split data into chunks using recalculated patients_per_process
     logger.info("Splitting data into chunks...")
     process_pool_data_list = []
-    index = 0
 
-    for i in range(n_jobs):
-        # Determine which patients belong to this job
-        first_patient_idx = index + i * patients_per_process
-        calculated_last_idx = index + (i + 1) * patients_per_process - 1
-        last_patient_idx = calculated_last_idx if calculated_last_idx < num_patients else num_patients - 1
+    for start_idx in range(0, num_patients, patients_per_process):
+        end_idx = min(start_idx + patients_per_process, num_patients)
+        first_patient = patient_ids[start_idx]
+        last_patient = patient_ids[end_idx - 1]
 
-        first_patient = patient_ids[first_patient_idx]
-        last_patient = patient_ids[last_patient_idx]
-
-        # Get the time range for this chunk
         first_patient_begin_index = patient_pos_dict[first_patient][0]
         last_patient_end_index = patient_pos_dict[last_patient][1]
 
-        # Extract the chunk
-        split_dataframe = dataframe[first_patient_begin_index:last_patient_end_index]
+        # Use .loc to slice by original index labels (inclusive)
+        split_dataframe = dataframe.loc[first_patient_begin_index:last_patient_end_index].copy()
         process_pool_data_list.append(split_dataframe)
 
         chunk_patient_count = len(split_dataframe["patient_id"].unique())
         chunk_row_count = len(split_dataframe)
-        logger.debug(f"Job {i + 1}/{n_jobs}: {chunk_patient_count} patients, {chunk_row_count} rows")
+        logger.debug(f"Chunk covering patients {start_idx + 1}-{end_idx}: {chunk_patient_count} patients, {chunk_row_count} rows")
+
+    # final number of jobs is length of generated list (should equal n_jobs)
+    actual_n_jobs = len(process_pool_data_list)
+    if actual_n_jobs != n_jobs:
+        logger.debug(f"Adjusted n_jobs from {n_jobs} to actual created chunks {actual_n_jobs}")
+        n_jobs = actual_n_jobs
 
     logger.info(f"Data preparation completed. Created {n_jobs} chunks for multiprocessing.")
     return process_pool_data_list, n_jobs

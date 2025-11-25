@@ -26,7 +26,7 @@ if __name__ == '__main__':
     # Log framework startup
     logger.info("=" * 80)
     logger.info("Starting ML Framework")
-    logger.info(f"Logs will be saved to: {log_filename} with level {logging.getLevelName(logger.level)}")
+    logger.info(f"Logs will be saved to: {log_filename}")
     logger.info("=" * 80)
     
     try:
