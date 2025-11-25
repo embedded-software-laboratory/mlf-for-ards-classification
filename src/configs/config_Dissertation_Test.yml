@@ -166,8 +166,6 @@ data:
   import_type: split # Options: numpy, csv, pkl, split
   image_file_path: # TODO: placeholder for image data path
   
-
-
 # Settings for preprocessing the data before training or classification
 # Includes anomaly detection, filtering, imputation, calculation of additional parameters and ARDS onset detection
 preprocessing:
@@ -303,7 +301,7 @@ preprocessing:
 feature_selection:
   method: univariate
   variance: 0.16
-  k: 15
+  k: 50
 
 # Settings about how the data is split into training and test data
 data_segregation:
@@ -331,7 +329,7 @@ evaluation:
   - NPV
   - Precisions
   - Recalls
-  evaluation_name: Evaluation Strict Physical_Outliers forward 11 Lowest Horovitz
+  evaluation_name: Evaluation SF Dissertation
   threshold_optimization_algorithms:
   - Standard
   - MaxTPR

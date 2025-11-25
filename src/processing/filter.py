@@ -45,7 +45,6 @@ class Filter:
                 dataframe = self.filter_lite(dataframe)
             if filter_to_apply == "BD":
                 dataframe = self.filter_BD(dataframe)
-        logger.info("Data filtering completed.")
         return dataframe
 
     @staticmethod

@@ -129,11 +129,10 @@ class DataProcessor:
             logger.info("-" * 80)
             logger.info("SUBSTEP 2: Data Imputation (Missing Data Handling)")
             logger.info("-" * 80)
-            logger.info("Starting data imputation using multiprocessing...")
             with Pool(processes=self.max_processes) as pool:
                 process_pool_data_list = pool.starmap(
                     self.data_imputator.impute_missing_data,
-                    [(process_pool_data_list[i], i, n_jobs) for i in range(n_jobs)]
+                    [(process_pool_data_list[i], i+1, n_jobs) for i in range(n_jobs)]
                 )
 
             dataframe = pd.concat(process_pool_data_list).reset_index(drop=True)
@@ -161,7 +160,7 @@ class DataProcessor:
                 with Pool(processes=self.max_processes) as pool:
                     process_pool_data_list = pool.starmap(
                         self.unit_converter.convert_units,
-                        [(process_pool_data_list[i], self.database_name, i, n_jobs) for i in range(n_jobs)]
+                        [(process_pool_data_list[i], self.database_name, i+1, n_jobs) for i in range(n_jobs)]
                     )
 
                 dataframe = pd.concat(process_pool_data_list).reset_index(drop=True)
@@ -177,12 +176,11 @@ class DataProcessor:
             logger.info("-" * 80)
             logger.info("SUBSTEP 4: Missing Parameter Calculation")
             logger.info("-" * 80)
-            logger.info("Calculating missing clinical parameters...")
 
             with Pool(processes=self.max_processes) as pool:
                 process_pool_data_list = pool.starmap(
                     self.param_calculator.calculate_missing_params,
-                    [(process_pool_data_list[i], i, n_jobs) for i in range(n_jobs)]
+                    [(process_pool_data_list[i], i+1, n_jobs) for i in range(n_jobs)]
                 )
             
             dataframe = pd.concat(process_pool_data_list).reset_index(drop=True)
@@ -202,7 +200,7 @@ class DataProcessor:
                 with Pool(processes=self.max_processes) as pool:
                     process_pool_data_list = pool.starmap(
                         self.onset_determiner.determine_ards_onset,
-                        [(process_pool_data_list[i], i, n_jobs) for i in range(n_jobs)]
+                        [(process_pool_data_list[i], i+1, n_jobs) for i in range(n_jobs)]
                     )
                 
                 dataframe = pd.concat(process_pool_data_list).reset_index(drop=True)
@@ -218,7 +216,6 @@ class DataProcessor:
             logger.info("-" * 80)
             logger.info("SUBSTEP 6: Data Filtering")
             logger.info("-" * 80)
-            logger.info("Applying filtering criteria...")
             dataframe = self.filter.filter_data(dataframe)
             self.filter.create_meta_data()
             logger.info(f"Filtering completed. Data shape after filtering: {dataframe.shape}")
