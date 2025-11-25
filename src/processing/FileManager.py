@@ -135,8 +135,24 @@ class DataFileManager:
         # Convert 'gender' column to binary (0/1)
         if 'gender' in dataframe.columns:
             logger.debug("Transforming 'gender' column to binary (0/1)")
-            dataframe['gender'] = dataframe['gender'].map({'M': 1, 'F': 0}).astype('int8')
-            logger.info("Transformed 'gender' to binary (0/1)")
+            
+            # Count NaN values before conversion
+            nan_count = dataframe['gender'].isna().sum()
+            total_count = len(dataframe)
+            logger.debug(f"Gender column contains {nan_count}/{total_count} NaN values")
+            
+            # Map only non-NaN values, keeping NaN as NaN
+            dataframe['gender'] = dataframe['gender'].map({'M': 1, 'F': 0})
+            
+            # Count converted values
+            converted_m_count = (dataframe['gender'] == 1).sum()
+            converted_f_count = (dataframe['gender'] == 0).sum()
+            logger.debug(f"Converted: {converted_m_count} males (1), {converted_f_count} females (0), {nan_count} NaN values retained")
+            
+            # Convert to int8, but only for non-NaN values
+            # Use nullable integer type to preserve NaN values
+            dataframe['gender'] = dataframe['gender'].astype('Int8')
+            logger.info("Transformed 'gender' to binary (0/1) with Int8 dtype (nullable integer)")
         
         # Convert all numeric columns to float64
         numeric_cols = dataframe.select_dtypes(include=['int', 'float']).columns
