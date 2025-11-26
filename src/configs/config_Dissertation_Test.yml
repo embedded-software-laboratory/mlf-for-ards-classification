@@ -5,7 +5,7 @@ process:
   perform_anomaly_detection: false
   perform_imputation: true
   perform_unit_conversion: true
-  calculate_missing_params: false
+  calculate_missing_params: true
   perform_ards_onset_detection: true
   perform_filtering: true
   perform_feature_selection: true
@@ -13,8 +13,8 @@ process:
   perform_timeseries_training: true
   perform_timeseries_classification: true
   perform_threshold_optimization: true
-  calculate_evaluation_metrics: false
-  perform_cross_validation: true
+  calculate_evaluation_metrics: true
+  perform_cross_validation: false
   save_models: true
   load_image_data: false
   train_image_models: false

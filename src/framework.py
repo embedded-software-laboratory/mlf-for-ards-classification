@@ -400,7 +400,7 @@ class Framework:
         if self.process["load_timeseries_data"]:
             self.load_timeseries_data()
         else:
-            logger.info("Skipping: load_timeseries_data (disabled in config)")
+            logger.info("Skipping STEP 1: load_timeseries_data (disabled in config)")
 
         if self.process["perform_timeseries_training"]:
             if not self.timeseries_training_set:
@@ -408,7 +408,7 @@ class Framework:
                 exit()
             self.learn_timeseries_models()
         else:
-            logger.info("Skipping: perform_timeseries_training (disabled in config)")
+            logger.info("Skipping STEP 2: perform_timeseries_training (disabled in config)")
 
         if self.process["perform_timeseries_classification"]:
             if not self.timeseries_test_set:
@@ -416,12 +416,12 @@ class Framework:
                 exit()
             self.execute_timeseries_models(self.timeseries_test_set)
         else:
-            logger.info("Skipping: perform_timeseries_classification (disabled in config)")
+            logger.info("Skipping STEP 3: perform_timeseries_classification (disabled in config)")
 
         if self.process["calculate_evaluation_metrics"]:
             self.evaluate_timeseries_models()
         else:
-            logger.info("Skipping: calculate_evaluation_metrics (disabled in config)")
+            logger.info("Skipping STEP 4: calculate_evaluation_metrics (disabled in config)")
 
         if self.process["perform_cross_validation"]:
             if not self.timeseries_training_set:
@@ -429,7 +429,7 @@ class Framework:
                 exit()
             self.cross_validate_models()
         else:
-            logger.info("Skipping: perform_cross_validation (disabled in config)")
+            logger.info("Skipping STEP 5: perform_cross_validation (disabled in config)")
 
         if self.timeseries_evaluations_result or self.timeseries_cross_validation_result:
             self.handle_timeseries_results()
