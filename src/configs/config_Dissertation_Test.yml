@@ -63,7 +63,7 @@ models:
         Names:
         - RandomForest
       SupportVectorMachine:
-        Active: true
+        Active: false
         Configs:
         - default
         Names:
@@ -123,7 +123,7 @@ models:
         Names:
         - RandomForest
       SupportVectorMachine:
-        Active: true
+        Active: false
         Names: 
         - SVM
       XGBoost:
@@ -148,7 +148,7 @@ models:
         Names:
         - RandomForest
       SupportVectorMachine:
-        Active: true
+        Active: false
         Names: 
         - SVM
       XGBoost:
