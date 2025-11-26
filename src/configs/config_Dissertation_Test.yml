@@ -46,12 +46,16 @@ models:
         - AdaBoost
       LightGBM:
         Active: true
-        Configs: []
-        Names: []
+        Configs:
+        - default
+        Names:
+        - LightGBM
       LogisticRegression:
         Active: true
-        Configs: []
-        Names: []
+        Configs:
+        - default
+        Names:
+        - LR
       RandomForest:
         Active: true
         Configs:
@@ -60,8 +64,10 @@ models:
         - RandomForest
       SupportVectorMachine:
         Active: true
-        Configs: []
-        Names: []
+        Configs:
+        - default
+        Names:
+        - SVM
       XGBoost:
         Active: true
         Configs:
@@ -106,17 +112,20 @@ models:
         - AdaBoost
       LightGBM:
         Active: true
-        Names: []
+        Names: 
+        - LightGBM
       LogisticRegression:
         Active: true
-        Names: []
+        Names: 
+        - LR
       RandomForest:
         Active: true
         Names:
         - RandomForest
       SupportVectorMachine:
         Active: true
-        Names: []
+        Names: 
+        - SVM
       XGBoost:
         Active: true
         Names:
@@ -128,17 +137,20 @@ models:
         - AdaBoost
       LightGBM:
         Active: false
-        Names: []
+        Names:
+        - LightGBM
       LogisticRegression:
         Active: false
-        Names: []
+        Names: 
+        - LR
       RandomForest:
         Active: false
         Names:
         - RandomForest
       SupportVectorMachine:
         Active: false
-        Names: []
+        Names: 
+        - SVM
       XGBoost:
         Active: false
         Names:

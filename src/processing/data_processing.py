@@ -237,7 +237,6 @@ class DataProcessor:
         Returns:
             Dictionary containing metadata from all preprocessing components
         """
-        logger.info("Collecting metadata from all preprocessing steps...")
         processing_step_dict = {
             "filtering": self.filter,
             "unit_conversion": self.unit_converter,
