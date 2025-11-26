@@ -298,11 +298,14 @@ class Framework:
             self.timeseries_models_to_cross_validate, self.timeseries_model_use_config["base_path_config"]["to_cross_validate"])
 
         total_cv_models = sum(len(models) for models in models_to_cross_validate_dict.values())
-        logger.info(f"Starting cross-validation for {total_cv_models} models...")
-        
-        overall_result = evaluator.cross_validate_timeseries_models(models_to_cross_validate_dict)
-        self.timeseries_cross_validation_result = overall_result
-        logger.info(f"Cross-validation completed successfully for {total_cv_models} models")
+        if total_cv_models == 0:
+            logger.warning("No models configured for cross-validation. Skipping this step.")
+            return
+        else:
+            logger.info(f"Starting cross-validation for {total_cv_models} models...")
+            overall_result = evaluator.cross_validate_timeseries_models(models_to_cross_validate_dict)
+            self.timeseries_cross_validation_result = overall_result
+            logger.info(f"Cross-validation completed successfully for {total_cv_models} models")
 
     def handle_timeseries_results(self):
         """
