@@ -79,4 +79,3 @@ def plot_eval(data: EvalResult, file_name: str) -> None:
     plot_data(data, model_count)
     plt.savefig(file_name + ".pdf", bbox_inches='tight', format="pdf")
 
-    #hallo
