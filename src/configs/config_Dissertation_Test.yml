@@ -45,32 +45,32 @@ models:
         Names:
         - AdaBoost
       LightGBM:
-        Active: false
+        Active: true
         Configs: []
         Names: []
       LogisticRegression:
-        Active: false
+        Active: true
         Configs: []
         Names: []
       RandomForest:
-        Active: false
+        Active: true
         Configs:
         - default
         Names:
         - RandomForest
       SupportVectorMachine:
-        Active: false
+        Active: true
         Configs: []
         Names: []
       XGBoost:
-        Active: false
+        Active: true
         Configs:
         - default
         Names:
         - XGBoost
     to_cross_validate:
       AdaBoost:
-        Active: true
+        Active: false
         Configs:
         - default
         Names:
@@ -105,20 +105,20 @@ models:
         Names:
         - AdaBoost
       LightGBM:
-        Active: false
+        Active: true
         Names: []
       LogisticRegression:
-        Active: false
+        Active: true
         Names: []
       RandomForest:
-        Active: false
+        Active: true
         Names:
         - RandomForest
       SupportVectorMachine:
-        Active: false
+        Active: true
         Names: []
       XGBoost:
-        Active: false
+        Active: true
         Names:
         - XGBoost
     to_execute:
@@ -306,7 +306,7 @@ feature_selection:
 # Settings about how the data is split into training and test data
 data_segregation:
   training_test_ratio: 0.8
-  percentage_of_ards_patients: 0.1
+  percentage_of_ards_patients: 0.164
   splitting_seed: 1
 
 # Configurations about the evaluation of the models and which metrics to calculate

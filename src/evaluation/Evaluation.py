@@ -77,7 +77,6 @@ class Evaluation:
         """
         logger.info("Starting cross-validation for timeseries models...")
         for model_algorithm in models_to_cross_validate_dict:
-            logger.info(f"Cross-validating models for algorithm: {model_algorithm}")
             for timeseries_model in models_to_cross_validate_dict[model_algorithm]:
                 logger.info(f"Cross-validating model: {timeseries_model.name}")
                 model_evaluation = ModelEvaluation(self.config, timeseries_model, self)
@@ -93,7 +92,6 @@ class Evaluation:
 
         ingredients = {"EvaluationInformation": self.eval_info, "model_results": self.model_results}
         overall_result = ResultManagement().factory_method("new", ingredients)
-        logger.info("Cross-validation completed.")
         return overall_result
 
 

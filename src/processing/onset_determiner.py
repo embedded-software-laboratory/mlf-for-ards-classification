@@ -275,10 +275,10 @@ class OnsetDeterminer:  # Class to determine the ARDS onset in a given dataset
         Returns:
             Updated return DataFrame
         """
-        logger.debug(f"Adding return data for index: {index} with return rule: {self.return_rule}")
+        # logger.debug(f"Adding return data for index: {index} with return rule: {self.return_rule}")
         if self.return_rule == "datapoint":
             return_dataframe = pd.concat([return_dataframe, dataframe.iloc[[index]]], axis=0)
-            logger.debug("Return data added as a single data point.")
+            # logger.debug("Return data added as a single data point.")
             return return_dataframe
 
         elif self.return_rule == "data_series_as_series":
