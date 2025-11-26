@@ -136,23 +136,23 @@ models:
         Names:
         - AdaBoost
       LightGBM:
-        Active: false
+        Active: true
         Names:
         - LightGBM
       LogisticRegression:
-        Active: false
+        Active: true
         Names: 
         - LR
       RandomForest:
-        Active: false
+        Active: true
         Names:
         - RandomForest
       SupportVectorMachine:
-        Active: false
+        Active: true
         Names: 
         - SVM
       XGBoost:
-        Active: false
+        Active: true
         Names:
         - XGBoost
 
