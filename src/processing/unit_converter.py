@@ -181,13 +181,8 @@ class UnitConverter:
         Returns:
             Converted CRP value
         """
-        try: 
-            value = value * 9.5238
-        except TypeError as e:
-            logger.error(f"TypeError: {e}")
-            logger.error(f"Variable types -> Value: {type(value)}, Constant: {type(9.5238)}")
-            raise
-        return value
+        logger.info(f"Type of value: {type(value)}; Value: {value}")
+        return value * 9.5238
 
     @staticmethod
     def convert_bilirubin(value):
