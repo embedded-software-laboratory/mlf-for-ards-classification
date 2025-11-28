@@ -167,7 +167,7 @@ algorithm_base_path:
   XGBoost: default
 
 # Path to store or load the results of the experiments
-storage_path: ../Save/Dissertation_Test/
+storage_path: ../Save/Calibration/Base50/
 
 # Information about the data that is used to train and evaluate the models
 data:
@@ -301,7 +301,7 @@ preprocessing:
   - horovitz
 
   ards_onset_detection:
-    detection_rule: first_horovitz
+    detection_rule: first_horovitz 
     impute_missing_rows: false
     remove_ards_patients_without_onset: false
     return_rule: datapoint
@@ -311,6 +311,7 @@ preprocessing:
 
 # Settings for feature selection before training or classification
 feature_selection:
+  # possible methods: low_variance, univariate, recursive, recursive_with_cv, L1, tree, sequential
   method: univariate
   variance: 0.16
   k: 50
@@ -318,7 +319,7 @@ feature_selection:
 # Settings about how the data is split into training and test data
 data_segregation:
   training_test_ratio: 0.8
-  percentage_of_ards_patients: 0.164
+  percentage_of_ards_patients: 0.15
   splitting_seed: 1
 
 # Configurations about the evaluation of the models and which metrics to calculate
