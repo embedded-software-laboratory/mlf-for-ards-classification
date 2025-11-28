@@ -12,7 +12,7 @@ log_filename = os.path.join(LOG_DIR, f"run_{datetime.now().strftime('%Y%m%d_%H%M
 
 # Configure logging to write to both file and console
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
         logging.FileHandler(log_filename),
