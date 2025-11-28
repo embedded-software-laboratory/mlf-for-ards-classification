@@ -124,27 +124,10 @@ class DataProcessor:
         else:
             logger.info("SUBSTEP 1: Anomaly Detection - SKIPPED (disabled in config)")
 
-        # Step 2: Data Imputation
-        if self.process["perform_imputation"]:
-            logger.info("-" * 80)
-            logger.info("SUBSTEP 2: Data Imputation (Missing Data Handling)")
-            logger.info("-" * 80)
-            with Pool(processes=self.max_processes) as pool:
-                process_pool_data_list = pool.starmap(
-                    self.data_imputator.impute_missing_data,
-                    [(process_pool_data_list[i], i+1, n_jobs) for i in range(n_jobs)]
-                )
-
-            dataframe = pd.concat(process_pool_data_list).reset_index(drop=True)
-            self.data_imputator.create_meta_data()
-            logger.info(f"Imputation completed successfully. Data shape: {dataframe.shape}")
-        else:
-            logger.info("SUBSTEP 2: Data Imputation - SKIPPED (disabled in config)")
-
-        # Step 3: Unit Conversion
+        # Step 2: Unit Conversion
         if self.process["perform_unit_conversion"]:
             logger.info("-" * 80)
-            logger.info("SUBSTEP 3: Unit Conversion")
+            logger.info("SUBSTEP 2: Unit Conversion")
             logger.info("-" * 80)
             
             if not dataset_metadata or (dataset_metadata and not dataset_metadata.unit_conversion):
@@ -169,7 +152,24 @@ class DataProcessor:
             else:
                 logger.info("Data already converted in previous run. Skipping unit conversion...")
         else:
-            logger.info("SUBSTEP 3: Unit Conversion - SKIPPED (disabled in config)")
+            logger.info("SUBSTEP 2: Unit Conversion - SKIPPED (disabled in config)")
+
+        # Step 3: Data Imputation
+        if self.process["perform_imputation"]:
+            logger.info("-" * 80)
+            logger.info("SUBSTEP 3: Data Imputation (Missing Data Handling)")
+            logger.info("-" * 80)
+            with Pool(processes=self.max_processes) as pool:
+                process_pool_data_list = pool.starmap(
+                    self.data_imputator.impute_missing_data,
+                    [(process_pool_data_list[i], i+1, n_jobs) for i in range(n_jobs)]
+                )
+
+            dataframe = pd.concat(process_pool_data_list).reset_index(drop=True)
+            self.data_imputator.create_meta_data()
+            logger.info(f"Imputation completed successfully. Data shape: {dataframe.shape}")
+        else:
+            logger.info("SUBSTEP 3: Data Imputation - SKIPPED (disabled in config)")
 
         # Step 4: Parameter Calculation
         if self.process["calculate_missing_params"]:

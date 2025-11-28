@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import logging
 
 from processing.datasets_metadata import UnitConversionMetaData
@@ -59,7 +60,16 @@ class UnitConverter:
         for column in self._columns_to_convert:
             if column in dataframe.columns:
                 logger.debug(f"Converting column: {column}")
-                dataframe[column] = dataframe[column].apply(self.conversion_formulas[database_name][column])
+                conversion_func = self.conversion_formulas[database_name][column]
+
+                def safe_convert(v, col=column, func=conversion_func):
+                    numeric_v = self._safe_numeric(v, col)
+                    # Skip converting NaN created from invalid strings
+                    if pd.isna(numeric_v):
+                        return np.nan
+                    return func(numeric_v)
+
+                dataframe[column] = dataframe[column].apply(safe_convert)
                 columns_converted += 1
             else:
                 logger.warning(f"Column '{column}' not found in dataframe. Skipping conversion.")
@@ -94,6 +104,30 @@ class UnitConverter:
         
         self.meta_data = UnitConversionMetaData(conversions=meta_data_dict)
         logger.info(f"Metadata created with {len(meta_data_dict)} conversion records")
+
+    def _safe_numeric(self, value, column_name):
+        """
+        Ensures that the value is numeric before unit conversion.
+        Invalid strings are removed (set to NaN) and logged.
+        Unexpected complex types raise an error.
+        """
+        # Direct numeric types
+        if isinstance(value, (int, float)):
+            return float(value)
+
+        # Strings: try to convert
+        if isinstance(value, str):
+            cleaned = value.strip().replace(",", ".")
+            try:
+                return float(cleaned)
+            except ValueError:
+                logger.info(f"Removed invalid non-numeric value '{value}' in column '{column_name}'")
+                return np.nan
+
+        # Anything else = error
+        logger.error(f"Unsupported type '{type(value)}' in column '{column_name}'")
+        raise TypeError(f"Unsupported value type: {type(value)}")
+
 
     @property
     def conversion_formulas(self):
@@ -181,7 +215,6 @@ class UnitConverter:
         Returns:
             Converted CRP value
         """
-        logger.info(f"Type of value: {type(value)}; Value: {value}")
         return value * 9.5238
 
     @staticmethod
@@ -221,7 +254,7 @@ class UnitConverter:
         Returns:
             Converted FiO2 value
         """
-        if value <= 1.0:
+        if value <= 1.0 and not pd.isna(value):
             value = value * 100.0
         return value
 
@@ -246,4 +279,3 @@ class UnitConverter:
         logger.info(f"Setting columns to convert: {columns_to_convert}")
         self._columns_to_convert = columns_to_convert
         logger.debug(f"Columns to convert updated. Count: {len(columns_to_convert) if columns_to_convert else 0}")
-
