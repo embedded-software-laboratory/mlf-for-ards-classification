@@ -63,11 +63,20 @@ class UnitConverter:
                 conversion_func = self.conversion_formulas[database_name][column]
 
                 def safe_convert(v, col=column, func=conversion_func):
+                    # Skip NaN directly (no logging)
+                    if pd.isna(v):
+                        return np.nan
+
+                    # Extract numeric safely
                     numeric_v = self._safe_numeric(v, col)
-                    # Skip converting NaN created from invalid strings
+
+                    # Skip NaN created by _safe_numeric
                     if pd.isna(numeric_v):
                         return np.nan
+
+                    # Only valid numbers reach this point
                     return func(numeric_v)
+
 
                 dataframe[column] = dataframe[column].apply(safe_convert)
                 columns_converted += 1
@@ -77,6 +86,8 @@ class UnitConverter:
         logger.info(f"Converted {columns_converted} columns")
         logger.info(f"Finished unit conversion for job {job_number} of {total_job_count} jobs...")
         return dataframe
+
+        
 
     def create_meta_data(self, database_name: str):
         """
