@@ -157,102 +157,110 @@ class OnsetDeterminer:  # Class to determine the ARDS onset in a given dataset
         for patient_count, patientid in enumerate(unique_patients, 1):
             patient_mask = dataframe["patient_id"] == patientid
             patient_data = dataframe[patient_mask]
-            
-            if self.detection_rule == "first_horovitz":
-                # logger.debug(f"  Using detection rule: first_horovitz")
-                horovitz_index = -1
-                for index in patient_data.index:
-                    horovitz_val = dataframe.loc[index, "horovitz"]
-                    peep_val = dataframe.loc[index, "peep"]
+
+            # Remove imputation placeholder -100,000 before any detection <<<
+            valid_horovitz_mask = (patient_data["horovitz"] != -100000.0) & (~patient_data["horovitz"].isna())
+            patient_valid_data = patient_data[valid_horovitz_mask]
+
+            if len(patient_valid_data) == 0:
+                logger.warning(f"Skipping patient {patientid}: no valid horovitz values (only -100 or NaN).")
+                continue
+            else:
+                if self.detection_rule == "first_horovitz":
+                    # logger.debug(f"  Using detection rule: first_horovitz")
+                    horovitz_index = -1
+                    for index in patient_valid_data.index:
+                        horovitz_val = dataframe.loc[index, "horovitz"]
+                        peep_val = dataframe.loc[index, "peep"]
+                        
+                        if horovitz_val < 300 and peep_val >= 5:
+                            horovitz_index = index
+                            break
                     
-                    if horovitz_val < 300 and peep_val >= 5:
-                        horovitz_index = index
-                        break
-                
-                if horovitz_index != -1:
-                    return_dataframe = self.add_return_data(return_dataframe, dataframe, horovitz_index)
-                else:
-                    logger.debug(f"  No valid onset found via first_horovitz. Checking fallback conditions...")
-                    ards_value = dataframe.loc[patient_data.index[0], "ards"]
-                    if (ards_value == 0 or not self.remove_ards_patients_without_onset):
-                        horovitz_index = patient_data["horovitz"].idxmin()
-                        logger.debug(f"    Using fallback: minimum horovitz at index {horovitz_index}")
+                    if horovitz_index != -1:
                         return_dataframe = self.add_return_data(return_dataframe, dataframe, horovitz_index)
                     else:
-                        logger.debug(f"    Patient has ARDS=1 and remove_ards_patients_without_onset=True. Skipping patient.")
-
-            elif self.detection_rule == "lowest_horovitz":
-                # logger.debug(f"  Using detection rule: lowest_horovitz")
-                try:
-                    horovitz_index = patient_data["horovitz"].idxmin()
-                    horovitz_value = dataframe.loc[horovitz_index, "horovitz"]
-                    logger.debug(f"  Minimum horovitz value: {horovitz_value} at index {horovitz_index}")
-                    return_dataframe = self.add_return_data(return_dataframe, dataframe, horovitz_index)
-                except Exception as e:
-                    logger.error(f"  Error finding lowest horovitz for patient {patientid}: {e}")
-                    raise
-
-            elif self.detection_rule in ["4h", "12h", "24h"]:
-                # logger.debug(f"  Using detection rule: {self.detection_rule}")
-                period_seconds = {"4h": 14400, "12h": 43200, "24h": 86400}[self.detection_rule]
-                # logger.debug(f"  Period length: {period_seconds} seconds")
-                return_dataframe = self.get_low_horovitz_period_start(dataframe, period_seconds,
-                                                                      patientid, return_dataframe)
-
-            elif self.detection_rule == "4h_50":
-                # logger.debug(f"  Using detection rule: 4h_50")
-                horovitz_index = -1
-                start_index_of_closest_series = -1
-                horovitz_percentage_of_closest_series = 0
-                
-                for index in patient_data.index:
-                    horovitz_val = dataframe.loc[index, "horovitz"]
-                    peep_val = dataframe.loc[index, "peep"]
-                    
-                    if horovitz_val < 300 and peep_val >= 5:
-                        horovitz_index = index
-                        start_timestamp = dataframe.loc[index, "time"]
-                        second_index = index
-                        number_of_low_horovitz = 1
-                        total_number_of_rows = 1
-                        fulfilled = True
-                        
-                        while (second_index < len(dataframe) and
-                               dataframe.loc[second_index, "patient_id"] == patientid and
-                               dataframe.loc[second_index, "time"] - start_timestamp <= 14400):
-                            total_number_of_rows += 1
-                            if dataframe.loc[second_index, "horovitz"] < 300:
-                                number_of_low_horovitz += 1
-                            second_index += 1
-                        
-                        percentage = number_of_low_horovitz / total_number_of_rows
-                        logger.debug(f"    Index {index}: low horovitz percentage = {percentage:.2%}")
-                        
-                        if percentage <= 0.5:
-                            fulfilled = False
-                            if percentage > horovitz_percentage_of_closest_series:
-                                horovitz_percentage_of_closest_series = percentage
-                                start_index_of_closest_series = horovitz_index
-                        
-                        if fulfilled:
-                            logger.debug(f"    Found valid 4h_50 onset at index {horovitz_index}")
-                            break
+                        logger.debug(f"  No valid onset found via first_horovitz. Checking fallback conditions...")
+                        ards_value = dataframe.loc[patient_valid_data.index[0], "ards"]
+                        if (ards_value == 0 or not self.remove_ards_patients_without_onset):
+                            horovitz_index = patient_valid_data["horovitz"].idxmin()
+                            logger.debug(f"    Using fallback: minimum horovitz at index {horovitz_index}")
+                            return_dataframe = self.add_return_data(return_dataframe, dataframe, horovitz_index)
                         else:
-                            horovitz_index = -1
-                
-                if horovitz_index != -1:
-                    return_dataframe = self.add_return_data(return_dataframe, dataframe, horovitz_index)
-                elif start_index_of_closest_series != -1:
-                    ards_value = dataframe.loc[patient_data.index[0], "ards"]
-                    if (ards_value == 0 or not self.remove_ards_patients_without_onset):
-                        logger.debug(f"    Using closest series as fallback at index {start_index_of_closest_series}")
-                        return_dataframe = self.add_return_data(return_dataframe, dataframe, start_index_of_closest_series)
-                else:
-                    ards_value = dataframe.loc[patient_data.index[0], "ards"]
-                    if (ards_value == 0 or not self.remove_ards_patients_without_onset):
-                        horovitz_index = patient_data["horovitz"].idxmin()
-                        logger.debug(f"    Using minimum horovitz as final fallback at index {horovitz_index}")
+                            logger.debug(f"    Patient has ARDS=1 and remove_ards_patients_without_onset=True. Skipping patient.")
+
+                elif self.detection_rule == "lowest_horovitz":
+                    # logger.debug(f"  Using detection rule: lowest_horovitz")
+                    try:
+                        horovitz_index = patient_valid_data["horovitz"].idxmin()
+                        horovitz_value = dataframe.loc[horovitz_index, "horovitz"]
+                        logger.debug(f"  Minimum horovitz value: {horovitz_value} at index {horovitz_index}")
                         return_dataframe = self.add_return_data(return_dataframe, dataframe, horovitz_index)
+                    except Exception as e:
+                        logger.error(f"  Error finding lowest horovitz for patient {patientid}: {e}")
+                        raise
+
+                elif self.detection_rule in ["4h", "12h", "24h"]:
+                    # logger.debug(f"  Using detection rule: {self.detection_rule}")
+                    period_seconds = {"4h": 14400, "12h": 43200, "24h": 86400}[self.detection_rule]
+                    # logger.debug(f"  Period length: {period_seconds} seconds")
+                    return_dataframe = self.get_low_horovitz_period_start(dataframe, period_seconds,
+                                                                        patientid, return_dataframe)
+
+                elif self.detection_rule == "4h_50":
+                    # logger.debug(f"  Using detection rule: 4h_50")
+                    horovitz_index = -1
+                    start_index_of_closest_series = -1
+                    horovitz_percentage_of_closest_series = 0
+                    
+                    for index in patient_valid_data.index:
+                        horovitz_val = dataframe.loc[index, "horovitz"]
+                        peep_val = dataframe.loc[index, "peep"]
+                        
+                        if horovitz_val < 300 and peep_val >= 5:
+                            horovitz_index = index
+                            start_timestamp = dataframe.loc[index, "time"]
+                            second_index = index
+                            number_of_low_horovitz = 1
+                            total_number_of_rows = 1
+                            fulfilled = True
+                            
+                            while (second_index < len(dataframe) and
+                                dataframe.loc[second_index, "patient_id"] == patientid and
+                                dataframe.loc[second_index, "time"] - start_timestamp <= 14400):
+                                total_number_of_rows += 1
+                                if dataframe.loc[second_index, "horovitz"] < 300:
+                                    number_of_low_horovitz += 1
+                                second_index += 1
+                            
+                            percentage = number_of_low_horovitz / total_number_of_rows
+                            logger.debug(f"    Index {index}: low horovitz percentage = {percentage:.2%}")
+                            
+                            if percentage <= 0.5:
+                                fulfilled = False
+                                if percentage > horovitz_percentage_of_closest_series:
+                                    horovitz_percentage_of_closest_series = percentage
+                                    start_index_of_closest_series = horovitz_index
+                            
+                            if fulfilled:
+                                logger.debug(f"    Found valid 4h_50 onset at index {horovitz_index}")
+                                break
+                            else:
+                                horovitz_index = -1
+                    
+                    if horovitz_index != -1:
+                        return_dataframe = self.add_return_data(return_dataframe, dataframe, horovitz_index)
+                    elif start_index_of_closest_series != -1:
+                        ards_value = dataframe.loc[patient_valid_data.index[0], "ards"]
+                        if (ards_value == 0 or not self.remove_ards_patients_without_onset):
+                            logger.debug(f"    Using closest series as fallback at index {start_index_of_closest_series}")
+                            return_dataframe = self.add_return_data(return_dataframe, dataframe, start_index_of_closest_series)
+                    else:
+                        ards_value = dataframe.loc[patient_valid_data.index[0], "ards"]
+                        if (ards_value == 0 or not self.remove_ards_patients_without_onset):
+                            horovitz_index = patient_valid_data["horovitz"].idxmin()
+                            logger.debug(f"    Using minimum horovitz as final fallback at index {horovitz_index}")
+                            return_dataframe = self.add_return_data(return_dataframe, dataframe, horovitz_index)
 
         if len(return_dataframe.index) == 0:
             logger.warning(f"No onset data found for any patients in job {job_number}")
