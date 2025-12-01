@@ -61,81 +61,78 @@ class DataFileManager:
     # =========================================================
     # ==================== GENDER CLEANUP ======================
     # =========================================================
-
     @staticmethod
-    def _convert_gender(df: pd.DataFrame) -> pd.DataFrame:
+    def _convert_gender(dataframe: pd.DataFrame) -> pd.DataFrame:
         """
         Convert gender column 'M'/'F' → 1/0 and leave NaN untouched.
         """
-        if df is None or df.empty:
-            return df
+        if dataframe is None or dataframe.empty:
+            return dataframe
 
-        if "gender" not in df.columns:
-            return df
+        if "gender" not in dataframe.columns:
+            return dataframe
 
         logger.info("Converting gender values (M/F → 1/0)")
-        df["gender"] = df["gender"].map({"M": 1, "F": 0})
+        dataframe["gender"] = dataframe["gender"].map({"M": 1, "F": 0})
         try:
-            df["gender"] = df["gender"].astype("Int8")
+            dataframe["gender"] = dataframe["gender"].astype("Int8")
         except Exception as e:
             logger.warning(f"Failed to convert gender column: {e}")
 
-        return df
+        return dataframe
 
     # =========================================================
     # =========== INVALID VALUE CLEANING ADDED HERE ===========
     # =========================================================
-
-    def _clean_invalid_numeric_entries(self, dataframe: pd.DataFrame) -> pd.DataFrame:
+    @staticmethod
+    def _clean_invalid_numeric_entries(dataframe: pd.DataFrame) -> pd.DataFrame:
         """
-        Cleans invalid numeric-like entries before dtype conversion.
-        Examples cleaned:
-            "<1.0" → 1.0
-            ">5" → 5.0
-            "Kein Material" → NaN
-            "Nicht messbar" → NaN
-            "--" → NaN
+        Fully generic cleanup of invalid numeric entries.
+        - Extracts numeric substrings from values like "<1.0", ">5", "~3".
+        - Leaves true NaN values untouched and does NOT log them.
+        - Logs only truly invalid non-numeric values.
         """
-
         if dataframe is None or dataframe.empty:
             return dataframe
 
-        logger.info("Cleaning invalid numeric entries...")
+        logger.info("Cleaning invalid numeric entries (generic method)...")
 
-        numeric_pattern = re.compile(r"[-+]?\d*[\.,]?\d+")
-        trash_values = {
-            "kein", "keine", "kein material", "nicht", "nicht messbar", "missing",
-            "na", "nan", "null", "none", "spur", "trace", "-", "--", "n/a",
-            "positive", "negativ", "unauffällig"
-        }
+        numeric_regex = re.compile(
+            r"[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?"
+        )
 
         for col in dataframe.columns:
             if not pd.api.types.is_object_dtype(dataframe[col]):
                 continue
 
             cleaned = []
-            for raw in dataframe[col].astype(str):
-                s = raw.strip().lower()
+            ser = dataframe[col]
 
-                # Trash → NaN
-                if s in trash_values or s.isalpha():
-                    logger.info(f"Removed non-numeric value '{raw}' in column '{col}'")
+            for raw_value in ser:
+
+                # --- NEW: skip logging for real NaNs ---
+                if pd.isna(raw_value):
                     cleaned.append(np.nan)
                     continue
 
-                # Extract number from "<1.0"
-                m = numeric_pattern.search(s)
-                if m:
-                    cleaned.append(m.group().replace(",", "."))
-                    continue
+                text = str(raw_value).strip()
 
-                # Fully invalid
-                logger.info(f"Removed invalid numeric value '{raw}' in column '{col}'")
-                cleaned.append(np.nan)
+                # Try extracting numeric part
+                match = numeric_regex.search(text)
 
+                if match:
+                    numeric_str = match.group().replace(",", ".")
+                    cleaned.append(numeric_str)
+                else:
+                    # Real invalid, non-numeric value
+                    logger.info(f"Removed invalid numeric value '{raw_value}' in column '{col}'")
+                    cleaned.append(np.nan)
+
+            # Convert cleaned strings → numeric
             dataframe[col] = pd.to_numeric(cleaned, errors="coerce")
 
         return dataframe
+
 
     # =========================================================
     # ==================== DTYPE OPTIMIZATION =================
@@ -227,20 +224,20 @@ class DataFileManager:
         if not files:
             logger.warning(f"No files found in {folder}")
             return pd.DataFrame()
-        dfs = []
+        dataframes = []
         for f in files:
             ext = os.path.splitext(f)[1].lower()
             if ext == ".csv":
-                dfs.append(pd.read_csv(f))
+                dataframes.append(pd.read_csv(f))
             elif ext == ".parquet":
-                dfs.append(pd.read_parquet(f))
+                dataframes.append(pd.read_parquet(f))
             else:
                 logger.warning(f"Unsupported file format: {f}")
-        if dfs:
-            demographic_df = pd.concat(dfs, ignore_index=True)
-            logger.info(f"Loaded {len(demographic_df)} rows and {len(demographic_df.columns)} columns from patient_characteristics")
-            logger.debug(f"Columns in patient_characteristics: {demographic_df.columns.tolist()}")
-        logger.info(f"Number of unique patients in demographic data: {demographic_df['identifier'].nunique()}")
+        if dataframes:
+            demographic_dataframe = pd.concat(dataframes, ignore_index=True)
+            logger.info(f"Loaded {len(demographic_dataframe)} rows and {len(demographic_dataframe.columns)} columns from patient_characteristics")
+            logger.debug(f"Columns in patient_characteristics: {demographic_dataframe.columns.tolist()}")
+        logger.info(f"Number of unique patients in demographic data: {demographic_dataframe['identifier'].nunique()}")
 
         logger.info("Loading clinical measurements data")
         folder = os.path.join(file_path, "clinical_measurements/")
@@ -248,35 +245,35 @@ class DataFileManager:
         if not files:
             logger.warning(f"No files found in {folder}")
             return pd.DataFrame()
-        dfs = []
+        dataframes = []
         for f in files:
             ext = os.path.splitext(f)[1].lower()
             if ext == ".csv":
-                dfs.append(pd.read_csv(f))
+                dataframes.append(pd.read_csv(f))
             elif ext == ".parquet":
-                dfs.append(pd.read_parquet(f))
+                dataframes.append(pd.read_parquet(f))
             else:
                 logger.warning(f"Unsupported file format: {f}")
-        if dfs:
-            measurements_df = pd.concat(dfs, ignore_index=True)
-            logger.info(f"Loaded {len(measurements_df)} rows and {len(measurements_df.columns)} columns from clinical_measurements")
-            logger.debug(f"Columns in clinical_measurements: {measurements_df.columns.tolist()}")
-        logger.info(f"Number of unique patients in vital data: {measurements_df['identifier'].nunique()}")
+        if dataframes:
+            measurements_dataframe = pd.concat(dataframes, ignore_index=True)
+            logger.info(f"Loaded {len(measurements_dataframe)} rows and {len(measurements_dataframe.columns)} columns from clinical_measurements")
+            logger.debug(f"Columns in clinical_measurements: {measurements_dataframe.columns.tolist()}")
+        logger.info(f"Number of unique patients in vital data: {measurements_dataframe['identifier'].nunique()}")
         logger.info("Combining patient characteristics and measurements")
-        combined_df = pd.merge(measurements_df, demographic_df, on="identifier", how="left")
+        combined_dataframe = pd.merge(measurements_dataframe, demographic_dataframe, on="identifier", how="left")
 
         # Rename 'identifier' column to 'patient_id'
-        if "identifier" in combined_df.columns:
-            combined_df = combined_df.rename(columns={"identifier": "patient_id"})
+        if "identifier" in combined_dataframe.columns:
+            combined_dataframe = combined_dataframe.rename(columns={"identifier": "patient_id"})
             logger.info("Renamed column 'identifier' to 'patient_id'")
         else:
             logger.warning("Column 'identifier' not found in combined dataframe")
 
         # Rename 'timestamp' column to 'time'
-        if "timestamp" in combined_df.columns:
-            combined_df = combined_df.rename(columns={"timestamp": "time"})
+        if "timestamp" in combined_dataframe.columns:
+            combined_dataframe = combined_dataframe.rename(columns={"timestamp": "time"})
             logger.info("Renamed column 'timestamp' to 'time'")
         else:
             logger.warning("Column 'timestamp' not found in combined dataframe")
 
-        return combined_df
+        return combined_dataframe
