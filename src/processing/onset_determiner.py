@@ -158,18 +158,18 @@ class OnsetDeterminer:  # Class to determine the ARDS onset in a given dataset
             patient_mask = dataframe["patient_id"] == patientid
             patient_data = dataframe[patient_mask]
 
-            # Remove imputation placeholder -100,000 before any detection <<<
-            valid_horovitz_mask = (patient_data["horovitz"] != -100000.0) & (~patient_data["horovitz"].isna())
-            patient_valid_data = patient_data[valid_horovitz_mask]
+            # Remove imputation placeholder -100,000 before any detection <<< Removed for Testruns: Implications to high
+            # valid_horovitz_mask = (patient_data["horovitz"] != -100000.0) & (~patient_data["horovitz"].isna())
+            # patient_valid_data = patient_data[valid_horovitz_mask]
 
-            if len(patient_valid_data) == 0:
-                logger.warning(f"Skipping patient {patientid}: no valid horovitz values (only -100 or NaN).")
+            if len(patient_data) == 0:
+                logger.warning(f"Skipping patient {patientid}: no valid horovitz values (only -100,000 or NaN).")
                 continue
             else:
                 if self.detection_rule == "first_horovitz":
                     # logger.debug(f"  Using detection rule: first_horovitz")
                     horovitz_index = -1
-                    for index in patient_valid_data.index:
+                    for index in patient_data.index:
                         horovitz_val = dataframe.loc[index, "horovitz"]
                         peep_val = dataframe.loc[index, "peep"]
                         
@@ -181,9 +181,9 @@ class OnsetDeterminer:  # Class to determine the ARDS onset in a given dataset
                         return_dataframe = self.add_return_data(return_dataframe, dataframe, horovitz_index)
                     else:
                         logger.debug(f"  No valid onset found via first_horovitz. Checking fallback conditions...")
-                        ards_value = dataframe.loc[patient_valid_data.index[0], "ards"]
+                        ards_value = dataframe.loc[patient_data.index[0], "ards"]
                         if (ards_value == 0 or not self.remove_ards_patients_without_onset):
-                            horovitz_index = patient_valid_data["horovitz"].idxmin()
+                            horovitz_index = patient_data["horovitz"].idxmin()
                             logger.debug(f"    Using fallback: minimum horovitz at index {horovitz_index}")
                             return_dataframe = self.add_return_data(return_dataframe, dataframe, horovitz_index)
                         else:
@@ -192,7 +192,7 @@ class OnsetDeterminer:  # Class to determine the ARDS onset in a given dataset
                 elif self.detection_rule == "lowest_horovitz":
                     # logger.debug(f"  Using detection rule: lowest_horovitz")
                     try:
-                        horovitz_index = patient_valid_data["horovitz"].idxmin()
+                        horovitz_index = patient_data["horovitz"].idxmin()
                         horovitz_value = dataframe.loc[horovitz_index, "horovitz"]
                         logger.debug(f"  Minimum horovitz value: {horovitz_value} at index {horovitz_index}")
                         return_dataframe = self.add_return_data(return_dataframe, dataframe, horovitz_index)
@@ -213,7 +213,7 @@ class OnsetDeterminer:  # Class to determine the ARDS onset in a given dataset
                     start_index_of_closest_series = -1
                     horovitz_percentage_of_closest_series = 0
                     
-                    for index in patient_valid_data.index:
+                    for index in patient_data.index:
                         horovitz_val = dataframe.loc[index, "horovitz"]
                         peep_val = dataframe.loc[index, "peep"]
                         
@@ -251,14 +251,14 @@ class OnsetDeterminer:  # Class to determine the ARDS onset in a given dataset
                     if horovitz_index != -1:
                         return_dataframe = self.add_return_data(return_dataframe, dataframe, horovitz_index)
                     elif start_index_of_closest_series != -1:
-                        ards_value = dataframe.loc[patient_valid_data.index[0], "ards"]
+                        ards_value = dataframe.loc[patient_data.index[0], "ards"]
                         if (ards_value == 0 or not self.remove_ards_patients_without_onset):
                             logger.debug(f"    Using closest series as fallback at index {start_index_of_closest_series}")
                             return_dataframe = self.add_return_data(return_dataframe, dataframe, start_index_of_closest_series)
                     else:
-                        ards_value = dataframe.loc[patient_valid_data.index[0], "ards"]
+                        ards_value = dataframe.loc[patient_data.index[0], "ards"]
                         if (ards_value == 0 or not self.remove_ards_patients_without_onset):
-                            horovitz_index = patient_valid_data["horovitz"].idxmin()
+                            horovitz_index = patient_data["horovitz"].idxmin()
                             logger.debug(f"    Using minimum horovitz as final fallback at index {horovitz_index}")
                             return_dataframe = self.add_return_data(return_dataframe, dataframe, horovitz_index)
 
