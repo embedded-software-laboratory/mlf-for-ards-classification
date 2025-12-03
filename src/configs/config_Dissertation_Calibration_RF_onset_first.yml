@@ -342,7 +342,7 @@ evaluation:
   - NPV
   - Precisions
   - Recalls
-  evaluation_name: RF_Onset_Lowest
+  evaluation_name: RF_Onset_First
   threshold_optimization_algorithms:
   - Standard
   - MaxTPR

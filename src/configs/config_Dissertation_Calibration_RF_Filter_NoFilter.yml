@@ -342,7 +342,7 @@ evaluation:
   - NPV
   - Precisions
   - Recalls
-  evaluation_name: RF_Filter_Lite
+  evaluation_name: RF_No_Filter
   threshold_optimization_algorithms:
   - Standard
   - MaxTPR
