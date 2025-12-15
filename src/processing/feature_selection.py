@@ -12,7 +12,7 @@ from sklearn.model_selection import StratifiedKFold
 logger = logging.getLogger(__name__)
 
 
-class FeatureSelection:
+class FeatureSelector:
     """
     Implements various feature selection methods to reduce dimensionality and improve model performance.
     Supports multiple selection algorithms including variance-based, univariate, recursive, L1, tree-based,

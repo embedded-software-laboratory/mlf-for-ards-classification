@@ -2,26 +2,26 @@
 process:
   # Information for time-series models
   load_models: false
-  load_timeseries_data: true
+  load_timeseries_data: false
   perform_anomaly_detection: false
-  perform_imputation: true
-  perform_unit_conversion: true
-  calculate_missing_params: true
-  perform_ards_onset_detection: true
-  perform_filtering: true
-  perform_feature_selection: true
-  perform_data_segregation: true
-  perform_timeseries_training: true
-  perform_timeseries_classification: true
-  perform_threshold_optimization: true
-  calculate_evaluation_metrics: true
+  perform_imputation: false
+  perform_unit_conversion: false
+  calculate_missing_params: false
+  perform_ards_onset_detection: false
+  perform_filtering: false
+  perform_feature_selection: false
+  perform_data_segregation: false
+  perform_timeseries_training: false
+  perform_timeseries_classification: false
+  perform_threshold_optimization: false
+  calculate_evaluation_metrics: false
   perform_cross_validation: false
-  save_models: true
+  save_models: false
   # Information for image models
-  load_image_data: false
-  train_image_models: false
-  execute_image_models: false
-  test_image_models: false
+  load_image_data: true
+  train_image_models: true
+  execute_image_models: true
+  test_image_models: true
 
 # Current supported algorithms by the framework 
 supported_algorithms:
@@ -35,7 +35,7 @@ supported_algorithms:
   image_models:
   - ResNetModel
   - DenseNetModel
-  - ViTModel
+  - VITModel
 
 # Configurations about the models to train, execute, cross-validate
 models:
@@ -161,9 +161,16 @@ models:
         Active: true
         Names:
         - XGBoost
+  image_models:
+    to_train:
+    to_fine_tune:
+    to_execute:
+    to_evaluate:
 
 image_model_parameters:
+  # defines the method for fine-tuning for the dl models
   method: last_block
+  # different modes for augmented training/testing
   mode: mode1
   num_epochs_pneumonia: 1
   num_epochs_ards: 1
@@ -173,7 +180,6 @@ image_model_parameters:
   SEED_ards: 105
   learning_rate: 0.05 
   k_folds: 2
-  path: "Data/Image_data"
 
 # Path to the algorithms if they need to be loaded for execution
 algorithm_base_path:
@@ -186,17 +192,17 @@ algorithm_base_path:
   XGBoost: default
 
 # Path to store or load the results of the experiments
-storage_path: ../Save/Calibration/Base50/
+storage_path: ../Save/ResNet50/
 
 # Information about the data that is used to train and evaluate the models
 data:
-  ards_dataset: weighted
   database: CALIBRATION
-  pneumonia_dataset: balanced
+  ards_image_dataset: mimic/train_weighted 
+  pneumonia_image_dataset: chexpert/combined
   timeseries_file_path: /work/rwth1474/Data/time_series/Calibration/Base50
   import_type: split # Options: numpy, csv, pkl, split
-  image_file_path: # TODO: placeholder for image data path
-  
+  image_file_path: /work/rwth1474/Data/image
+
 # Settings for preprocessing the data before training or classification
 # Includes anomaly detection, filtering, imputation, calculation of additional parameters and ARDS onset detection
 preprocessing:

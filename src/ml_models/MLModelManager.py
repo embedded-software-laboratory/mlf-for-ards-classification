@@ -8,7 +8,7 @@ from ml_models.logistic_regression import LogisticRegressionModel
 from ml_models.random_forest import RandomForestModel
 #from ml_models.recurrentneuralnetworkmodel import RecurrentNeuralNetworkModel
 from ml_models.support_vector_machine import SupportVectorMachineModel
-from ml_models.xgboost_model import XGBoostModel
+from ml_models.xgboost import XGBoostModel
 
 logger = logging.getLogger(__name__)
 

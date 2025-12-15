@@ -1,5 +1,5 @@
 from cli import make_parser
-from processing import DataFileManager, DataProcessor, FeatureSelection, DataSegregator, TimeSeriesDatasetManagement, TimeSeriesDataset
+from processing import DataFileManager, DataProcessor, FeatureSelector, DataSegregator, TimeSeriesDatasetManagement, TimeSeriesDataset, DatasetGenerator
 from ml_models import *
 from evaluation import Evaluation
 from metrics import ResultManagement
@@ -21,7 +21,12 @@ class Framework:
     Main framework class that orchestrates the entire ML pipeline including data loading,
     model training, evaluation, and cross-validation for timeseries and image data.
     """
-    
+    # ██╗███╗   ██╗██╗████████╗██╗ █████╗ ██╗     ██╗███████╗ █████╗ ████████╗██╗ ██████╗ ███╗   ██╗
+    # ██║████╗  ██║██║╚══██╔══╝██║██╔══██╗██║     ██║╚══███╔╝██╔══██╗╚══██╔══╝██║██╔═══██╗████╗  ██║
+    # ██║██╔██╗ ██║██║   ██║   ██║███████║██║     ██║  ███╔╝ ███████║   ██║   ██║██║   ██║██╔██╗ ██║
+    # ██║██║╚██╗██║██║   ██║   ██║██╔══██║██║     ██║ ███╔╝  ██╔══██║   ██║   ██║██║   ██║██║╚██╗██║
+    # ██║██║ ╚████║██║   ██║   ██║██║  ██║███████╗██║███████╗██║  ██║   ██║   ██║╚██████╔╝██║ ╚████║
+    # ╚═╝╚═╝  ╚═══╝╚═╝   ╚═╝   ╚═╝╚═╝  ╚═╝╚══════╝╚═╝╚══════╝╚═╝  ╚═╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝
     def __init__(self):
         """
         Initializes the Framework by loading configuration, setting up data/model managers,
@@ -64,8 +69,19 @@ class Framework:
         self.processing_meta_data = {}
 
         self.dataProcessor = DataProcessor(config["preprocessing"], config["data"]["database"], config["process"])
-        self.feature_selector = FeatureSelection(config["feature_selection"])
+        self.feature_selector = FeatureSelector(config["feature_selection"])
         self.segregator = DataSegregator(config["data_segregation"])
+        self.pneumonia_image_dataset = config["data"]["pneumonia_image_dataset"]
+        self.ards_image_dataset = config["data"]["ards_image_dataset"]
+        self.image_file_path = config["data"]["image_file_path"]
+        self.method = config["image_model_parameters"]["method"]
+        self.mode = config["image_model_parameters"]["mode"]
+        self.image_model_use_config = self.config['models']['image_models']
+        self.image_models_to_train = self.create_needed_models(self.image_model_use_config, 'to_train')
+        self.image_models_to_evaluate = self.create_needed_models(self.image_model_use_config, 'to_evaluate')
+        self.image_models_to_execute = self.create_needed_models(self.image_model_use_config, 'to_execute')
+        self.image_models_to_cross_validate = self.create_needed_models(self.image_model_use_config, 'to_cross_validate')
+        self.dataset_generator = DatasetGenerator()
 
         self.process = config["process"]
         self.model_base_paths = config["algorithm_base_path"]
@@ -105,6 +121,12 @@ class Framework:
                 result_dict[model_algorithm] = content
         return result_dict
 
+    # ████████╗██╗███╗   ███╗███████╗    ███████╗███████╗██████╗ ██╗███████╗███████╗    ███╗   ███╗ ██████╗ ██████╗ ███████╗██╗     ███████╗
+    # ╚══██╔══╝██║████╗ ████║██╔════╝    ██╔════╝██╔════╝██╔══██╗██║██╔════╝██╔════╝    ████╗ ████║██╔═══██╗██╔══██╗██╔════╝██║     ██╔════╝
+    #    ██║   ██║██╔████╔██║█████╗█████╗███████╗█████╗  ██████╔╝██║█████╗  ███████╗    ██╔████╔██║██║   ██║██║  ██║█████╗  ██║     ███████╗
+    #    ██║   ██║██║╚██╔╝██║██╔══╝╚════╝╚════██║██╔══╝  ██╔══██╗██║██╔══╝  ╚════██║    ██║╚██╔╝██║██║   ██║██║  ██║██╔══╝  ██║     ╚════██║
+    #    ██║   ██║██║ ╚═╝ ██║███████╗    ███████║███████╗██║  ██║██║███████╗███████║    ██║ ╚═╝ ██║╚██████╔╝██████╔╝███████╗███████╗███████║
+    #    ╚═╝   ╚═╝╚═╝     ╚═╝╚══════╝    ╚══════╝╚══════╝╚═╝  ╚═╝╚═╝╚══════╝╚══════╝    ╚═╝     ╚═╝ ╚═════╝ ╚═════╝ ╚══════╝╚══════╝╚══════╝
     def load_timeseries_data(self):
         """
         Loads timeseries data from file, applies preprocessing and feature selection,
@@ -347,13 +369,32 @@ class Framework:
             f.write(final_result.model_dump_json(indent=4))
         logger.info("Results saved successfully")
 
+    # ██╗███╗   ███╗ █████╗  ██████╗ ███████╗    ███╗   ███╗ ██████╗ ██████╗ ███████╗██╗     ███████╗
+    # ██║████╗ ████║██╔══██╗██╔════╝ ██╔════╝    ████╗ ████║██╔═══██╗██╔══██╗██╔════╝██║     ██╔════╝
+    # ██║██╔████╔██║███████║██║  ███╗█████╗      ██╔████╔██║██║   ██║██║  ██║█████╗  ██║     ███████╗
+    # ██║██║╚██╔╝██║██╔══██║██║   ██║██╔══╝      ██║╚██╔╝██║██║   ██║██║  ██║██╔══╝  ██║     ╚════██║
+    # ██║██║ ╚═╝ ██║██║  ██║╚██████╔╝███████╗    ██║ ╚═╝ ██║╚██████╔╝██████╔╝███████╗███████╗███████║
+    # ╚═╝╚═╝     ╚═╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝    ╚═╝     ╚═╝ ╚═════╝ ╚═════╝ ╚══════╝╚══════╝╚══════╝
     def load_image_data(self):
         """
-        Loads image data for pneumonia and ARDS classification.
-        Currently not implemented.
+        Loads timeseries data from file, applies preprocessing and feature selection,
+        segregates data into training and test sets, and saves all datasets with metadata.
         """
-        logger.warning("load_image_data: Feature not yet implemented")
-        raise NotImplementedError
+        logger.info("=" * 80)
+        logger.info("STEP 6: Loading and Processing Image Data")
+        logger.info("=" * 80)
+
+        for dl_method in self.image_dl_methods:
+            self.image_pneumonia_training_data = self.dataset_generator.build_dataset(self.pneumonia_dataset, dl_method,
+                                                                                      'PNEUMONIA',
+                                                                                      path=self.image_file_path,
+                                                                                      augment=False)
+            self.image_ards_training_data = self.dataset_generator.build_dataset(self.ards_dataset, dl_method, 'ARDS',
+                                                                                 path=self.image_file_path,
+                                                                                 augment=False)
+            self.image_ards_test_data = self.dataset_generator.build_dataset('test', dl_method, 'ARDS',
+                                                                             path=self.image_file_path, augment=False)
+
 
     def load_image_models(self):
         """
@@ -371,6 +412,14 @@ class Framework:
         logger.warning("learn_image_models: Feature not yet implemented")
         raise NotImplementedError
 
+    def execute_image_models(self):
+        """
+        Executes image classification models.
+        Currently not implemented.
+        """
+        logger.warning("execute_image_models: Feature not yet implemented")
+        raise NotImplementedError
+
     def evaluate_image_models(self):
         """
         Evaluates image classification models.
@@ -379,6 +428,12 @@ class Framework:
         logger.warning("evaluate_image_models: Feature not yet implemented")
         raise NotImplementedError
 
+    # ███████╗██████╗  █████╗ ███╗   ███╗███████╗██╗    ██╗ ██████╗ ██████╗ ██╗  ██╗    ██████╗ ██╗   ██╗███╗   ██╗
+    # ██╔════╝██╔══██╗██╔══██╗████╗ ████║██╔════╝██║    ██║██╔═══██╗██╔══██╗██║ ██╔╝    ██╔══██╗██║   ██║████╗  ██║
+    # █████╗  ██████╔╝███████║██╔████╔██║█████╗  ██║ █╗ ██║██║   ██║██████╔╝█████╔╝     ██████╔╝██║   ██║██╔██╗ ██║
+    # ██╔══╝  ██╔══██╗██╔══██║██║╚██╔╝██║██╔══╝  ██║███╗██║██║   ██║██╔══██╗██╔═██╗     ██╔══██╗██║   ██║██║╚██╗██║
+    # ██║     ██║  ██║██║  ██║██║ ╚═╝ ██║███████╗╚███╔███╔╝╚██████╔╝██║  ██║██║  ██╗    ██║  ██║╚██████╔╝██║ ╚████║
+    # ╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝ ╚══╝╚══╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝    ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═══╝
     def run(self):
         """
         Main entry point that orchestrates the entire ML pipeline.
@@ -437,14 +492,26 @@ class Framework:
         if self.process["load_image_data"]:
             logger.info("Currently not supported: load_image_data")
             self.load_image_data()
+        else:
+            logger.info("Skipping STEP 6: load_image_data (disabled in config)")
 
         if self.process["train_image_models"]:
             logger.info("Currently not supported: train_image_models")
             self.learn_image_models()
+        else:
+            logger.info("Skipping STEP 7: train_image_data (disabled in config)")
+
+        if self.process["execute_image_models"]:
+            logger.info("Currently not supported: execute_image_models")
+            self.execute_image_models()
+        else:
+            logger.info("Skipping STEP 8: execute_image_models (disabled in config)")
 
         if self.process["test_image_models"]:
             logger.info("Currently not supported: test_image_models")
             self.evaluate_image_models()
+        else:
+            logger.info("Skipping STEP 9: evaluate_image_models (disabled in config)")
 
         logger.info("=" * 80)
         logger.info("MACHINE LEARNING FRAMEWORK EXECUTION COMPLETED")

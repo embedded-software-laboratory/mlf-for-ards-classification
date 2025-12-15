@@ -436,4 +436,14 @@ class TimeSeriesMetaDataManagement:
         logger.debug(f"Metadata loaded successfully. Is child: {content['is_child']}")
         return TimeseriesMetaData(**content)
 
+class ImageMetaData(BaseModel):
+    """
+    Comprehensive metadata describing an image dataset.
+    Tracks datasource, processing history, ARDS percentage, and relationships to parent datasets.
+    """
+    datasource: str
+    dataset_location: Union[str, None]
+    disease_type: str
+    additional_information: Union[str, None]
 
+    number_of_images: int

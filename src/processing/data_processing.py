@@ -1,4 +1,4 @@
-from processing.filter import Filter
+from processing.data_filter import DataFilter
 from processing.unit_converter import UnitConverter
 from processing.data_imputator import DataImputator
 from processing.param_calculation import ParamCalculator
@@ -32,7 +32,7 @@ class DataProcessor:
             process: Dictionary indicating which processing steps should be executed
         """
         logger.info("Initializing DataProcessor...")
-        self.filter = Filter(config["filtering"])
+        self.filter = DataFilter(config["filtering"])
         self.patients_per_process = config["patients_per_process"]
         self.max_processes = config["max_processes"]
         logger.info(f"Max processes set to: {self.max_processes}, Patients per process: {self.patients_per_process}")
@@ -110,24 +110,10 @@ class DataProcessor:
         process_pool_data_list, n_jobs = prepare_multiprocessing(dataframe, self.patients_per_process, self.max_processes)
         logger.info(f"Data split into {n_jobs} jobs for parallel processing")
 
-        # Step 1: Anomaly Detection
-        if self.process["perform_anomaly_detection"]:
-            logger.info("-" * 80)
-            logger.info("SUBSTEP 1: Anomaly Detection")
-            logger.info("-" * 80)
-            logger.info(f"Starting anomaly detection with {self.anomaly_detector.__class__.__name__}...")
-            process_pool_data_list, n_jobs, dataframe = self.anomaly_detector.execute_handler(
-                process_pool_data_list, self.patients_per_process
-            )
-            self.anomaly_detector.create_meta_data()
-            logger.info(f"Anomaly detection completed. Data shape: {dataframe.shape}")
-        else:
-            logger.info("SUBSTEP 1: Anomaly Detection - SKIPPED (disabled in config)")
-
-        # Step 2: Unit Conversion
+        # Step 1: Unit Conversion
         if self.process["perform_unit_conversion"]:
             logger.info("-" * 80)
-            logger.info("SUBSTEP 2: Unit Conversion")
+            logger.info("SUBSTEP 1: Unit Conversion")
             logger.info("-" * 80)
             
             if not dataset_metadata or (dataset_metadata and not dataset_metadata.unit_conversion):
@@ -152,7 +138,21 @@ class DataProcessor:
             else:
                 logger.info("Data already converted in previous run. Skipping unit conversion...")
         else:
-            logger.info("SUBSTEP 2: Unit Conversion - SKIPPED (disabled in config)")
+            logger.info("SUBSTEP 1: Unit Conversion - SKIPPED (disabled in config)")
+
+        # Step 1: Anomaly Detection
+        if self.process["perform_anomaly_detection"]:
+            logger.info("-" * 80)
+            logger.info("SUBSTEP 2: Anomaly Detection")
+            logger.info("-" * 80)
+            logger.info(f"Starting anomaly detection with {self.anomaly_detector.__class__.__name__}...")
+            process_pool_data_list, n_jobs, dataframe = self.anomaly_detector.execute_handler(
+                process_pool_data_list, self.patients_per_process
+            )
+            self.anomaly_detector.create_meta_data()
+            logger.info(f"Anomaly detection completed. Data shape: {dataframe.shape}")
+        else:
+            logger.info("SUBSTEP 2: Anomaly Detection - SKIPPED (disabled in config)")
 
         # Step 3: Data Imputation
         if self.process["perform_imputation"]:

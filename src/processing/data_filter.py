@@ -3,7 +3,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-class Filter:
+class DataFilter:
     def __init__(self, config) -> None:
         """
         Initializes the Filter class with configuration settings.
