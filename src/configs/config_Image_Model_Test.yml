@@ -183,6 +183,7 @@ image_model_parameters:
 
 # Path to the algorithms if they need to be loaded for execution
 algorithm_base_path:
+  # Timeseries models
   AdaBoost: default
   LightGBM: default
   LogisticRegression: default
@@ -190,6 +191,10 @@ algorithm_base_path:
   RecurrentNeuralNetwork: Save/Cross validation results/Recurrent neural network_1
   SupportVectorMachine: default
   XGBoost: default
+  # Image models
+  DensetNet: default
+  ResNet: default
+  VIT: default
 
 # Path to store or load the results of the experiments
 storage_path: ../Save/ResNet50/

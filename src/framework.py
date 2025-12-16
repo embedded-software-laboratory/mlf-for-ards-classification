@@ -71,6 +71,13 @@ class Framework:
         self.dataProcessor = DataProcessor(config["preprocessing"], config["data"]["database"], config["process"])
         self.feature_selector = FeatureSelector(config["feature_selection"])
         self.segregator = DataSegregator(config["data_segregation"])
+
+        self.available_image_models = {}
+
+        for model in self.supported_image_models:
+            architecture = model.replace("Model", "")
+            self.available_image_models[architecture] = []
+
         self.pneumonia_image_dataset = config["data"]["pneumonia_image_dataset"]
         self.ards_image_dataset = config["data"]["ards_image_dataset"]
         self.image_file_path = config["data"]["image_file_path"]
@@ -97,6 +104,7 @@ class Framework:
         logger.info(f"Output directory set to: {self.outdir}")
 
         self.TimeseriesModelManager = TimeSeriesModelManager(config, self.outdir)
+        self.ImageModelManager = ImageModelManager(config, self.outdir)
         logger.info("Framework initialization completed successfully")
 
     @staticmethod
@@ -202,7 +210,7 @@ class Framework:
             return
             
         self.available_timeseries_models = self.TimeseriesModelManager.load_models(needed_models, self.available_timeseries_models, self.model_base_paths)
-        logger.info(f"Models loaded successfully for stage: {stage}")
+        logger.info(f"Timeseries models loaded successfully for stage: {stage}")
 
     def learn_timeseries_models(self):
         """
@@ -396,13 +404,29 @@ class Framework:
                                                                              path=self.image_file_path, augment=False)
 
 
-    def load_image_models(self):
+    def load_image_models(self, stage: str):
         """
         Loads pre-trained image classification models.
         Currently not implemented.
         """
-        logger.warning("load_image_models: Feature not yet implemented")
-        raise NotImplementedError
+        """
+        Loads pre-trained timeseries models for a specific stage (to_execute or to_evaluate).
+        
+        Args:
+            stage: The pipeline stage (to_execute, to_evaluate, etc.)
+        """
+        logger.info(f"Loading image models for stage: {stage}")
+        
+        if stage == "to_execute":
+            needed_models = self.image_models_to_execute
+        elif stage == "to_evaluate":
+            needed_models = self.image_models_to_evaluate
+        else:
+            logger.info(f"For stage '{stage}' it does not make sense to load models")
+            return
+            
+        self.available_image_models = self.ImageModelManager.load_models(needed_models, self.available_image_models, self.model_base_paths)
+        logger.info(f"Image models loaded successfully for stage: {stage}")
 
     def learn_image_models(self):
         """
@@ -490,13 +514,13 @@ class Framework:
             self.handle_timeseries_results()
 
         if self.process["load_image_data"]:
-            logger.info("Currently not supported: load_image_data")
+            logger.info("Currently under construction: load_image_data")
             self.load_image_data()
         else:
             logger.info("Skipping STEP 6: load_image_data (disabled in config)")
 
         if self.process["train_image_models"]:
-            logger.info("Currently not supported: train_image_models")
+            logger.info("Currently under construction: train_image_models")
             self.learn_image_models()
         else:
             logger.info("Skipping STEP 7: train_image_data (disabled in config)")

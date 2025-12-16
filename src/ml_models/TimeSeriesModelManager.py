@@ -181,10 +181,10 @@ class TimeSeriesModelManager:
                         raise
         
         logger.info("=" * 80)
-        logger.info("Model Loading Completed")
-        logger.info(f"Total models needed: {total_models_needed}")
-        logger.info(f"Models loaded from disk: {models_loaded}")
-        logger.info(f"Models already in memory: {models_already_available}")
+        logger.info("Timeseries model loading completed")
+        logger.info(f"Total timeseries models needed: {total_models_needed}")
+        logger.info(f"Timeseries models loaded from disk: {models_loaded}")
+        logger.info(f"Timeseries models already in memory: {models_already_available}")
         logger.info("=" * 80)
         
         return available_models_dict
