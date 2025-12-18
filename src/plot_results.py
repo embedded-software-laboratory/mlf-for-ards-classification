@@ -432,6 +432,67 @@ class ResultsAnalyzer:
 
         logger.info(f"Saved summary report to {report_path}")
 
+    def create_feature_selection_heatmap(self, comparison_csv_path: str = None):
+        """
+        Create a heatmap from a Comparison.csv containing Model, Feature_Number, F1.
+        If comparison_csv_path is None, try to find Comparison.csv in the same folder as results_json_path
+        under a Feature_Selection subfolder.
+        """
+        # determine path
+        if comparison_csv_path:
+            csv_path = Path(comparison_csv_path).resolve()
+        else:
+            # try a sensible default next to the results json
+            json_parent = Path(self.results_json_path).resolve().parent
+            csv_path = (json_parent / "Feature_Selection" / "Comparison.csv").resolve()
+
+        if not csv_path.exists():
+            logger.warning(f"Comparison CSV not found: {csv_path}")
+            return
+
+        try:
+            df = pd.read_csv(csv_path)
+        except Exception as e:
+            logger.error(f"Failed to read Comparison CSV {csv_path}: {e}")
+            return
+
+        # pivot table: rows = Model, cols = Feature_Number, values = F1
+        try:
+            pivot = df.pivot_table(index="Model", columns="Feature_Number", values="F1", aggfunc="mean")
+        except Exception as e:
+            logger.error(f"Failed to pivot Comparison CSV: {e}")
+            return
+
+        # sort columns numerically
+        try:
+            pivot = pivot.reindex(sorted(pivot.columns), axis=1)
+        except Exception:
+            pass
+
+        # ensure output dir exists
+        Path(self.output_dir).mkdir(parents=True, exist_ok=True)
+
+        # create heatmap
+        plt.figure(figsize=(max(6, pivot.shape[1] * 0.8), max(4, pivot.shape[0] * 0.6)))
+        cmap = sns.color_palette(PASTEL_PALETTE, as_cmap=True)
+        ax = sns.heatmap(pivot, annot=True, fmt=".4f", cmap=cmap, vmin=0.0, vmax=1.0, cbar_kws={"label": "F1"})
+        ax.set_title("Feature Selection — F1 by Model and Feature Count", fontsize=12, fontweight="bold")
+        ax.set_xlabel("Number of Features", fontsize=11)
+        ax.set_ylabel("Model", fontsize=11)
+        plt.tight_layout()
+
+        out_png = os.path.join(self.output_dir, "feature_selection_heatmap.png")
+        plt.savefig(out_png, dpi=300, bbox_inches="tight")
+        plt.close()
+        logger.info(f"Saved feature selection heatmap to {out_png}")
+
+        # also save pivot as csv for downstream use
+        out_csv = os.path.join(self.output_dir, "feature_selection_pivot.csv")
+        pivot.to_csv(out_csv)
+        logger.info(f"Saved pivot CSV to {out_csv}")
+
+        return out_png, out_csv
+
     def run_full_analysis(self):
         """Run complete analysis pipeline."""
         logger.info("Starting full analysis...")

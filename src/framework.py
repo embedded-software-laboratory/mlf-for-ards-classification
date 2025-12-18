@@ -428,7 +428,7 @@ class Framework:
         self.available_image_models = self.ImageModelManager.load_models(needed_models, self.available_image_models, self.model_base_paths)
         logger.info(f"Image models loaded successfully for stage: {stage}")
 
-    def learn_image_models(self):
+    def train_image_models(self):
         """
         Trains image classification models.
         Currently not implemented.
@@ -521,7 +521,7 @@ class Framework:
 
         if self.process["train_image_models"]:
             logger.info("Currently under construction: train_image_models")
-            self.learn_image_models()
+            self.train_image_models()
         else:
             logger.info("Skipping STEP 7: train_image_data (disabled in config)")
 
