@@ -1,8 +1,5 @@
 FROM nvcr.io/nvidia/tensorflow:23.08-tf2-py3
 
-# 🔒 NumPy 1.x erzwingen (TF + pandas kompatibel)
-RUN pip install --no-cache-dir "numpy<2"
-
 # Alles andere danach
 RUN pip install --no-cache-dir \
     pandas \
@@ -21,3 +18,6 @@ RUN pip install --no-cache-dir \
     torchmetrics \
     tqdm \
     opencv-python-headless
+
+RUN pip uninstall --yes numpy
+RUN pip install "numpy <=1.24.3, >=1.22.3"
