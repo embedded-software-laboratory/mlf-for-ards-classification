@@ -4,7 +4,10 @@ from metrics.Metrics import *
 from metrics.ThresholdOptimizer import *
 
 from processing import TimeseriesMetaData, TimeSeriesMetaDataManagement
-from evaluation import ModelEvaluationInformation
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from evaluation import ModelEvaluationInformation
 
 from sklearn.metrics import roc_curve
 import logging
