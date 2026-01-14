@@ -17,7 +17,8 @@ RUN pip install --no-cache-dir \
     albumentations \
     torchmetrics \
     tqdm \
-    opencv-python-headless
+    opencv-python-headless \
+    libauc
 
 RUN pip uninstall --yes numpy
 RUN pip install "numpy <=1.24.3, >=1.22.3"
