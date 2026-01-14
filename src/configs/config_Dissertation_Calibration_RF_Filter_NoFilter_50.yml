@@ -158,6 +158,71 @@ models:
         Active: false
         Names:
         - XGBoost
+  image_models:
+    to_train:
+      ResNet:
+        Active: false
+        Configs:
+        - default
+        Names:
+        - ResNet
+      DenseNet:
+        Active: false
+        Configs:
+        - default
+        Names:
+        - DenseNet
+      ViT:
+        Active: false
+        Configs:
+        - default
+        Names:
+        - ViT
+    to_evaluate:
+      ResNet:
+        Active: false
+        Names:
+        - ResNet
+      DenseNet:
+        Active: false
+        Names:
+        - DenseNet
+      ViT:
+        Active: false
+        Names:
+        - ViT
+    to_execute:
+      ResNet:
+        Active: false
+        Names:
+        - ResNet
+      DenseNet:
+        Active: false
+        Names:
+        - DenseNet
+      ViT:
+        Active: false
+        Names:
+        - ViT
+    to_cross_validate:
+      ResNet:
+        Active: false
+        Configs:
+        - default
+        Names:
+        - ResNet
+      DenseNet:
+        Active: false
+        Configs:
+        - default
+        Names:
+        - DenseNet
+      ViT:
+        Active: false
+        Configs:
+        - default
+        Names:
+        - ViT
 
 # Path to the algorithms if they need to be loaded for execution
 algorithm_base_path:
