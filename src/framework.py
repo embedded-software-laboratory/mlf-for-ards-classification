@@ -72,6 +72,8 @@ class Framework:
         self.feature_selector = FeatureSelector(config["feature_selection"])
         self.segregator = DataSegregator(config["data_segregation"])
 
+        self.supported_image_models = self.config['supported_algorithms']['image_models']
+
         self.available_image_models = {}
 
         for model in self.supported_image_models:
