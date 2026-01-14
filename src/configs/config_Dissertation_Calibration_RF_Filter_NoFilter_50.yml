@@ -391,13 +391,13 @@ image_model_parameters:
   learning_rate: 0.05 
   k_folds: 2
   path: "Data/Image_data"
-  
+
 # Settings for feature selection before training or classification
 feature_selection:
   # possible methods: low_variance, univariate, recursive, recursive_with_cv, L1, tree, sequential
   method: univariate
   variance: 0.16
-  k: 50
+  k: 20
 
 # Settings about how the data is split into training and test data
 data_segregation:

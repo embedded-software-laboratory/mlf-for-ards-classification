@@ -119,6 +119,9 @@ class FeatureSelector:
         logger.info(f"Applying variance threshold: {variance}")
         selection = VarianceThreshold(threshold=variance)
         temp, data = self.split_dataframe(dataframe)
+        if k_value > data.shape[1]:
+            logger.warning(f"k_value {k_value} exceeds number of features {data.shape[1]}, adjusting to {data.shape[1]}")
+            k_value = data.shape[1]
         result = selection.fit_transform(data)
         selected_features = selection.get_feature_names_out(data.columns)
         logger.info(f"Selected {len(selected_features)} features out of {data.shape[1]}")
@@ -140,6 +143,9 @@ class FeatureSelector:
         """
         logger.info(f"Selecting top {k_value} features using univariate statistical test")
         temp, data = self.split_dataframe(dataframe)
+        if k_value > data.shape[1]:
+            logger.warning(f"k_value {k_value} exceeds number of features {data.shape[1]}, adjusting to {data.shape[1]}")
+            k_value = data.shape[1]
         selection = SelectKBest(f_classif, k=k_value)
         result = selection.fit_transform(data, temp["ards"])
         selected_features = selection.get_feature_names_out(data.columns)
@@ -169,6 +175,9 @@ class FeatureSelector:
         ranking = rfe.ranking_
         if k is None:
             k = rfe.n_features_
+        if k > len(ranking):
+            logger.warning(f"k {k} exceeds number of features {len(ranking)}, adjusting to {len(ranking)}")
+            k = len(ranking)
         logger.info(f"RFE selected {k} features")
         result_dataframe_temp = pd.DataFrame(data.iloc[:, ranking[0:k]], columns=data.iloc[:, ranking[0:k]].columns)
         result_dataframe = pd.concat([temp, result_dataframe_temp], axis=1)
