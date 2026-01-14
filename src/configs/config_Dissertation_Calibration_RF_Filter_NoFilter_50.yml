@@ -30,6 +30,9 @@ supported_algorithms:
   # - SupportVectorMachineModel
   - XGBoostModel
   image_models:
+  - ResNetModel
+  - DenseNetModel
+  - ViTModel
 
 # Configurations about the models to train, execute, cross-validate
 models:
