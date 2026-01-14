@@ -4,6 +4,9 @@ FROM nvcr.io/nvidia/tensorflow:23.08-tf2-py3
 RUN pip install --no-cache-dir \
     pandas \
     scikit-learn \
+    scipy \
+    sympy \
+    joblib \
     statsmodels \
     lightgbm \
     xgboost \
@@ -13,7 +16,7 @@ RUN pip install --no-cache-dir \
     pillow \
     pyyaml \
     scikit-image \
-    torch torchvision pyod lightning \
+    torch torchvision pyod pytorch-lightning \
     albumentations \
     torchmetrics \
     tqdm \
