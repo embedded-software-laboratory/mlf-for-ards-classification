@@ -21,6 +21,7 @@ RUN pip install --no-cache-dir \
     pyyaml \
     scikit-image \
     torch torchvision pyod pytorch-lightning \
+    timm \
     albumentations \
     torchmetrics \
     tqdm \
