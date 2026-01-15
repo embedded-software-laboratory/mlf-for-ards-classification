@@ -427,7 +427,7 @@ evaluation:
   - NPV
   - Precisions
   - Recalls
-    evaluation_name: RF_No_Filter_50
+  evaluation_name: RF_No_Filter_50
   threshold_optimization_algorithms:
   - Standard
   - MaxTPR
