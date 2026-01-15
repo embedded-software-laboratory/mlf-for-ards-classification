@@ -248,6 +248,14 @@ class ParamCalculator:
                 horovitz_values.append(np.nan)
         dataframe["horovitz"] = horovitz_values
         logger.debug("Horovitz calculation completed.")
+        
+        # Log summary statistics for Horovitz values
+        logger.debug("Horovitz calculation summary:")
+        logger.debug(f"Total rows: {len(dataframe)}")
+        logger.debug(f"Valid Horovitz values: {dataframe['horovitz'].notna().sum()}")
+        logger.debug(f"NaN Horovitz values: {dataframe['horovitz'].isna().sum()}")
+        logger.debug(f"Horovitz describe:\n{dataframe['horovitz'].describe()}")
+        
         return dataframe
 
     @staticmethod
