@@ -105,7 +105,7 @@ class ParamCalculator:
             raise RuntimeError("PEEP is required to calculate delta P, but this parameter is missing in the given dataset.")
         
         logger.debug("Calculating delta P...")
-        delta_p_values = [dataframe["p-ei"][i] - dataframe["peep"][i] for i in dataframe["p-ei"].index]
+        delta_p_values = [dataframe["p-ei"][i] - dataframe["peep"][i] if dataframe["p-ei"][i] != -100000.0 and dataframe["peep"][i] != -100000.0 else -100000.0 for i in dataframe["p-ei"].index]
         dataframe["delta-p"] = delta_p_values
         logger.debug("Delta P calculation completed.")
         return dataframe
@@ -136,12 +136,15 @@ class ParamCalculator:
         gender_value = dataframe["gender"].iloc[0]
         height_value = dataframe["height"].iloc[0]
         
-        if gender_value == 1:  # Male (mapped to 1)
-            ideal_body_weight = 50 + (height_value - 152.4)
-        else:  # Female (mapped to 0)
-            ideal_body_weight = 45.5 + (height_value - 152.4)
-        
-        individual_tidal_volumes = [dataframe["tidal-volume"][i] / ideal_body_weight for i in dataframe["tidal-volume"].index]
+        if gender_value == -100000.0 or height_value == -100000.0:
+            individual_tidal_volumes = [-100000.0] * len(dataframe["tidal-volume"])
+        else:
+            if gender_value == 1:  # Male (mapped to 1)
+                ideal_body_weight = 50 + (height_value - 152.4)
+            else:  # Female (mapped to 0)
+                ideal_body_weight = 45.5 + (height_value - 152.4)
+            
+            individual_tidal_volumes = [dataframe["tidal-volume"][i] / ideal_body_weight if dataframe["tidal-volume"][i] != -100000.0 else -100000.0 for i in dataframe["tidal-volume"].index]
         dataframe["tidal-vol-per-kg"] = individual_tidal_volumes
         logger.debug("Individual tidal volume calculation completed.")
         return dataframe
@@ -174,6 +177,8 @@ class ParamCalculator:
         for i in dataframe["time"].index:
             if dataframe["time"][i] - time_start > 86400 or dataframe["patient_id"][i] != current_patient:
                 balance = sum(inputs) - sum(outputs)
+                if -100000.0 in inputs or -100000.0 in outputs:
+                    balance = -100000.0
                 fluid_balances.extend([balance] * (i - index_start))
                 index_start = i
                 time_start = dataframe["time"][i]
@@ -184,6 +189,8 @@ class ParamCalculator:
             outputs.append(dataframe["liquid-output"][i])
 
         balance = sum(inputs) - sum(outputs)
+        if -100000.0 in inputs or -100000.0 in outputs:
+            balance = -100000.0
         fluid_balances.extend([balance] * (len(dataframe["time"]) - index_start))
         dataframe["liquid-balance"] = fluid_balances
         logger.debug("Fluid balance calculation completed.")
@@ -209,7 +216,7 @@ class ParamCalculator:
             raise RuntimeError("Number of leucocytes is required to calculate absolute number of lymphocytes, but this parameter is missing in the given dataset.")
         
         logger.debug("Calculating absolute lymphocytes...")
-        lymphocyte_values = [dataframe["lymphocytes (percentage)"][i] * dataframe["leucocytes"][i] for i in dataframe["lymphocytes (percentage)"].index]
+        lymphocyte_values = [dataframe["lymphocytes (percentage)"][i] * dataframe["leucocytes"][i] if dataframe["lymphocytes (percentage)"][i] != -100000.0 and dataframe["leucocytes"][i] != -100000.0 else -100000.0 for i in dataframe["lymphocytes (percentage)"].index]
         dataframe["lymphocytes (absolute)"] = lymphocyte_values
         logger.debug("Absolute lymphocytes calculation completed.")
         return dataframe
@@ -235,8 +242,6 @@ class ParamCalculator:
         
         logger.debug("Calculating horovitz...")
         horovitz_values = []
-        debug_count = 0
-        negative_count = 0
         for i in dataframe["pao2"].index:
             last_FiO2 = None
             j = i
@@ -244,29 +249,19 @@ class ParamCalculator:
                 if not np.isnan(dataframe["fio2"][j]):
                     last_FiO2 = dataframe["fio2"][j]
                 j -= 1
-            if last_FiO2 is not None and last_FiO2 != 0:
-                horovitz = dataframe["pao2"][i] / last_FiO2
-                horovitz_values.append(horovitz)
-                if debug_count < 10:  # Log first 10 calculations
-                    logger.debug(f"Row {i}: PaO2={dataframe['pao2'][i]}, FiO2={last_FiO2}, Horovitz={horovitz}")
-                    debug_count += 1
-                if horovitz < 0:
-                    negative_count += 1
-                    if negative_count <= 5:  # Log first 5 negative cases
-                        logger.warning(f"Negative Horovitz at row {i}: PaO2={dataframe['pao2'][i]}, FiO2={last_FiO2}, Horovitz={horovitz}")
+            if last_FiO2 is not None and last_FiO2 != 0 and dataframe["pao2"][i] != -100000.0 and last_FiO2 != -100000.0:
+                horovitz_values.append(dataframe["pao2"][i] / last_FiO2)
             else:
-                horovitz_values.append(np.nan)
-        if negative_count > 0:
-            logger.warning(f"Total negative Horovitz values: {negative_count}")
+                horovitz_values.append(-100000.0)
         dataframe["horovitz"] = horovitz_values
         logger.debug("Horovitz calculation completed.")
         
         # Log summary statistics for Horovitz values
-        logger.debug("Horovitz calculation summary:")
-        logger.debug(f"Total rows: {len(dataframe)}")
-        logger.debug(f"Valid Horovitz values: {dataframe['horovitz'].notna().sum()}")
-        logger.debug(f"NaN Horovitz values: {dataframe['horovitz'].isna().sum()}")
-        logger.debug(f"Horovitz describe:\n{dataframe['horovitz'].describe()}")
+        logger.info("Horovitz calculation summary:")
+        logger.info(f"Total rows: {len(dataframe)}")
+        logger.info(f"Valid Horovitz values: {dataframe['horovitz'].notna().sum()}")
+        logger.info(f"NaN Horovitz values: {dataframe['horovitz'].isna().sum()}")
+        logger.info(f"Horovitz describe:\n{dataframe['horovitz'].describe()}")
         
         return dataframe
 
@@ -290,7 +285,7 @@ class ParamCalculator:
             raise RuntimeError("Expiratory time is required to calculate I:E ratio, but this parameter is missing in the given dataset.")
         
         logger.debug("Calculating I:E ratio...")
-        ie_values = [dataframe["inspiry-time"][i] / dataframe["expiry-time"][i] for i in dataframe["inspiry-time"].index]
+        ie_values = [dataframe["inspiry-time"][i] / dataframe["expiry-time"][i] if dataframe["inspiry-time"][i] != -100000.0 and dataframe["expiry-time"][i] != -100000.0 else -100000.0 for i in dataframe["inspiry-time"].index]
         dataframe["i-e"] = ie_values
         logger.debug("I:E ratio calculation completed.")
         return dataframe
@@ -315,7 +310,7 @@ class ParamCalculator:
             raise RuntimeError("Number of leucocytes is required to calculate lymphocyte percentage, but this parameter is missing in the given dataset.")
         
         logger.debug("Calculating lymphocyte percentage...")
-        lymphocyte_values = [dataframe["lymphocytes (absolute)"][i] / dataframe["leucocytes"][i] for i in dataframe["lymphocytes (absolute)"].index]
+        lymphocyte_values = [dataframe["lymphocytes (absolute)"][i] / dataframe["leucocytes"][i] if dataframe["lymphocytes (absolute)"][i] != -100000.0 and dataframe["leucocytes"][i] != -100000.0 else -100000.0 for i in dataframe["lymphocytes (absolute)"].index]
         dataframe["lymphocytes (percentage)"] = lymphocyte_values
         logger.debug("Lymphocyte percentage calculation completed.")
         return dataframe
