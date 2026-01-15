@@ -235,6 +235,8 @@ class ParamCalculator:
         
         logger.debug("Calculating horovitz...")
         horovitz_values = []
+        debug_count = 0
+        negative_count = 0
         for i in dataframe["pao2"].index:
             last_FiO2 = None
             j = i
@@ -243,9 +245,19 @@ class ParamCalculator:
                     last_FiO2 = dataframe["fio2"][j]
                 j -= 1
             if last_FiO2 is not None and last_FiO2 != 0:
-                horovitz_values.append(dataframe["pao2"][i] / last_FiO2)
+                horovitz = dataframe["pao2"][i] / last_FiO2
+                horovitz_values.append(horovitz)
+                if debug_count < 10:  # Log first 10 calculations
+                    logger.debug(f"Row {i}: PaO2={dataframe['pao2'][i]}, FiO2={last_FiO2}, Horovitz={horovitz}")
+                    debug_count += 1
+                if horovitz < 0:
+                    negative_count += 1
+                    if negative_count <= 5:  # Log first 5 negative cases
+                        logger.warning(f"Negative Horovitz at row {i}: PaO2={dataframe['pao2'][i]}, FiO2={last_FiO2}, Horovitz={horovitz}")
             else:
                 horovitz_values.append(np.nan)
+        if negative_count > 0:
+            logger.warning(f"Total negative Horovitz values: {negative_count}")
         dataframe["horovitz"] = horovitz_values
         logger.debug("Horovitz calculation completed.")
         
