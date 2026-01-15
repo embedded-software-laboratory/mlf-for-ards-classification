@@ -15,10 +15,11 @@ process:
   calculate_evaluation_metrics: False
   perform_cross_validation: False
   save_models: False
-
-  load_image_data: False
-  train_image_models: False
-  test_image_models: False
+  # Information for image models
+  load_image_data: false
+  train_image_models: false
+  execute_image_models: false
+  test_image_models: false
 
 models:
     timeseries_models:

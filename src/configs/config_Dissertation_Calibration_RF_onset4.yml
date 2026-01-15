@@ -16,8 +16,10 @@ process:
   calculate_evaluation_metrics: true
   perform_cross_validation: false
   save_models: true
+  # Information for image models
   load_image_data: false
   train_image_models: false
+  execute_image_models: false
   test_image_models: false
 
 # Current supported algorithms by the framework 
