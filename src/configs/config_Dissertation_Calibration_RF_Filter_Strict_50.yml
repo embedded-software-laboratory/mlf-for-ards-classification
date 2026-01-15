@@ -237,7 +237,7 @@ algorithm_base_path:
   XGBoost: default
 
 # Path to store or load the results of the experiments
-storage_path: ../Save/Calibration/Base50_Filter_Lite/
+storage_path: ../Save/Calibration/ARDS_Percentage/50/Base50_Filter_Strict/
 
 # Information about the data that is used to train and evaluate the models
 data:
@@ -426,7 +426,7 @@ evaluation:
   - NPV
   - Precisions
   - Recalls
-  evaluation_name: RF_Filter_Strict
+  evaluation_name: RF_Filter_Strict_50
   threshold_optimization_algorithms:
   - Standard
   - MaxTPR
