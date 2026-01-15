@@ -207,6 +207,8 @@ class SplitFactory:
             logger.warning(type(evaluation.predicted_probas_test))
             logger.warning(np.unique(evaluation.true_labels_test))
             logger.warning(np.array(evaluation.predicted_probas_test).shape)
+            evaluation.true_labels_test = evaluation.true_labels_test.to_numpy().astype(int)
+            evaluation.predicted_probas_test = evaluation.predicted_probas_test.to_numpy().astype(int)
             fpr, tpr, thresholds = roc_curve(evaluation.true_labels_test, evaluation.predicted_probas_test)
             metric_information["fpr"] = fpr
             metric_information["tpr"] = tpr
