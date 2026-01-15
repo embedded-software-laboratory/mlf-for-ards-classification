@@ -69,6 +69,29 @@ class DataFilter:
         patients_with_low_horo = filtered_horo.groupby(dataframe["patient_id"]).transform(lambda x: (x < 200).any())
 
         mask = ~(patients_without_ards & patients_with_low_horo)
+
+        # Debugging logs
+        total_patients = dataframe['patient_id'].nunique()
+        kept_patients = dataframe[mask]['patient_id'].nunique()
+        removed_patients = total_patients - kept_patients
+        patients_with_ards_count = dataframe[patients_with_ards]['patient_id'].nunique()
+        patients_without_ards_count = dataframe[patients_without_ards]['patient_id'].nunique()
+        patients_removed_no_ards_low_horo = dataframe[patients_without_ards & patients_with_low_horo]['patient_id'].nunique()
+        patients_all_missing_horo = dataframe.groupby('patient_id')['horovitz'].apply(lambda x: (x <= -100000).all()).sum()
+        patients_some_missing_horo = dataframe.groupby('patient_id')['horovitz'].apply(lambda x: (x <= -100000).any() and not (x <= -100000).all()).sum()
+        patients_no_missing_horo = dataframe.groupby('patient_id')['horovitz'].apply(lambda x: ~(x <= -100000).any()).sum()
+
+        logger.debug(f"Strict filter stats:")
+        logger.debug(f"  Total patients: {total_patients}")
+        logger.debug(f"  Patients with ARDS: {patients_with_ards_count}")
+        logger.debug(f"  Patients without ARDS: {patients_without_ards_count}")
+        logger.debug(f"  Patients without ARDS and with low Horovitz (<200): {patients_removed_no_ards_low_horo}")
+        logger.debug(f"  Patients with all Horovitz missing (<= -100000): {patients_all_missing_horo}")
+        logger.debug(f"  Patients with some Horovitz missing: {patients_some_missing_horo}")
+        logger.debug(f"  Patients with no Horovitz missing: {patients_no_missing_horo}")
+        logger.debug(f"  Patients kept: {kept_patients}")
+        logger.debug(f"  Patients removed: {removed_patients}")
+
         return dataframe[mask]
 
     @staticmethod
