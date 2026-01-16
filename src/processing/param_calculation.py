@@ -256,13 +256,6 @@ class ParamCalculator:
         dataframe["horovitz"] = horovitz_values
         logger.debug("Horovitz calculation completed.")
         
-        # Log summary statistics for Horovitz values
-        logger.info("Horovitz calculation summary:")
-        logger.info(f"Total rows: {len(dataframe)}")
-        logger.info(f"Valid Horovitz values: {dataframe['horovitz'].notna().sum()}")
-        logger.info(f"NaN Horovitz values: {dataframe['horovitz'].isna().sum()}")
-        logger.info(f"Horovitz describe:\n{dataframe['horovitz'].describe()}")
-        
         return dataframe
 
     @staticmethod

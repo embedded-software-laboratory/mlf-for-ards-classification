@@ -37,14 +37,28 @@ class DataFilter:
             Filtered DataFrame
         """
         logger.info("Starting data filtering process...")
-        logger.debug(f"Number of patients in dataframe: {dataframe['patient_id'].nunique()}")
+        initial_patients = dataframe['patient_id'].nunique()
+        initial_ards_patients = dataframe[dataframe['ards'] == 1]['patient_id'].nunique()
+        logger.info(f"Initial: {initial_patients} patients total, {initial_ards_patients} ARDS patients")
+        
         for filter_to_apply in self.filter:
+            pre_filter_patients = dataframe['patient_id'].nunique()
+            pre_filter_ards = dataframe[dataframe['ards'] == 1]['patient_id'].nunique()
+            
             if filter_to_apply == "Strict":
                 dataframe = self.filter_strict(dataframe)
-            if filter_to_apply == "Lite":
+            elif filter_to_apply == "Lite":
                 dataframe = self.filter_lite(dataframe)
-            if filter_to_apply == "BD":
+            elif filter_to_apply == "BD":
                 dataframe = self.filter_BD(dataframe)
+            
+            post_filter_patients = dataframe['patient_id'].nunique()
+            post_filter_ards = dataframe[dataframe['ards'] == 1]['patient_id'].nunique()
+            excluded_total = pre_filter_patients - post_filter_patients
+            excluded_ards = pre_filter_ards - post_filter_ards
+            
+            logger.info(f"After {filter_to_apply} filter: {post_filter_patients} patients total ({excluded_total} excluded), {post_filter_ards} ARDS patients ({excluded_ards} ARDS excluded)")
+        
         return dataframe
 
     @staticmethod
@@ -68,29 +82,12 @@ class DataFilter:
         patients_without_ards = ~patients_with_ards
         patients_with_low_horo = filtered_horo.groupby(dataframe["patient_id"]).transform(lambda x: (x < 200).any())
 
+        # Patients to exclude: no ARDS AND low Horovitz
+        exclude_mask = patients_without_ards & patients_with_low_horo
+        excluded_patients = dataframe[exclude_mask]['patient_id'].nunique()
+        logger.debug(f"Strict filter: Excluding {excluded_patients} patients without ARDS who have Horovitz < 200")
+
         mask = ~(patients_without_ards & patients_with_low_horo)
-
-        # Debugging logs
-        total_patients = dataframe['patient_id'].nunique()
-        kept_patients = dataframe[mask]['patient_id'].nunique()
-        removed_patients = total_patients - kept_patients
-        patients_with_ards_count = dataframe[patients_with_ards]['patient_id'].nunique()
-        patients_without_ards_count = dataframe[patients_without_ards]['patient_id'].nunique()
-        patients_removed_no_ards_low_horo = dataframe[patients_without_ards & patients_with_low_horo]['patient_id'].nunique()
-        patients_all_missing_horo = dataframe.groupby('patient_id')['horovitz'].apply(lambda x: (x <= -100000).all()).sum()
-        patients_some_missing_horo = dataframe.groupby('patient_id')['horovitz'].apply(lambda x: (x <= -100000).any() and not (x <= -100000).all()).sum()
-        patients_no_missing_horo = dataframe.groupby('patient_id')['horovitz'].apply(lambda x: ~(x <= -100000).any()).sum()
-
-        logger.debug(f"Strict filter stats:")
-        logger.debug(f"  Total patients: {total_patients}")
-        logger.debug(f"  Patients with ARDS: {patients_with_ards_count}")
-        logger.debug(f"  Patients without ARDS: {patients_without_ards_count}")
-        logger.debug(f"  Patients without ARDS and with low Horovitz (<200): {patients_removed_no_ards_low_horo}")
-        logger.debug(f"  Patients with all Horovitz missing (<= -100000): {patients_all_missing_horo}")
-        logger.debug(f"  Patients with some Horovitz missing: {patients_some_missing_horo}")
-        logger.debug(f"  Patients with no Horovitz missing: {patients_no_missing_horo}")
-        logger.debug(f"  Patients kept: {kept_patients}")
-        logger.debug(f"  Patients removed: {removed_patients}")
 
         return dataframe[mask]
 
@@ -120,30 +117,14 @@ class DataFilter:
         horovitz_mask = filtered_horo.groupby(dataframe["patient_id"]).transform(lambda x: (x < 200).any())
         comorbidities_mask = ~dataframe[required_columns].eq(1).any(axis=1)
 
+        # Keep: ARDS patients OR (low Horovitz AND no comorbidities)
         keep_mask = ards_mask | (horovitz_mask & comorbidities_mask)
-        return dataframe[keep_mask]
-
-    @staticmethod
-    def filter_BD(dataframe):
-        """
-        Applies the BD filter to the DataFrame.
-        Checks for patients with ARDS and ensures both PEEP >= 5 and Horovitz < 300 conditions are met.
         
-        Args:
-            dataframe: DataFrame containing patient data
-            
-        Returns:
-            Filtered DataFrame
-        """
-        logger.debug("Applying BD filter...")
-
-        # treat placeholder values as missing
-        filtered_horo = dataframe["horovitz"].where(dataframe["horovitz"] > -100000.0)
-
-        ards_mask = dataframe.groupby("patient_id")["ards"].transform(lambda x: 1 in x.values)
-
-        # Both PEEP >= 5 and real Horovitz < 300 in same row
-        peep_horo_mask = (filtered_horo < 300) & (dataframe["peep"] >= 5)
+        excluded_patients = dataframe[~keep_mask]['patient_id'].nunique()
+        excluded_ards = dataframe[~keep_mask & ards_mask]['patient_id'].nunique()
+        logger.debug(f"Lite filter: Excluding {excluded_patients} patients total, {excluded_ards} ARDS patients")
+        if excluded_ards > 0:
+            logger.warning(f"Lite filter: Excluding {excluded_ards} ARDS patients who have low Horovitz and comorbidities")
 
         valid_patient_ids = (
             dataframe.groupby("patient_id")
@@ -151,8 +132,16 @@ class DataFilter:
             ["patient_id"]
             .unique()
         )
+        
+        valid_ards_patients = len([pid for pid in valid_patient_ids if dataframe[dataframe['patient_id'] == pid]['ards'].any()])
+        logger.debug(f"BD filter: {len(valid_patient_ids)} patients meet PEEP>=5 and Horovitz<300 criteria, {valid_ards_patients} are ARDS patients")
 
         keep_mask = ~ards_mask | dataframe["patient_id"].isin(valid_patient_ids)
+        
+        excluded_ards = ards_patients - valid_ards_patients
+        if excluded_ards > 0:
+            logger.warning(f"BD filter: Excluding {excluded_ards} ARDS patients who don't meet PEEP>=5 and Horovitz<300 criteria")
+        
         return dataframe[keep_mask]
 
     def set_filter(self, filter_list):
