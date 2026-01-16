@@ -2,7 +2,9 @@
 from ml_models.timeseries_model import TimeSeriesProbaModel
 from sklearn.ensemble import AdaBoostClassifier
 import pickle
+import logging
 
+logger = logging.getLogger(__name__)
 
 class AdaBoostModel(TimeSeriesProbaModel):
 
@@ -28,7 +30,9 @@ class AdaBoostModel(TimeSeriesProbaModel):
     def train_model(self, training_data):
 
         y = training_data["ards"]
+        logger.info(f"ARDS data: {y.describe()}")
         X = training_data.loc[:, training_data.columns != 'ards']
+        logger.info(f"Rest of training data: {X.describe()}")
         self.model.fit(X, y)
         self.trained = True
 

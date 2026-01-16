@@ -103,7 +103,6 @@ class ModelEvaluation:
     """
 
     def __init__(self, config, model, evaluation: Union[Evaluation, None]):
-        logger.debug(f"Initializing ModelEvaluation for model: {getattr(model, 'name', 'unknown')}")
         self.evaluation = evaluation
         self.config = config
         self.model = model
