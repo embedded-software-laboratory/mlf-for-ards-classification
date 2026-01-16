@@ -41,12 +41,6 @@ class LightGBMModel(TimeSeriesProbaModel):
             "verbose": 0
         }
 
-
-
-
-
-
-
         #What about early stopping round als attribut wenn das Model eskaliert?
         self.model = self._init_gbm()
 
