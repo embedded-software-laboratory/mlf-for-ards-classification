@@ -136,7 +136,16 @@ class DataFilter:
 
         # treat placeholder values as missing
         filtered_horo = dataframe["horovitz"].where(dataframe["horovitz"] > -100000.0)
-        logger.debug(f"BD filter: Filtered placeholder Horovitz values: {filtered_horo.describe()}")
+        
+        # Check if we have any valid Horovitz measurements
+        valid_horo_count = filtered_horo.notna().sum()
+        logger.debug(f"BD filter: {valid_horo_count} valid Horovitz measurements out of {len(filtered_horo)} total")
+        
+        if valid_horo_count == 0:
+            logger.warning("BD filter: No valid Horovitz measurements found! All values appear to be placeholders (<= -100000)")
+            logger.warning("BD filter: Cannot verify ventilation criteria, so keeping all ARDS patients")
+            # Return dataframe unchanged - keep all patients including ARDS patients
+            return dataframe
 
         ards_mask = dataframe.groupby("patient_id")["ards"].transform(lambda x: 1 in x.values)
         ards_patients = dataframe[ards_mask]['patient_id'].nunique()
