@@ -32,9 +32,135 @@ supported_algorithms:
   # - SupportVectorMachineModel
   - XGBoostModel
   image_models:
+  - ResNetModel
+  - DenseNetModel
+  - ViTModel
 
 # Configurations about the models to train, execute, cross-validate
 models:
+  timeseries_models:
+    base_path_config:
+      to_cross_validate: Data/Models/TimeSeriesModels/Config/CrossValidation/
+      to_train: Data/Models/TimeSeriesModels/Config/Training/
+    to_train:
+      AdaBoost:
+        Active: true
+        Configs:
+        - default
+        Names:
+        - AdaBoost
+      LightGBM:
+        Active: true
+        Configs:
+        - default
+        Names:
+        - LightGBM
+      LogisticRegression:
+        Active: true
+        Configs:
+        - default
+        Names:
+        - LR
+      RandomForest:
+        Active: true
+        Configs:
+        - default
+        Names:
+        - RandomForest
+      SupportVectorMachine:
+        Active: false
+        Configs:
+        - default
+        Names:
+        - SVM
+      XGBoost:
+        Active: true
+        Configs:
+        - default
+        Names:
+        - XGBoost
+    to_cross_validate:
+      AdaBoost:
+        Active: false
+        Configs:
+        - default
+        Names:
+        - AdaBoost
+      LightGBM:
+        Active: false
+        Configs: []
+        Names: []
+      LogisticRegression:
+        Active: false
+        Configs: []
+        Names: []
+      RandomForest:
+        Active: false
+        Configs:
+        - default
+        Names:
+        - RandomForest
+      SupportVectorMachine:
+        Active: false
+        Configs: []
+        Names: []
+      XGBoost:
+        Active: false
+        Configs:
+        - default
+        Names:
+        - XGBoost
+    to_evaluate:
+      AdaBoost:
+        Active: true
+        Names:
+        - AdaBoost
+      LightGBM:
+        Active: true
+        Names: 
+        - LightGBM
+      LogisticRegression:
+        Active: true
+        Names: 
+        - LR
+      RandomForest:
+        Active: true
+        Names:
+        - RandomForest
+      SupportVectorMachine:
+        Active: false
+        Names: 
+        - SVM
+      XGBoost:
+        Active: true
+        Names:
+        - XGBoost
+    to_execute:
+      AdaBoost:
+        Active: true
+        Names:
+        - AdaBoost
+      LightGBM:
+        Active: true
+        Names:
+        - LightGBM
+      LogisticRegression:
+        Active: true
+        Names: 
+        - LR
+      RandomForest:
+        Active: true
+        Names:
+        - RandomForest
+      SupportVectorMachine:
+        Active: false
+        Names: 
+        - SVM
+      XGBoost:
+        Active: true
+        Names:
+        - XGBoost
+  image_models:
   timeseries_models:
     base_path_config:
       to_cross_validate: Data/Models/TimeSeriesModels/Config/CrossValidation/
@@ -164,7 +290,7 @@ algorithm_base_path:
   LightGBM: default
   LogisticRegression: default
   RandomForest: default
-  RecurrentNeuralNetwork: Save/Cross validation results/Recurrent neural network_1
+  RecurrentNeuralNetwork: default
   SupportVectorMachine: default
   XGBoost: default
 
@@ -173,9 +299,11 @@ storage_path: ../Save/MIMIC-IV/Base50/
 
 # Information about the data that is used to train and evaluate the models
 data:
-  ards_dataset: weighted
+  # time-series dataset information
   database: MIMIC4
-  pneumonia_dataset: balanced
+  # image dataset information
+  pneumonia_image_dataset: balanced
+  ards_image_dataset: weighted
   timeseries_file_path: /work/rwth1474/Data/time_series/MIMIC4/Base50
   import_type: split # Options: numpy, csv, pkl, split
   image_file_path: # TODO: placeholder for image data path
@@ -310,6 +438,19 @@ preprocessing:
     series_end_point: 50000
     series_start_point: -50000
     update_ards_values: false
+
+image_model_parameters:
+  method: last_block
+  mode: mode1
+  num_epochs_pneumonia: 1
+  num_epochs_ards: 1
+  batch_size_pneumonia: 32
+  batch_size_ards: 32
+  SEED_pneumonia: 123
+  SEED_ards: 105
+  learning_rate: 0.05 
+  k_folds: 2
+  path: "Data/Image_data"
 
 # Settings for feature selection before training or classification
 feature_selection:
