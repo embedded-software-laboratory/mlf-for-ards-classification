@@ -141,8 +141,20 @@ class DataFilter:
         ards_patients = dataframe[ards_mask]['patient_id'].nunique()
         logger.debug(f"BD filter: Found {ards_patients} ARDS patients")
 
+        # Individual criteria
+        peep_mask = dataframe["peep"] >= 5
+        horo_mask = filtered_horo < 300
+        
+        # Patients meeting PEEP criterion
+        peep_patients = dataframe[peep_mask]['patient_id'].nunique()
+        # Patients meeting Horovitz criterion  
+        horo_patients = dataframe[horo_mask]['patient_id'].nunique()
+        
+        logger.debug(f"BD filter: {peep_patients} patients meet PEEP >= 5 criterion")
+        logger.debug(f"BD filter: {horo_patients} patients meet Horovitz < 300 criterion")
+
         # Both PEEP >= 5 and real Horovitz < 300 in same row
-        peep_horo_mask = (filtered_horo < 300) & (dataframe["peep"] >= 5)
+        peep_horo_mask = peep_mask & horo_mask
         
         valid_patient_ids = (
             dataframe.groupby("patient_id")
@@ -151,8 +163,10 @@ class DataFilter:
             .unique()
         )
         
+        logger.debug(f"BD filter: {len(valid_patient_ids)} patients meet BOTH PEEP>=5 AND Horovitz<300 criteria")
+        
         valid_ards_patients = len([pid for pid in valid_patient_ids if dataframe[dataframe['patient_id'] == pid]['ards'].any()])
-        logger.debug(f"BD filter: {len(valid_patient_ids)} patients meet PEEP>=5 and Horovitz<300 criteria, {valid_ards_patients} are ARDS patients")
+        logger.debug(f"BD filter: {valid_ards_patients} of the valid patients are ARDS patients")
 
         keep_mask = ~ards_mask | dataframe["patient_id"].isin(valid_patient_ids)
         
