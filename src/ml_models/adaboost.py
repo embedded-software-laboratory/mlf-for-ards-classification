@@ -3,6 +3,7 @@ from ml_models.timeseries_model import TimeSeriesProbaModel
 from sklearn.ensemble import AdaBoostClassifier
 import pickle
 import logging
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -33,17 +34,13 @@ class AdaBoostModel(TimeSeriesProbaModel):
         logger.info(f"ARDS data unique values: {y.unique()}")
         logger.info(f"ARDS data value counts: {y.value_counts()}")
         logger.info(f"ARDS data dtype: {y.dtype}")
+        logger.info(f"ARDS data has NaN: {y.isna().any()}")
+        logger.info(f"Number of NaN values: {y.isna().sum()}")
         logger.info(f"ARDS data: {y.describe()}")
         
-        # Check for problematic values
-        if 'unknown' in y.values:
-            logger.error("Found 'unknown' values in ARDS column! This will cause sklearn to fail.")
-            logger.error(f"Number of 'unknown' values: {(y == 'unknown').sum()}")
-            # Filter out unknown values
-            mask = y != 'unknown'
-            y = y[mask]
-            training_data = training_data[mask]
-            logger.info(f"Filtered out 'unknown' values. Remaining samples: {len(y)}")
+        # Convert to standard numpy array to avoid pandas dtype issues
+        y = y.astype(int).values
+        logger.info(f"After conversion - y shape: {y.shape}, y dtype: {y.dtype}, unique values: {np.unique(y)}")
         
         X = training_data.loc[:, training_data.columns != 'ards']
         logger.info(f"Rest of training data: {X.describe()}")
