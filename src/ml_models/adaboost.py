@@ -30,7 +30,21 @@ class AdaBoostModel(TimeSeriesProbaModel):
     def train_model(self, training_data):
 
         y = training_data["ards"]
+        logger.info(f"ARDS data unique values: {y.unique()}")
+        logger.info(f"ARDS data value counts: {y.value_counts()}")
+        logger.info(f"ARDS data dtype: {y.dtype}")
         logger.info(f"ARDS data: {y.describe()}")
+        
+        # Check for problematic values
+        if 'unknown' in y.values:
+            logger.error("Found 'unknown' values in ARDS column! This will cause sklearn to fail.")
+            logger.error(f"Number of 'unknown' values: {(y == 'unknown').sum()}")
+            # Filter out unknown values
+            mask = y != 'unknown'
+            y = y[mask]
+            training_data = training_data[mask]
+            logger.info(f"Filtered out 'unknown' values. Remaining samples: {len(y)}")
+        
         X = training_data.loc[:, training_data.columns != 'ards']
         logger.info(f"Rest of training data: {X.describe()}")
         self.model.fit(X, y)
