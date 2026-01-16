@@ -5,6 +5,7 @@ import pickle
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 import pandas as pd
 import logging
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +52,10 @@ class LogisticRegressionModel(TimeSeriesProbaModel):
 
     def train_model(self, training_data):
         label = training_data["ards"]
+        
+        # Convert to standard numpy array to avoid pandas dtype issues
+        label = label.astype(int).values
+        
         predictors = training_data.loc[:, training_data.columns != 'ards']
 
         # Modell trainieren

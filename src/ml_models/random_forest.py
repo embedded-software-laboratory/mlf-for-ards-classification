@@ -1,6 +1,7 @@
 from ml_models.timeseries_model import TimeSeriesProbaModel
 from sklearn.ensemble import RandomForestClassifier
 import pickle
+import numpy as np
 
 
 class RandomForestModel(TimeSeriesProbaModel):
@@ -38,6 +39,10 @@ class RandomForestModel(TimeSeriesProbaModel):
 
         # Init forest and read training data
         label = training_data["ards"]
+        
+        # Convert to standard numpy array to avoid pandas dtype issues
+        label = label.astype(int).values
+        
         predictors = training_data.loc[:, training_data.columns != 'ards']
 
         # Learn and store resulting model

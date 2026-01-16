@@ -1,6 +1,7 @@
 from ml_models.timeseries_model import TimeSeriesProbaModel
 from xgboost import XGBClassifier
 from sklearn.preprocessing import LabelEncoder
+import numpy as np
 
 class XGBoostModel(TimeSeriesProbaModel):
 
@@ -20,6 +21,10 @@ class XGBoostModel(TimeSeriesProbaModel):
 
     def train_model(self, training_data):
         label = training_data["ards"]
+        
+        # Convert to standard numpy array to avoid pandas dtype issues
+        label = label.astype(int).values
+        
         predictors = training_data.loc[:, training_data.columns != 'ards']
 
         y_train = self.le.fit_transform(label)

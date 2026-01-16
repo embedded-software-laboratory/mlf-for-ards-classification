@@ -1,5 +1,6 @@
 from lightgbm import LGBMClassifier
 import pickle
+import numpy as np
 
 from ml_models.timeseries_model import TimeSeriesProbaModel
 from ml_models.model_interface import Model
@@ -54,6 +55,10 @@ class LightGBMModel(TimeSeriesProbaModel):
     def train_model(self, training_data):
         # Daten und Labels extrahieren
         label = training_data["ards"]
+        
+        # Convert to standard numpy array to avoid pandas dtype issues
+        label = label.astype(int).values
+        
         predictors = training_data.loc[:, training_data.columns != 'ards']
 
         self.model = self.model.fit(predictors, label)
