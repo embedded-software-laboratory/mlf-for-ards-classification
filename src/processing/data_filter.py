@@ -117,15 +117,33 @@ class DataFilter:
         horovitz_mask = filtered_horo.groupby(dataframe["patient_id"]).transform(lambda x: (x < 200).any())
         comorbidities_mask = ~dataframe[required_columns].eq(1).any(axis=1)
 
-        # Keep: ARDS patients OR (low Horovitz AND no comorbidities)
         keep_mask = ards_mask | (horovitz_mask & comorbidities_mask)
-        
-        excluded_patients = dataframe[~keep_mask]['patient_id'].nunique()
-        excluded_ards = dataframe[~keep_mask & ards_mask]['patient_id'].nunique()
-        logger.debug(f"Lite filter: Excluding {excluded_patients} patients total, {excluded_ards} ARDS patients")
-        if excluded_ards > 0:
-            logger.warning(f"Lite filter: Excluding {excluded_ards} ARDS patients who have low Horovitz and comorbidities")
+        return dataframe[keep_mask]
 
+    @staticmethod
+    def filter_BD(dataframe):
+        """
+        Applies the BD filter to the DataFrame.
+        Checks for patients with ARDS and ensures both PEEP >= 5 and Horovitz < 300 conditions are met.
+        
+        Args:
+            dataframe: DataFrame containing patient data
+            
+        Returns:
+            Filtered DataFrame
+        """
+        logger.debug("Applying BD filter...")
+
+        # treat placeholder values as missing
+        filtered_horo = dataframe["horovitz"].where(dataframe["horovitz"] > -100000.0)
+
+        ards_mask = dataframe.groupby("patient_id")["ards"].transform(lambda x: 1 in x.values)
+        ards_patients = dataframe[ards_mask]['patient_id'].nunique()
+        logger.debug(f"BD filter: Found {ards_patients} ARDS patients")
+
+        # Both PEEP >= 5 and real Horovitz < 300 in same row
+        peep_horo_mask = (filtered_horo < 300) & (dataframe["peep"] >= 5)
+        
         valid_patient_ids = (
             dataframe.groupby("patient_id")
             .filter(lambda group: peep_horo_mask.loc[group.index].any())
