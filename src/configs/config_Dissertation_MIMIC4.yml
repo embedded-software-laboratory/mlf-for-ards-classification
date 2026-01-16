@@ -161,128 +161,70 @@ models:
         Names:
         - XGBoost
   image_models:
-  timeseries_models:
-    base_path_config:
-      to_cross_validate: Data/Models/TimeSeriesModels/Config/CrossValidation/
-      to_train: Data/Models/TimeSeriesModels/Config/Training/
     to_train:
-      AdaBoost:
-        Active: true
-        Configs:
-        - default
-        Names:
-        - AdaBoost
-      LightGBM:
-        Active: true
-        Configs:
-        - default
-        Names:
-        - LightGBM
-      LogisticRegression:
-        Active: true
-        Configs:
-        - default
-        Names:
-        - LR
-      RandomForest:
-        Active: true
-        Configs:
-        - default
-        Names:
-        - RandomForest
-      SupportVectorMachine:
+      ResNet:
         Active: false
         Configs:
         - default
         Names:
-        - SVM
-      XGBoost:
-        Active: true
-        Configs:
-        - default
-        Names:
-        - XGBoost
-    to_cross_validate:
-      AdaBoost:
+        - ResNet
+      DenseNet:
         Active: false
         Configs:
         - default
         Names:
-        - AdaBoost
-      LightGBM:
-        Active: false
-        Configs: []
-        Names: []
-      LogisticRegression:
-        Active: false
-        Configs: []
-        Names: []
-      RandomForest:
+        - DenseNet
+      ViT:
         Active: false
         Configs:
         - default
         Names:
-        - RandomForest
-      SupportVectorMachine:
-        Active: false
-        Configs: []
-        Names: []
-      XGBoost:
-        Active: false
-        Configs:
-        - default
-        Names:
-        - XGBoost
+        - ViT
     to_evaluate:
-      AdaBoost:
-        Active: true
-        Names:
-        - AdaBoost
-      LightGBM:
-        Active: true
-        Names: 
-        - LightGBM
-      LogisticRegression:
-        Active: true
-        Names: 
-        - LR
-      RandomForest:
-        Active: true
-        Names:
-        - RandomForest
-      SupportVectorMachine:
+      ResNet:
         Active: false
-        Names: 
-        - SVM
-      XGBoost:
-        Active: true
         Names:
-        - XGBoost
+        - ResNet
+      DenseNet:
+        Active: false
+        Names:
+        - DenseNet
+      ViT:
+        Active: false
+        Names:
+        - ViT
     to_execute:
-      AdaBoost:
-        Active: true
-        Names:
-        - AdaBoost
-      LightGBM:
-        Active: true
-        Names:
-        - LightGBM
-      LogisticRegression:
-        Active: true
-        Names: 
-        - LR
-      RandomForest:
-        Active: true
-        Names:
-        - RandomForest
-      SupportVectorMachine:
+      ResNet:
         Active: false
-        Names: 
-        - SVM
-      XGBoost:
-        Active: true
         Names:
-        - XGBoost
+        - ResNet
+      DenseNet:
+        Active: false
+        Names:
+        - DenseNet
+      ViT:
+        Active: false
+        Names:
+        - ViT
+    to_cross_validate:
+      ResNet:
+        Active: false
+        Configs:
+        - default
+        Names:
+        - ResNet
+      DenseNet:
+        Active: false
+        Configs:
+        - default
+        Names:
+        - DenseNet
+      ViT:
+        Active: false
+        Configs:
+        - default
+        Names:
+        - ViT
 
 # Path to the algorithms if they need to be loaded for execution
 algorithm_base_path:
