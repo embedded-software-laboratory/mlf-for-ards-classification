@@ -140,12 +140,6 @@ class DataFilter:
         # Check if we have any valid Horovitz measurements
         valid_horo_count = filtered_horo.notna().sum()
         logger.debug(f"BD filter: {valid_horo_count} valid Horovitz measurements out of {len(filtered_horo)} total")
-        
-        if valid_horo_count == 0:
-            logger.warning("BD filter: No valid Horovitz measurements found! All values appear to be placeholders (<= -100000)")
-            logger.warning("BD filter: Cannot verify ventilation criteria, so keeping all ARDS patients")
-            # Return dataframe unchanged - keep all patients including ARDS patients
-            return dataframe
 
         ards_mask = dataframe.groupby("patient_id")["ards"].transform(lambda x: 1 in x.values)
         ards_patients = dataframe[ards_mask]['patient_id'].nunique()
@@ -166,23 +160,36 @@ class DataFilter:
         # Both PEEP >= 5 and real Horovitz < 300 in same row
         peep_horo_mask = peep_mask & horo_mask
         
+        # For ARDS patients: they are valid if they either meet the criteria OR have no valid Horovitz measurements
+        def is_ards_patient_valid(group):
+            patient_id = group.name
+            is_ards = group['ards'].any()
+            if not is_ards:
+                return True  # Non-ARDS patients are always kept
+            
+            # ARDS patient: check if they meet criteria OR have no valid Horovitz measurements
+            has_valid_criteria = peep_horo_mask.loc[group.index].any()
+            has_any_valid_horo = filtered_horo.loc[group.index].notna().any()
+            
+            return has_valid_criteria or not has_any_valid_horo
+        
         valid_patient_ids = (
             dataframe.groupby("patient_id")
-            .filter(lambda group: peep_horo_mask.loc[group.index].any())
+            .filter(is_ards_patient_valid)
             ["patient_id"]
             .unique()
         )
         
-        logger.debug(f"BD filter: {len(valid_patient_ids)} patients meet BOTH PEEP>=5 AND Horovitz<300 criteria")
+        logger.debug(f"BD filter: {len(valid_patient_ids)} patients pass validation (ARDS patients kept if they meet criteria OR have no valid Horovitz data)")
         
         valid_ards_patients = len([pid for pid in valid_patient_ids if dataframe[dataframe['patient_id'] == pid]['ards'].any()])
         logger.debug(f"BD filter: {valid_ards_patients} of the valid patients are ARDS patients")
 
-        keep_mask = ~ards_mask | dataframe["patient_id"].isin(valid_patient_ids)
+        keep_mask = dataframe["patient_id"].isin(valid_patient_ids)
         
         excluded_ards = ards_patients - valid_ards_patients
         if excluded_ards > 0:
-            logger.warning(f"BD filter: Excluding {excluded_ards} ARDS patients who don't meet PEEP>=5 and Horovitz<300 criteria")
+            logger.warning(f"BD filter: Excluding {excluded_ards} ARDS patients who have valid Horovitz data but don't meet PEEP>=5 and Horovitz<300 criteria")
         
         return dataframe[keep_mask]
 
