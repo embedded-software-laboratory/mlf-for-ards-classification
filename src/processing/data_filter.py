@@ -136,6 +136,7 @@ class DataFilter:
 
         # treat placeholder values as missing
         filtered_horo = dataframe["horovitz"].where(dataframe["horovitz"] > -100000.0)
+        logger.debug(f"BD filter: Filtered placeholder Horovitz values: {filtered_horo.describe()}")
 
         ards_mask = dataframe.groupby("patient_id")["ards"].transform(lambda x: 1 in x.values)
         ards_patients = dataframe[ards_mask]['patient_id'].nunique()
