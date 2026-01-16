@@ -32,6 +32,9 @@ supported_algorithms:
   # - SupportVectorMachineModel
   - XGBoostModel
   image_models:
+  - ResNetModel
+  - DenseNetModel
+  - ViTModel
 
 # Configurations about the models to train, execute, cross-validate
 models:
@@ -157,6 +160,71 @@ models:
         Active: true
         Names:
         - XGBoost
+  image_models:
+    to_train:
+      ResNet:
+        Active: false
+        Configs:
+        - default
+        Names:
+        - ResNet
+      DenseNet:
+        Active: false
+        Configs:
+        - default
+        Names:
+        - DenseNet
+      ViT:
+        Active: false
+        Configs:
+        - default
+        Names:
+        - ViT
+    to_evaluate:
+      ResNet:
+        Active: false
+        Names:
+        - ResNet
+      DenseNet:
+        Active: false
+        Names:
+        - DenseNet
+      ViT:
+        Active: false
+        Names:
+        - ViT
+    to_execute:
+      ResNet:
+        Active: false
+        Names:
+        - ResNet
+      DenseNet:
+        Active: false
+        Names:
+        - DenseNet
+      ViT:
+        Active: false
+        Names:
+        - ViT
+    to_cross_validate:
+      ResNet:
+        Active: false
+        Configs:
+        - default
+        Names:
+        - ResNet
+      DenseNet:
+        Active: false
+        Configs:
+        - default
+        Names:
+        - DenseNet
+      ViT:
+        Active: false
+        Configs:
+        - default
+        Names:
+        - ViT
 
 # Path to the algorithms if they need to be loaded for execution
 algorithm_base_path:
@@ -169,13 +237,15 @@ algorithm_base_path:
   XGBoost: default
 
 # Path to store or load the results of the experiments
-storage_path: ../Save/Calibration/FS/
+storage_path: ../Save/Calibration/FS/Uni10
 
 # Information about the data that is used to train and evaluate the models
 data:
-  ards_dataset: weighted
+  # time-series dataset information
   database: CALIBRATION
-  pneumonia_dataset: balanced
+  # image dataset information
+  pneumonia_image_dataset: balanced
+  ards_image_dataset: weighted
   timeseries_file_path: /work/rwth1474/Data/time_series/Calibration/Base50
   import_type: split # Options: numpy, csv, pkl, split
   image_file_path: # TODO: placeholder for image data path
@@ -310,6 +380,19 @@ preprocessing:
     series_end_point: 50000
     series_start_point: -50000
     update_ards_values: false
+
+image_model_parameters:
+  method: last_block
+  mode: mode1
+  num_epochs_pneumonia: 1
+  num_epochs_ards: 1
+  batch_size_pneumonia: 32
+  batch_size_ards: 32
+  SEED_pneumonia: 123
+  SEED_ards: 105
+  learning_rate: 0.05 
+  k_folds: 2
+  path: "Data/Image_data"
 
 # Settings for feature selection before training or classification
 feature_selection:
