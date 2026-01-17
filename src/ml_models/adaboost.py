@@ -31,12 +31,6 @@ class AdaBoostModel(TimeSeriesProbaModel):
     def train_model(self, training_data):
 
         y = training_data["ards"]
-        logger.info(f"ARDS data unique values: {y.unique()}")
-        logger.info(f"ARDS data value counts: {y.value_counts()}")
-        logger.info(f"ARDS data dtype: {y.dtype}")
-        logger.info(f"ARDS data has NaN: {y.isna().any()}")
-        logger.info(f"Number of NaN values: {y.isna().sum()}")
-        logger.info(f"ARDS data: {y.describe()}")
         
         # Convert to standard numpy array to avoid pandas dtype issues
         y = y.astype(int).values

@@ -254,7 +254,7 @@ data:
 # Includes anomaly detection, filtering, imputation, calculation of additional parameters and ARDS onset detection
 preprocessing:
   patients_per_process: 5000
-  max_processes: 4
+  max_processes: 8
 
   anomaly_detection:
     ALAD:
