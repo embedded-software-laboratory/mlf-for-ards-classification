@@ -253,8 +253,8 @@ data:
 # Settings for preprocessing the data before training or classification
 # Includes anomaly detection, filtering, imputation, calculation of additional parameters and ARDS onset detection
 preprocessing:
-  patients_per_process: 5000
-  max_processes: 4
+  patients_per_process: 2000
+  max_processes: 16
 
   anomaly_detection:
     ALAD:
@@ -403,7 +403,7 @@ feature_selection:
 # Settings about how the data is split into training and test data
 data_segregation:
   training_test_ratio: 0.8
-  percentage_of_ards_patients: 0.15
+  percentage_of_ards_patients: 0.50
   splitting_seed: 1
 
 # Configurations about the evaluation of the models and which metrics to calculate

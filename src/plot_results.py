@@ -174,7 +174,7 @@ class ResultsAnalyzer:
         for i, model in enumerate(df.index):
             table[(i + 1, -1)].set_facecolor(PASTEL_COLORS.get(model, '#FFFFFF'))
 
-        plt.title('Model Metrics Comparison', fontsize=14, fontweight='bold', pad=20)
+        # plt.title('Model Metrics Comparison', fontsize=14, fontweight='bold', pad=20)
         plt.tight_layout()
 
         # Save figure
