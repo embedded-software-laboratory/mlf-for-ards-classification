@@ -1,0 +1,435 @@
+# Information about the process itself - defines which steps are executed by the framework
+process:
+  load_models: false
+  load_timeseries_data: true
+  perform_anomaly_detection: false
+  perform_imputation: true
+  perform_unit_conversion: true
+  calculate_missing_params: true
+  perform_ards_onset_detection: true
+  perform_filtering: true
+  perform_feature_selection: true
+  perform_data_segregation: true
+  perform_timeseries_training: true
+  perform_timeseries_classification: true
+  perform_threshold_optimization: true
+  calculate_evaluation_metrics: true
+  perform_cross_validation: false
+  save_models: true
+  # Information for image models
+  load_image_data: false
+  train_image_models: false
+  execute_image_models: false
+  test_image_models: false
+
+# Current supported algorithms by the framework 
+supported_algorithms:
+  timeseries_models:
+  - AdaBoostModel
+  - LightGBMModel
+  - LogisticRegressionModel
+  - RandomForestModel
+  # - SupportVectorMachineModel
+  - XGBoostModel
+  image_models:
+  - ResNetModel
+  - DenseNetModel
+  - ViTModel
+
+# Configurations about the models to train, execute, cross-validate
+models:
+  timeseries_models:
+    base_path_config:
+      to_cross_validate: Data/Models/TimeSeriesModels/Config/CrossValidation/
+      to_train: Data/Models/TimeSeriesModels/Config/Training/
+    to_train:
+      AdaBoost:
+        Active: true
+        Configs:
+        - default
+        Names:
+        - AdaBoost
+      LightGBM:
+        Active: true
+        Configs:
+        - default
+        Names:
+        - LightGBM
+      LogisticRegression:
+        Active: true
+        Configs:
+        - default
+        Names:
+        - LR
+      RandomForest:
+        Active: true
+        Configs:
+        - default
+        Names:
+        - RandomForest
+      SupportVectorMachine:
+        Active: false
+        Configs:
+        - default
+        Names:
+        - SVM
+      XGBoost:
+        Active: true
+        Configs:
+        - default
+        Names:
+        - XGBoost
+    to_cross_validate:
+      AdaBoost:
+        Active: false
+        Configs:
+        - default
+        Names:
+        - AdaBoost
+      LightGBM:
+        Active: false
+        Configs: []
+        Names: []
+      LogisticRegression:
+        Active: false
+        Configs: []
+        Names: []
+      RandomForest:
+        Active: false
+        Configs:
+        - default
+        Names:
+        - RandomForest
+      SupportVectorMachine:
+        Active: false
+        Configs: []
+        Names: []
+      XGBoost:
+        Active: false
+        Configs:
+        - default
+        Names:
+        - XGBoost
+    to_evaluate:
+      AdaBoost:
+        Active: true
+        Names:
+        - AdaBoost
+      LightGBM:
+        Active: true
+        Names: 
+        - LightGBM
+      LogisticRegression:
+        Active: true
+        Names: 
+        - LR
+      RandomForest:
+        Active: true
+        Names:
+        - RandomForest
+      SupportVectorMachine:
+        Active: false
+        Names: 
+        - SVM
+      XGBoost:
+        Active: true
+        Names:
+        - XGBoost
+    to_execute:
+      AdaBoost:
+        Active: true
+        Names:
+        - AdaBoost
+      LightGBM:
+        Active: true
+        Names:
+        - LightGBM
+      LogisticRegression:
+        Active: true
+        Names: 
+        - LR
+      RandomForest:
+        Active: true
+        Names:
+        - RandomForest
+      SupportVectorMachine:
+        Active: false
+        Names: 
+        - SVM
+      XGBoost:
+        Active: true
+        Names:
+        - XGBoost
+  image_models:
+    to_train:
+      ResNet:
+        Active: false
+        Configs:
+        - default
+        Names:
+        - ResNet
+      DenseNet:
+        Active: false
+        Configs:
+        - default
+        Names:
+        - DenseNet
+      ViT:
+        Active: false
+        Configs:
+        - default
+        Names:
+        - ViT
+    to_evaluate:
+      ResNet:
+        Active: false
+        Names:
+        - ResNet
+      DenseNet:
+        Active: false
+        Names:
+        - DenseNet
+      ViT:
+        Active: false
+        Names:
+        - ViT
+    to_execute:
+      ResNet:
+        Active: false
+        Names:
+        - ResNet
+      DenseNet:
+        Active: false
+        Names:
+        - DenseNet
+      ViT:
+        Active: false
+        Names:
+        - ViT
+    to_cross_validate:
+      ResNet:
+        Active: false
+        Configs:
+        - default
+        Names:
+        - ResNet
+      DenseNet:
+        Active: false
+        Configs:
+        - default
+        Names:
+        - DenseNet
+      ViT:
+        Active: false
+        Configs:
+        - default
+        Names:
+        - ViT
+
+# Path to the algorithms if they need to be loaded for execution
+algorithm_base_path:
+  AdaBoost: default
+  LightGBM: default
+  LogisticRegression: default
+  RandomForest: default
+  RecurrentNeuralNetwork: Save/Cross validation results/Recurrent neural network_1
+  SupportVectorMachine: default
+  XGBoost: default
+
+# Path to store or load the results of the experiments
+storage_path: ../Save/Control/Base50/50_percent_ards/
+
+# Information about the data that is used to train and evaluate the models
+data:
+  # time-series dataset information
+  database: CONTROL
+  # image dataset information
+  pneumonia_image_dataset: balanced
+  ards_image_dataset: weighted
+  timeseries_file_path: /work/rwth1474/Data/time_series/Control/Base50
+  import_type: split # Options: numpy, csv, pkl, split
+  image_file_path: # TODO: placeholder for image data path
+  
+# Settings for preprocessing the data before training or classification
+# Includes anomaly detection, filtering, imputation, calculation of additional parameters and ARDS onset detection
+preprocessing:
+  patients_per_process: 2000
+  max_processes: 16
+
+  anomaly_detection:
+    ALAD:
+      active: false
+      active_stages:
+      - fix
+      anomaly_data_dir: /work/rwth1474/Data/AnomalyDetection/anomaly_data/ALAD
+      anomaly_threshold: 0.5
+      checkpoint_dir: ../Data/Models/AnomalyDetection/DeepAnt/checkpoints
+      columns_to_check: []
+      fix_algorithm: interpolate
+      handling_strategy: delete_than_impute
+      hyperparameters: {}
+      load_data: true
+      name: ALAD
+      prepared_data_dir: /work/rwth1474/Data/AnomalyDetection/prepared_data/ALAD
+      retrain_models: {}
+      run_dir: ../Data/Models/AnomalyDetection/DeepAnt
+      save_data: true
+      sk_seed: 42
+      supported_stages:
+      - prepare
+      - train
+      - predict
+      - fix
+      train_percentage: 0.0
+    DeepAnt:
+      active: false
+      active_stages:
+      - fix
+      anomaly_data_dir: /work/rwth1474/Data/AnomalyDetection/anomaly_data/DeepAnt
+      anomaly_threshold: 0.5
+      batch_size: 32
+      checkpoint_dir: ../Data/Models/AnomalyDetection/DeepAnt/checkpoints
+      columns_to_check: []
+      fix_algorithm: forward
+      handling_strategy: delete_than_impute
+      hidden_size: 256
+      learning_rate: 0.001
+      load_data: true
+      max_epochs: 100
+      max_initial_epochs: 10
+      name: DeepAnt
+      patience: 5
+      prepared_data_dir: /work/rwth1474/Data/AnomalyDetection/prepared_data/DeepAnt
+      retrain_models: {}
+      run_dir: ../Data/Models/AnomalyDetection/DeepAnt
+      save_data: true
+      sk_seed: 42
+      supported_stages:
+      - prepare
+      - train
+      - predict
+      - fix
+      train_percentage: 0.2
+      val_percentage: 0.1
+      window_generator_config:
+        input_width: 10
+        output_width: 10
+    Physiological_Outliers:
+      active: false
+      active_stages:
+      - fix
+      anomaly_data_dir: /work/rwth1474/Data/AnomalyDetection/anomaly_data/Physiological_Outliers
+      anomaly_threshold: 0.5
+      columns_to_check: []
+      fix_algorithm: forward
+      handling_strategy: delete_than_impute
+      name: Physiological_Outliers
+      prepared_data_dir: /work/rwth1474/Data/AnomalyDetection/prepared_data/Physiological_Outliers
+      supported_stages:
+      - prepare
+      - predict
+      - fix
+    SW_ABSAD_MOD:
+      active: false
+      active_stages:
+      - fix
+      anomaly_data_dir: /work/rwth1474/Data/AnomalyDetection/anomaly_data/SW_ABSAD_MOD
+      anomaly_threshold: 0.5
+      clea_training: false
+      columns_to_check: []
+      confidence_level: 0.95
+      fix_algorithm: interpolate
+      handling_strategy: delete_than_impute
+      k: 5
+      name: SW_ABSAD_MOD
+      prepared_data_dir: /work/rwth1474/Data/AnomalyDetection/prepared_data/SW_ABSAD_MOD
+      replace_physical_outliers: true
+      replace_zeros: false
+      retrain_after_gap: true
+      s: 5
+      supported_stages:
+      - prepare
+      - predict
+      - fix
+      theta: 0.5
+      use_cl_modification: false
+      variance_check: false
+      variance_window: 7
+      window_length: 7
+
+  filtering:
+    filter:
+    - BD
+    - Strict
+
+  imputation:
+    default_imputation_method: forward
+    impute_empty_cells: true
+    params_to_impute:
+    - ards, forward
+    - all
+
+  params_to_calculate:
+  - horovitz
+
+  ards_onset_detection:
+    detection_rule: first_horovitz 
+    impute_missing_rows: false
+    remove_ards_patients_without_onset: false
+    return_rule: datapoint
+    series_end_point: 50000
+    series_start_point: -50000
+    update_ards_values: false
+
+image_model_parameters:
+  method: last_block
+  mode: mode1
+  num_epochs_pneumonia: 1
+  num_epochs_ards: 1
+  batch_size_pneumonia: 32
+  batch_size_ards: 32
+  SEED_pneumonia: 123
+  SEED_ards: 105
+  learning_rate: 0.05 
+  k_folds: 2
+  path: "Data/Image_data"
+
+# Settings for feature selection before training or classification
+feature_selection:
+  method: univariate
+  variance: 0.16
+  k: 50
+
+# Settings about how the data is split into training and test data
+data_segregation:
+  training_test_ratio: 0.8
+  percentage_of_ards_patients: 0.50
+  splitting_seed: 1
+
+# Configurations about the evaluation of the models and which metrics to calculate
+evaluation:
+  cross_validation:
+    n_splits: 5
+    random_state: 11
+    shuffle: true
+  evaluation_metrics:
+  - AUC
+  - Accuracy
+  - F1Score
+  - FPR
+  - MCC
+  - OptimalProbability
+  - Sensitivity
+  - Specificity
+  - TPR
+  - PPV
+  - NPV
+  - Precisions
+  - Recalls
+  evaluation_name: All_models_Control_50
+  threshold_optimization_algorithms:
+  - Standard
+  - MaxTPR
+  - MaxTPRMinFPR
+  - GeometricRoot
+

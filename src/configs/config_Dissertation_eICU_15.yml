@@ -237,16 +237,16 @@ algorithm_base_path:
   XGBoost: default
 
 # Path to store or load the results of the experiments
-storage_path: ../Save/Control/Base50/
+storage_path: ../Save/eICU/Base50/15_percent_ards/
 
 # Information about the data that is used to train and evaluate the models
 data:
   # time-series dataset information
-  database: CONTROL
+  database: eICU
   # image dataset information
   pneumonia_image_dataset: balanced
   ards_image_dataset: weighted
-  timeseries_file_path: /work/rwth1474/Data/time_series/Control/Base50
+  timeseries_file_path: /work/rwth1474/Data/time_series/eICU/Base50
   import_type: split # Options: numpy, csv, pkl, split
   image_file_path: # TODO: placeholder for image data path
   
@@ -403,7 +403,7 @@ feature_selection:
 # Settings about how the data is split into training and test data
 data_segregation:
   training_test_ratio: 0.8
-  percentage_of_ards_patients: 0.50
+  percentage_of_ards_patients: 0.15
   splitting_seed: 1
 
 # Configurations about the evaluation of the models and which metrics to calculate
@@ -426,7 +426,7 @@ evaluation:
   - NPV
   - Precisions
   - Recalls
-  evaluation_name: All_models_Control
+  evaluation_name: All_models_eICU_15
   threshold_optimization_algorithms:
   - Standard
   - MaxTPR

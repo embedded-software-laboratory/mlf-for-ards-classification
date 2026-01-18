@@ -237,16 +237,16 @@ algorithm_base_path:
   XGBoost: default
 
 # Path to store or load the results of the experiments
-storage_path: ../Save/Calibration/Base50/
+storage_path: ../Save/MIMIC-III/Base50/50_percent_ards/
 
 # Information about the data that is used to train and evaluate the models
 data:
   # time-series dataset information
-  database: CALIBRATION
+  database: MIMIC3
   # image dataset information
   pneumonia_image_dataset: balanced
   ards_image_dataset: weighted
-  timeseries_file_path: /work/rwth1474/Data/time_series/Calibration/Base50
+  timeseries_file_path: /work/rwth1474/Data/time_series/MIMIC3/Base50
   import_type: split # Options: numpy, csv, pkl, split
   image_file_path: # TODO: placeholder for image data path
   
@@ -426,7 +426,7 @@ evaluation:
   - NPV
   - Precisions
   - Recalls
-  evaluation_name: All_models_Calibration
+  evaluation_name: All_models_MIMIC3_50
   threshold_optimization_algorithms:
   - Standard
   - MaxTPR
