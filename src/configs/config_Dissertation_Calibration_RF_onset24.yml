@@ -253,8 +253,8 @@ data:
 # Settings for preprocessing the data before training or classification
 # Includes anomaly detection, filtering, imputation, calculation of additional parameters and ARDS onset detection
 preprocessing:
-  patients_per_process: 2500
-  max_processes: 8
+  patients_per_process: 1000
+  max_processes: 16
 
   anomaly_detection:
     ALAD:

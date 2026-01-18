@@ -298,7 +298,7 @@ class ResultsAnalyzer:
                    cbar_kws={'label': 'Metric Value'}, linewidths=0.5, ax=ax,
                    cbar=True, square=False)
 
-        ax.set_title('Model Performance Heatmap', fontsize=14, fontweight='bold', pad=20)
+        # .set_title('Model Performance Heatmap', fontsize=14, fontweight='bold', pad=20)
         ax.set_xlabel('Metrics', fontsize=12, fontweight='bold')
         ax.set_ylabel('Models', fontsize=12, fontweight='bold')
 
@@ -369,17 +369,17 @@ class ResultsAnalyzer:
             ax.text(value - 0.02, bar.get_y() + bar.get_height() / 2,
                    f'{value:.4f}', ha='right', va='center', fontsize=11, fontweight='bold')
 
-        ax.set_xlabel('AUC Score', fontsize=12, fontweight='bold')
-        ax.set_title('Area Under Curve (AUC) Comparison', fontsize=14, fontweight='bold')
+        ax.set_xlabel('AUROC Score', fontsize=12, fontweight='bold')
+        ax.set_title('AUROC Comparison', fontsize=14, fontweight='bold')
         ax.set_xlim([0.5, 1.0])
         ax.grid(axis='x', alpha=0.3, linestyle='--')
         ax.set_axisbelow(True)
 
         plt.tight_layout()
 
-        output_path = os.path.join(self.output_dir, 'auc_comparison.png')
+        output_path = os.path.join(self.output_dir, 'auroc_comparison.png')
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
-        logger.info(f"Saved AUC comparison to {output_path}")
+        logger.info(f"Saved AUROC comparison to {output_path}")
         plt.close()
 
     def generate_summary_report(self):
@@ -516,16 +516,47 @@ class ResultsAnalyzer:
         return True
 
 
-def main(results_json_path: str, output_dir: str = None):
+def main(results_folder: str, output_dir: str = None):
     """
-    Main function to run the results analysis.
+    Main function to run the results analysis for all results JSON files in a folder and its subfolders.
 
     Args:
-        results_json_path: Path to the results JSON file
-        output_dir: Optional output directory for results
+        results_folder: Path to the folder containing results JSON files (searched recursively)
+        output_dir: Optional output directory for results (subfolders will be created per model)
     """
-    analyzer = ResultsAnalyzer(results_json_path, output_dir)
-    return analyzer.run_full_analysis()
+    results_folder_path = Path(results_folder).resolve()
+    
+    if output_dir:
+        base_output_dir = Path(output_dir).resolve()
+    else:
+        base_output_dir = results_folder_path / "results_visualization"
+    
+    base_output_dir.mkdir(exist_ok=True, parents=True)
+    
+    # Find all *results.json files recursively in subfolders
+    json_files = list(results_folder_path.glob("**/*results.json"))
+    
+    if not json_files:
+        logger.error(f"No results.json files found in {results_folder_path}")
+        return False
+    
+    logger.info(f"Found {len(json_files)} results JSON files to process")
+    
+    for json_file in json_files:
+        # Extract model name: e.g., "All_models_Calibration_results.json" -> "All_models_Calibration"
+        model_name = json_file.stem.replace("_results", "")
+        model_output_dir = base_output_dir / model_name
+        
+        logger.info(f"Processing {json_file.name} -> Model: {model_name}")
+        
+        analyzer = ResultsAnalyzer(str(json_file), str(model_output_dir))
+        success = analyzer.run_full_analysis()
+        
+        if not success:
+            logger.warning(f"Failed to process {json_file.name}")
+    
+    logger.info(f"All analyses complete! Results saved to {base_output_dir}")
+    return True
 
 
 if __name__ == "__main__":
@@ -536,10 +567,10 @@ if __name__ == "__main__":
         format="%(asctime)s - %(levelname)s - %(message)s",
     )
 
-    parser = argparse.ArgumentParser(description="Analyze and visualize ML evaluation results")
-    parser.add_argument("results_json", help="Path to the results JSON file")
-    parser.add_argument("--output", "-o", help="Output directory for visualizations", default=None)
+    parser = argparse.ArgumentParser(description="Analyze and visualize ML evaluation results from all JSON files in a folder and its subfolders")
+    parser.add_argument("--results_folder", "-r", help="Path to the folder containing results JSON files", default=None)
+    parser.add_argument("--output", "-o", help="Output directory for visualizations (subfolders will be created per model)", default=None)
 
     args = parser.parse_args()
 
-    main(args.results_json, args.output)
+    main(args.results_folder, args.output)
