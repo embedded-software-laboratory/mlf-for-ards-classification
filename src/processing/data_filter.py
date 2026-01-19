@@ -118,7 +118,16 @@ class DataFilter:
         horovitz_mask = filtered_horo.groupby(dataframe["patient_id"]).transform(lambda x: (x < 200).any())
         comorbidities_mask = ~((dataframe[available_columns] == 1) | (dataframe[available_columns] == -100000.0)).any(axis=1)
 
+        logger.debug(f"Lite filter - Patients with ARDS: {dataframe[ards_mask]['patient_id'].nunique()}")
+        logger.debug(f"Lite filter - Patients with Horovitz < 200: {dataframe[horovitz_mask]['patient_id'].nunique()}")
+        logger.debug(f"Lite filter - Patients with no comorbidities: {dataframe[comorbidities_mask]['patient_id'].nunique()}")
+
         keep_mask = ards_mask | (horovitz_mask & comorbidities_mask)
+
+        logger.debug(f"Lite filter - Patients kept by ARDS: {dataframe[ards_mask]['patient_id'].nunique()}")
+        logger.debug(f"Lite filter - Patients kept by low Horovitz and no comorbidities: {dataframe[horovitz_mask & comorbidities_mask]['patient_id'].nunique()}")
+        logger.debug(f"Lite filter - Total patients kept: {dataframe[keep_mask]['patient_id'].nunique()}")
+
         return dataframe[keep_mask]
 
     @staticmethod
