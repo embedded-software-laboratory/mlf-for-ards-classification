@@ -122,10 +122,10 @@ class DataFilter:
         logger.debug(f"Lite filter - Patients with Horovitz < 200: {dataframe[horovitz_mask]['patient_id'].nunique()}")
         logger.debug(f"Lite filter - Patients with no comorbidities: {dataframe[comorbidities_mask]['patient_id'].nunique()}")
 
-        keep_mask = ards_mask | (horovitz_mask & comorbidities_mask)
+        keep_mask = ards_mask | ~(horovitz_mask & ~comorbidities_mask)
 
         logger.debug(f"Lite filter - Patients kept by ARDS: {dataframe[ards_mask]['patient_id'].nunique()}")
-        logger.debug(f"Lite filter - Patients kept by low Horovitz and no comorbidities: {dataframe[horovitz_mask & comorbidities_mask]['patient_id'].nunique()}")
+        logger.debug(f"Lite filter - Patients excluded by low Horovitz and comorbidities: {dataframe[horovitz_mask & ~comorbidities_mask]['patient_id'].nunique()}")
         logger.debug(f"Lite filter - Total patients kept: {dataframe[keep_mask]['patient_id'].nunique()}")
 
         return dataframe[keep_mask]
