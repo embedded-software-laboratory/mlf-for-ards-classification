@@ -105,9 +105,9 @@ class DataFilter:
         """
         logger.debug("Applying lite filter...")
 
-        required_columns = ["hypervolemia", "pulmonary-edema", "heart-failure"]
-        if not all(col in dataframe.columns for col in required_columns):
-            logger.info("Skipping lite filter since not all necessary columns are present")
+        required_columns = ["hypervolemia", "cardiac-pulmonary-edema", "heart-failure"]
+        if not any(col in dataframe.columns for col in required_columns):
+            logger.info("Skipping lite filter since no necessary columns are present")
             return dataframe
 
         # treat placeholder values as missing
