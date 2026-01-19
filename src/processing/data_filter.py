@@ -106,7 +106,8 @@ class DataFilter:
         logger.debug("Applying lite filter...")
 
         required_columns = ["hypervolemia", "cardiac-pulmonary-edema", "heart-failure"]
-        if not any(col in dataframe.columns for col in required_columns):
+        available_columns = [col for col in required_columns if col in dataframe.columns]
+        if not available_columns:
             logger.info("Skipping lite filter since no necessary columns are present")
             return dataframe
 
@@ -115,7 +116,7 @@ class DataFilter:
 
         ards_mask = dataframe.groupby("patient_id")["ards"].transform(lambda x: 1 in x.values)
         horovitz_mask = filtered_horo.groupby(dataframe["patient_id"]).transform(lambda x: (x < 200).any())
-        comorbidities_mask = ~dataframe[required_columns].eq(1).any(axis=1)
+        comorbidities_mask = ~dataframe[available_columns].eq(1).any(axis=1)
 
         keep_mask = ards_mask | (horovitz_mask & comorbidities_mask)
         return dataframe[keep_mask]
