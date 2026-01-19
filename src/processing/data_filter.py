@@ -114,7 +114,7 @@ class DataFilter:
         # treat placeholder values as missing
         filtered_horo = dataframe["horovitz"].where(dataframe["horovitz"] > -100000.0)
 
-        ards_mask = dataframe.groupby("patient_id")["ards"].transform(lambda x: 1 in x.values)
+        ards_mask = filtered_horo.groupby("patient_id")["ards"].transform(lambda x: 1 in x.values)
         horovitz_mask = filtered_horo.groupby(dataframe["patient_id"]).transform(lambda x: (x < 200).any())
         comorbidities_mask = ~dataframe[available_columns].eq(1).any(axis=1)
 
