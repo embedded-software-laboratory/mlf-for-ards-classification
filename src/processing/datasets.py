@@ -310,10 +310,10 @@ class ImageDataset(Dataset):
         """
         if dl_method == 'ResNet' or dl_method == 'DenseNet':
             IMAGE_SIZE = [256, 256]
-        elif dl_method == 'VIT':
+        elif dl_method == 'ViT':
             IMAGE_SIZE = [224, 224]
         else:
-            raise Exception(str("DL method is not supported. Supported DL method are ResNet, DenseNet, VIT."))
+            raise Exception(str("DL method is not supported. Supported DL method are ResNet, DenseNet, ViT."))
             
         return IMAGE_SIZE
 
@@ -323,7 +323,7 @@ class DatasetGenerator:
         Function to build the dataset of Class Dataset
         
         :param dataset_name: (str) The name of the dataset used
-        :param dl_method: (str) The deep learning method used, either ResNet, DenseNet or VIT
+        :param dl_method: (str) The deep learning method used, either ResNet, DenseNet or ViT
         :param disease: (str) Either PNEUMONIA or ARDS, the disease which is being classifies
         :param path: (str) The base path to the datasets
         :param augment: (bool) Whether the dataset should be taken from the pre augmented or not, default is False
