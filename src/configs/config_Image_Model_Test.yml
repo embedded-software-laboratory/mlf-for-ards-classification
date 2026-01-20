@@ -164,64 +164,64 @@ models:
   image_models:
     to_train:
       ResNet:
-        Active: false
+        Active: true
         Configs:
         - default
         Names:
         - ResNet
       DenseNet:
-        Active: false
+        Active: true
         Configs:
         - default
         Names:
         - DenseNet
       ViT:
-        Active: false
+        Active: true
         Configs:
         - default
         Names:
         - ViT
     to_evaluate:
       ResNet:
-        Active: false
+        Active: true
         Names:
         - ResNet
       DenseNet:
-        Active: false
+        Active: true
         Names:
         - DenseNet
       ViT:
-        Active: false
+        Active: true
         Names:
         - ViT
     to_execute:
       ResNet:
-        Active: false
+        Active: true
         Names:
         - ResNet
       DenseNet:
-        Active: false
+        Active: true
         Names:
         - DenseNet
       ViT:
-        Active: false
+        Active: true
         Names:
         - ViT
     to_cross_validate:
       ResNet:
-        Active: false
+        Active: true
         Configs:
         - default
         Names:
         - ResNet
       DenseNet:
-        Active: false
+        Active: true
         Configs:
         - default
         Names:
         - DenseNet
       ViT:
-        Active: false
+        Active: true
         Configs:
         - default
         Names:

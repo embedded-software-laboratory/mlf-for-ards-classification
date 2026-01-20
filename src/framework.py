@@ -394,7 +394,7 @@ class Framework:
         logger.info("STEP 6: Loading and Processing Image Data")
         logger.info("=" * 80)
 
-        for dl_method in self.image_dl_methods:
+        for dl_method in self.image_models_to_train:
             self.image_pneumonia_training_data = self.dataset_generator.build_dataset(self.pneumonia_dataset, dl_method,
                                                                                       'PNEUMONIA',
                                                                                       path=self.image_file_path,

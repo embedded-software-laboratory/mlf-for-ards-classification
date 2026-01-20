@@ -220,7 +220,7 @@ class ImageDataset(Dataset):
         image = torch.load(image_file_path)
         image = (image * 255).astype('uint8') if image.max() <= 1 else image
         
-        if self.dl_method == 'CNN':
+        if self.dl_method == 'ResNet' or self.dl_method == 'DenseNet':
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         
         image = self.aug(image=image)['image']
@@ -309,12 +309,12 @@ class ImageDataset(Dataset):
         :param dl_method: (str) Either CNN or ViT for the deep learning method which we are using
         :return: (list) The image size accoring to which deep learning method we are using
         """
-        if dl_method == 'CNN':
+        if dl_method == 'ResNet' or dl_method == 'DenseNet':
             IMAGE_SIZE = [256, 256]
         elif dl_method == 'VIT':
             IMAGE_SIZE = [224, 224]
         else:
-            raise Exception(str("DL method is not supported. Supported DL method are CNN, VIT."))
+            raise Exception(str("DL method is not supported. Supported DL method are ResNet, DenseNet, VIT."))
             
         return IMAGE_SIZE
 
@@ -324,7 +324,7 @@ class DatasetGenerator:
         Function to build the dataset of Class Dataset
         
         :param dataset_name: (str) The name of the dataset used
-        :param dl_method: (str) The deep learning method used, either CNN or VIT
+        :param dl_method: (str) The deep learning method used, either ResNet, DenseNet or VIT
         :param disease: (str) Either PNEUMONIA or ARDS, the disease which is being classifies
         :param augment: (bool) Whether the dataset should be taken from the pre augmented or not, default is False
         :return: dataset (Dataset) contains a dataset with the aformentioned properties
