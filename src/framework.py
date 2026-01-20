@@ -395,11 +395,11 @@ class Framework:
         logger.info("=" * 80)
 
         for dl_method in self.image_models_to_train:
-            self.image_pneumonia_training_data = self.dataset_generator.build_dataset(self.pneumonia_dataset, dl_method,
+            self.image_pneumonia_training_data = self.dataset_generator.build_dataset(self.pneumonia_image_dataset, dl_method,
                                                                                       'PNEUMONIA',
                                                                                       path=self.image_file_path,
                                                                                       augment=False)
-            self.image_ards_training_data = self.dataset_generator.build_dataset(self.ards_dataset, dl_method, 'ARDS',
+            self.image_ards_training_data = self.dataset_generator.build_dataset(self.ards_image_dataset, dl_method, 'ARDS',
                                                                                  path=self.image_file_path,
                                                                                  augment=False)
             self.image_ards_test_data = self.dataset_generator.build_dataset('test', dl_method, 'ARDS',
