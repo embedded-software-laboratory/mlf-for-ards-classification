@@ -326,17 +326,34 @@ class DatasetGenerator:
         :param dataset_name: (str) The name of the dataset used
         :param dl_method: (str) The deep learning method used, either ResNet, DenseNet or VIT
         :param disease: (str) Either PNEUMONIA or ARDS, the disease which is being classifies
+        :param path: (str) The base path to the datasets
         :param augment: (bool) Whether the dataset should be taken from the pre augmented or not, default is False
         :return: dataset (Dataset) contains a dataset with the aformentioned properties
         """
         
-        # get available datasets from chexpert and mimic
-        datasets_available_pneumonia = [name for name in os.listdir(path) if not name.startswith('.') and not name.endswith('.7z')]
-        datasets_avaiable_ards = [name for name in os.listdir(path) if not name.startswith('.') and not name.endswith('.7z')]
-        datasets_available = datasets_available_pneumonia + datasets_avaiable_ards
+        # Determine the correct subfolder based on disease and augmentation
+        if disease == 'PNEUMONIA':
+            subfolder = 'CheXpert-DB-AUG' if augment else 'CheXpert-DB-PNEUMONIA'
+        elif disease == 'ARDS':
+            subfolder = 'MIMIC-DB-AUG' if augment else 'MIMIC-DB-ARDS'
+        else:
+            logger.error(f"Unsupported disease: '{disease}'. Supported diseases are: PNEUMONIA, ARDS")
+            raise Exception(str("Disease is not supported. Supported diseases are PNEUMONIA and ARDS."))
         
-        logger.info(f"Available datasets in path '{path}': {datasets_available}")
-        logger.debug(f"Requested dataset: '{dataset_name}', DL method: '{dl_method}', Disease: '{disease}'")
+        # Build the full path to the disease-specific folder
+        dataset_path = os.path.join(path, subfolder)
+        
+        # Check if the subfolder exists
+        if not os.path.exists(dataset_path):
+            logger.error(f"Dataset folder '{dataset_path}' does not exist")
+            raise Exception(f"Dataset folder '{subfolder}' not found in path '{path}'")
+        
+        # Get available datasets from the subfolder
+        datasets_available = [name for name in os.listdir(dataset_path) if not name.startswith('.') and not name.endswith('.7z')]
+        
+        logger.info(f"Looking for datasets in: '{dataset_path}'")
+        logger.info(f"Available datasets: {datasets_available}")
+        logger.debug(f"Requested dataset: '{dataset_name}', DL method: '{dl_method}', Disease: '{disease}', Augment: {augment}")
         
         # raise exception if dataset not available
         if not (dataset_name in datasets_available):
@@ -344,5 +361,5 @@ class DatasetGenerator:
             raise Exception(str("Dataset is not supported. Supported datasets are: "+ ', '.join(datasets_available)))
             
         # generate Dataset Object with properties
-        dataset = ImageDataset(dataset_name, dl_method, disease, augment, path)
+        dataset = ImageDataset(dataset_name, dl_method, disease, augment, dataset_path)
         return dataset
