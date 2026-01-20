@@ -394,16 +394,31 @@ class Framework:
         logger.info("STEP 6: Loading and Processing Image Data")
         logger.info("=" * 80)
 
+        logger.info(f"Image models to train: {list(self.image_models_to_train.keys())}")
+        logger.info(f"Image file path: {self.image_file_path}")
+        logger.info(f"Pneumonia dataset name: {self.pneumonia_image_dataset}")
+        logger.info(f"ARDS dataset name: {self.ards_image_dataset}")
+
         for dl_method in self.image_models_to_train:
+            logger.info(f"Building datasets for DL method: {dl_method}")
+            
+            logger.info(f"Building PNEUMONIA training dataset: '{self.pneumonia_image_dataset}' (augment=False)")
             self.image_pneumonia_training_data = self.dataset_generator.build_dataset(self.pneumonia_image_dataset, dl_method,
                                                                                       'PNEUMONIA',
                                                                                       path=self.image_file_path,
                                                                                       augment=False)
+            logger.info(f"PNEUMONIA training dataset built successfully. Size: {len(self.image_pneumonia_training_data)}")
+            
+            logger.info(f"Building ARDS training dataset: '{self.ards_image_dataset}' (augment=False)")
             self.image_ards_training_data = self.dataset_generator.build_dataset(self.ards_image_dataset, dl_method, 'ARDS',
                                                                                  path=self.image_file_path,
                                                                                  augment=False)
+            logger.info(f"ARDS training dataset built successfully. Size: {len(self.image_ards_training_data)}")
+            
+            logger.info(f"Building ARDS test dataset: 'test' (augment=False)")
             self.image_ards_test_data = self.dataset_generator.build_dataset('test', dl_method, 'ARDS',
                                                                              path=self.image_file_path, augment=False)
+            logger.info(f"ARDS test dataset built successfully. Size: {len(self.image_ards_test_data)}")
 
 
     def load_image_models(self, stage: str):
