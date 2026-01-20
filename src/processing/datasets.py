@@ -335,8 +335,12 @@ class DatasetGenerator:
         datasets_avaiable_ards = [name for name in os.listdir(path) if not name.startswith('.') and not name.endswith('.7z')]
         datasets_available = datasets_available_pneumonia + datasets_avaiable_ards
         
+        logger.info(f"Available datasets in path '{path}': {datasets_available}")
+        logger.debug(f"Requested dataset: '{dataset_name}', DL method: '{dl_method}', Disease: '{disease}'")
+        
         # raise exception if dataset not available
         if not (dataset_name in datasets_available):
+            logger.error(f"Dataset '{dataset_name}' not found in available datasets: {datasets_available}")
             raise Exception(str("Dataset is not supported. Supported datasets are: "+ ', '.join(datasets_available)))
             
         # generate Dataset Object with properties
