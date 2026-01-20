@@ -268,7 +268,7 @@ data:
   ards_image_dataset: weighted
   timeseries_file_path: /work/rwth1474/Data/time_series/Calibration/Base50
   import_type: split # Options: numpy, csv, pkl, split
-  image_file_path: /hpcwork/rwth1474/Data/image
+  image_file_path: /hpcwork/rwth1474/Data/image/
 
 # Settings for preprocessing the data before training or classification
 # Includes anomaly detection, filtering, imputation, calculation of additional parameters and ARDS onset detection
