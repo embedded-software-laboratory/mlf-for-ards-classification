@@ -163,9 +163,69 @@ models:
         - XGBoost
   image_models:
     to_train:
-    to_fine_tune:
-    to_execute:
+      ResNet:
+        Active: false
+        Configs:
+        - default
+        Names:
+        - ResNet
+      DenseNet:
+        Active: false
+        Configs:
+        - default
+        Names:
+        - DenseNet
+      ViT:
+        Active: false
+        Configs:
+        - default
+        Names:
+        - ViT
     to_evaluate:
+      ResNet:
+        Active: false
+        Names:
+        - ResNet
+      DenseNet:
+        Active: false
+        Names:
+        - DenseNet
+      ViT:
+        Active: false
+        Names:
+        - ViT
+    to_execute:
+      ResNet:
+        Active: false
+        Names:
+        - ResNet
+      DenseNet:
+        Active: false
+        Names:
+        - DenseNet
+      ViT:
+        Active: false
+        Names:
+        - ViT
+    to_cross_validate:
+      ResNet:
+        Active: false
+        Configs:
+        - default
+        Names:
+        - ResNet
+      DenseNet:
+        Active: false
+        Configs:
+        - default
+        Names:
+        - DenseNet
+      ViT:
+        Active: false
+        Configs:
+        - default
+        Names:
+        - ViT
 
 image_model_parameters:
   # defines the method for fine-tuning for the dl models
@@ -201,9 +261,11 @@ storage_path: ../Save/ResNet50/
 
 # Information about the data that is used to train and evaluate the models
 data:
+  # time-series dataset information
   database: CALIBRATION
-  ards_image_dataset: mimic/train_weighted 
-  pneumonia_image_dataset: chexpert/combined
+  # image dataset information
+  pneumonia_image_dataset: balanced
+  ards_image_dataset: weighted
   timeseries_file_path: /work/rwth1474/Data/time_series/Calibration/Base50
   import_type: split # Options: numpy, csv, pkl, split
   image_file_path: /work/rwth1474/Data/image
