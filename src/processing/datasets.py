@@ -278,8 +278,7 @@ class ImageDataset(Dataset):
         path_walk_image = []
         path_walk_label = []
         
-        with open(os.path.join(self.folder_path, 'aug_tech.txt'), 'r') as f:
-            AUG_TECH = [line.strip() for line in f]
+        AUG_TECH = ['colorinvert', 'jitter', 'emboss', 'fog', 'gamma']
         
         # only save original image paths if is training set or if it is a testset without augmentation
         if dataset_name != 'test' or (dataset_name == 'test' and not augment): 
