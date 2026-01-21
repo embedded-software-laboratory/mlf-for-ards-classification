@@ -162,6 +162,9 @@ models:
         Names:
         - XGBoost
   image_models:
+    base_path_config:
+      to_cross_validate: Data/Models/ImageModels/Config/CrossValidation/
+      to_train: Data/Models/ImageModels/Config/Training/
     to_train:
       ResNet:
         Active: true

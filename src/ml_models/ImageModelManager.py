@@ -113,6 +113,7 @@ class ImageModelManager:
                     setattr(model, "algorithm", model_type)
 
                 # load hyperparameters if provided
+                # Currently not implemented/tested for image models, but structure is here
                 cfg = configs[i] if i < len(configs) else "default"
                 if cfg != "default":
                     hyperparameters_path = Path(base_config_path) / str(model_type) / cfg
