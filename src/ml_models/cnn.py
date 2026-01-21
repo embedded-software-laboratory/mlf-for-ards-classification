@@ -182,6 +182,13 @@ class CNN(ImageModel):
         return loss_fn, kfold, optimizer, scheduler
     
     def perform_training(self, device, train_dataloader, model, valid_dataloader, loss_fn, optimizer, scheduler, epoch, history, model_name, dataset_name, method, PATH_RESULT_MODEL, PATH_RESULTS, best_acc, best_auroc, mode):
+        # Show learning rate and device info
+        current_lr = optimizer.param_groups[0]['lr']
+        print(f"Learning Rate: {current_lr:.6f}, Device: {device}, AMP: {self.use_amp}", flush=True)
+        
+        if 'cuda' in str(device) and torch.cuda.is_available():
+            print(f"GPU: {torch.cuda.get_device_name(0)}, Available Memory: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.2f}GB", flush=True)
+        
         # Training
         train_start = time.perf_counter()
         train_loss, correct, train_prediction, train_true = self.train_loop(device, train_dataloader, model, loss_fn, optimizer) #training
@@ -304,6 +311,11 @@ class CNN(ImageModel):
         model.train()
         train_loss = 0
         index = 0
+        total_batches = len(dataloader)
+        batch_start_time = time.perf_counter()
+        
+        print(f"  Training: Processing {total_batches} batches...", flush=True)
+        
         for images, labels in dataloader: 
 
             # load images and labels and run prediction of classification
@@ -342,9 +354,27 @@ class CNN(ImageModel):
             train_prediction = torch.cat((train_prediction, predictions.cpu()),0)   
             train_true = torch.cat((train_true, labels_reshaped.cpu()),0)
             index += 1
+            
+            # Debug output every 10 batches or last batch
+            if index % 10 == 0 or index == total_batches:
+                batch_time = time.perf_counter() - batch_start_time
+                avg_batch_time = batch_time / index
+                current_loss = train_loss / index
+                current_acc = train_correct / (index * images.size(0))
+                
+                debug_msg = f"    Batch {index}/{total_batches} - Loss: {current_loss:.4f}, Acc: {current_acc:.3f}, Time: {avg_batch_time:.3f}s/batch"
+                
+                # Add GPU memory info if using CUDA
+                if 'cuda' in str(device) and torch.cuda.is_available():
+                    mem_allocated = torch.cuda.memory_allocated() / 1024**3
+                    mem_reserved = torch.cuda.memory_reserved() / 1024**3
+                    debug_msg += f", GPU Mem: {mem_allocated:.2f}GB/{mem_reserved:.2f}GB"
+                
+                print(debug_msg, flush=True)
 
         # compoute training loss
         train_loss = train_loss / index
+        print(f"  Training completed: {index} batches in {time.perf_counter() - batch_start_time:.2f}s", flush=True)
         
         return train_loss, train_correct, train_prediction.to(torch.int32), train_true.to(torch.int32)
     
@@ -369,6 +399,11 @@ class CNN(ImageModel):
         # evalution mode on
         model.eval()
         index = 0
+        total_batches = len(dataloader)
+        val_start_time = time.perf_counter()
+        
+        print(f"  Validation: Processing {total_batches} batches...", flush=True)
+        
         with torch.no_grad():  # Disable gradient computation for validation
             for images, labels in dataloader:
                 
@@ -389,8 +424,15 @@ class CNN(ImageModel):
                 test_true = torch.cat((test_true, labels_reshaped.cpu()),0)
                 test_correct += torch.sum(predictions == labels_reshaped).item()
                 index += 1
+                
+                # Debug output every 10 batches or last batch
+                if index % 10 == 0 or index == total_batches:
+                    current_loss = test_loss / index
+                    current_acc = test_correct / (index * images.size(0))
+                    print(f"    Batch {index}/{total_batches} - Loss: {current_loss:.4f}, Acc: {current_acc:.3f}", flush=True)
             
         test_loss = test_loss / index
+        print(f"  Validation completed: {index} batches in {time.perf_counter() - val_start_time:.2f}s", flush=True)
         
         return test_loss, test_correct, test_prediction.to(torch.int32), test_true.to(torch.int32)
     
