@@ -41,22 +41,32 @@ class ImageModelManager:
 
     def _instantiate_class_by_name(self, model_type: str):
         """Try to import/instantiate an image model class for model_type."""
+        # Map specific model types to their module names
+        module_name_override = {
+            "ResNet": "cnn",
+            "DenseNet": "cnn",
+            "ViT": "vision_transformer",
+        }
+        
+        # Determine module name
+        module_name = module_name_override.get(model_type, model_type.lower())
+        
         candidates = [
-            (model_type.lower(), model_type + "ImageModel"),
-            (model_type.lower(), model_type + "Model"),
-            (model_type.lower(), model_type),  # class may be same as module name
+            (module_name, model_type + "ImageModel"),
+            (module_name, model_type + "Model"),
+            (module_name, model_type),  # class may be same as module name
         ]
-        for module_name, class_name in candidates:
+        for mod_name, class_name in candidates:
             try:
-                module = importlib.import_module(f"ml_models.{module_name}")
+                module = importlib.import_module(f"ml_models.{mod_name}")
                 cls = getattr(module, class_name, None)
                 if cls:
-                    logger.debug(f"Found image model class '{class_name}' in ml_models.{module_name}")
+                    logger.debug(f"Found image model class '{class_name}' in ml_models.{mod_name}")
                     return cls
             except ModuleNotFoundError:
                 continue
             except Exception as e:
-                logger.debug(f"Error importing ml_models.{module_name}: {e}")
+                logger.debug(f"Error importing ml_models.{mod_name}: {e}")
                 continue
 
         # last resort: try to eval "<model_type>ImageModel()"
