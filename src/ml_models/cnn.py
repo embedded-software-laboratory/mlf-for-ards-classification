@@ -46,7 +46,16 @@ class ResNet50(nn.Module):
             nn.Sigmoid()
         )
         
+        # Ensure classifier is trainable
+        for param in self.resnet50.fc.parameters():
+            param.requires_grad = True
+        
         self.name = 'ResNet50'
+        
+        # Count trainable parameters for debugging
+        trainable = sum(p.numel() for p in self.resnet50.parameters() if p.requires_grad)
+        total = sum(p.numel() for p in self.resnet50.parameters())
+        print(f"{self.name}: {trainable:,} trainable / {total:,} total parameters")
 
     def forward(self, x):
         """
@@ -78,18 +87,27 @@ class DenseNet121(nn.Module):
         for param in model_ft.features.conv0.parameters():
             param.requires_grad = True
 
-        # define average pool layer
-        model_ft.features.avgpool = nn.AdaptiveAvgPool2d((1,1))
-        
-        # define classifier layer
+        # define classifier layer BEFORE setting avgpool to avoid issues
         num_ftrs = model_ft.classifier.in_features
         model_ft.classifier = nn.Sequential(
             nn.Linear(num_ftrs, 1),
             nn.Sigmoid()
         )
+        
+        # Ensure classifier is trainable
+        for param in model_ft.classifier.parameters():
+            param.requires_grad = True
+        
+        # define average pool layer
+        model_ft.features.avgpool = nn.AdaptiveAvgPool2d((1,1))
 
         self.model = model_ft
         self.name = 'DenseNet121'
+        
+        # Count trainable parameters for debugging
+        trainable = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
+        total = sum(p.numel() for p in self.model.parameters())
+        print(f"{self.name}: {trainable:,} trainable / {total:,} total parameters")
         
     def forward(self, x):
         """
@@ -126,8 +144,6 @@ class CNN(ImageModel):
             self.pretraining(device, dataset_train, info_list)
         
         base_model = self.build_model(model_name)
-            
-        print("Selected model: {}".format(model_name))
 
         base_model = base_model.to(device)
         path = '{name}_{dataset}_{method}_{mode}_pretrained.pt'.format(name=model_name, dataset=dataset_name, method=method, mode=mode)
