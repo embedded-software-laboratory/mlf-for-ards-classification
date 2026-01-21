@@ -305,15 +305,18 @@ class ImageDataset(Dataset):
         """
         Gets the image size according to which deep learning method we are using.
         
-        :param dl_method: (str) Either CNN or ViT for the deep learning method which we are using
+        :param dl_method: (str) Either CNN or ViT for the deep learning method which we are using (case-insensitive)
         :return: (list) The image size accoring to which deep learning method we are using
         """
-        if dl_method == 'ResNet' or dl_method == 'DenseNet':
+        # Make case-insensitive comparison
+        dl_method_lower = dl_method.lower()
+        
+        if 'resnet' in dl_method_lower or 'densenet' in dl_method_lower:
             IMAGE_SIZE = [256, 256]
-        elif dl_method == 'ViT':
+        elif 'vit' in dl_method_lower:
             IMAGE_SIZE = [224, 224]
         else:
-            raise Exception(str("DL method is not supported. Supported DL method are ResNet, DenseNet, ViT."))
+            raise Exception(str("DL method is not supported. Supported DL method are ResNet, DenseNet, ViT (case insensitive)."))
             
         return IMAGE_SIZE
 
