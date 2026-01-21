@@ -23,13 +23,26 @@ class VisionTransformer(ImageModel):
         Function for building a ViT model.
         
         :param model_name: (str) The model name for the ViT model, for ViT typically small/base/large/huge model size and 8/16/32 patch size, 
-                                but for this thesis only small model size and patch size 16
+                                but for this thesis only small model size and patch size 16. 
+                                Format: "ViT-small-16" or just "ViT" (defaults to small-16)
         :return: model contains the ViT model which we are using for the classification
                 model_name (str) contains the model name which we are using
         """
         name_split = re.split('-', model_name)
-        model_size = name_split[1]
-        patch_size = name_split[2]
+        
+        # Handle different model name formats with defaults
+        if len(name_split) >= 3:
+            model_size = name_split[1]
+            patch_size = name_split[2]
+        elif len(name_split) == 2:
+            model_size = name_split[1]
+            patch_size = "16"  # default patch size
+        else:
+            # Just "ViT" - use defaults
+            model_size = "small"
+            patch_size = "16"
+        
+        print(f"Building ViT model: size={model_size}, patch_size={patch_size}", flush=True)
 
         # generate the model name and save existing models
         model_name_og = str("vit_" + model_size + "_patch" + str(patch_size) + "_224.augreg_in21k") # Changed Original: from "_224_in21k"
