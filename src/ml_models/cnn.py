@@ -427,5 +427,6 @@ class CNN(ImageModel):
                     print ('Epoch=%s, BatchID=%s, Val_AUC=%.4f, Best_Val_AUC=%.4f'%(epoch, batch_train, val_auc_mean, best_val_auc ))
 
     def get_created_model(self, device, model_name, dataset_pneumonia, method, mode):
-        return self.get_model(device, model_name, dataset_pneumonia, method)
+        """Load pretrained model for ARDS training (transfer learning)"""
+        return self.get_model(device, model_name, dataset_pneumonia, method, mode)
             

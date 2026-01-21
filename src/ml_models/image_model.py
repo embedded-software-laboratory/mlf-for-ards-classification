@@ -3,13 +3,19 @@ import numpy as np
 import tensorflow as tf
 import gc
 import os
+import time
+import logging
+from abc import abstractmethod
 from torch.utils.data import DataLoader, SubsetRandomSampler
 from torchmetrics import Accuracy, Precision, Recall, Specificity, AUROC, F1Score
 from ml_models.model_interface import Model
 import csv
 import sys
 
+logger = logging.getLogger(__name__)
+
 class ImageModel(Model):
+    """Base class for all image classification models with template method pattern"""
 
     def __init__(self, image_model_parameters, model_name):
         # for explanation of the parameters, see the manual for the config file (doc/Anleitung Config-Datei.md)
@@ -36,10 +42,21 @@ class ImageModel(Model):
         self.auroc = AUROC(task="binary")
 
         self.model = None
+        self._storage_location = None
 
+    # ==================== PUBLIC API ====================
 
     def train_image_model(self, pneumonia_train, ards_train, info_list):
-        # structure of info_list: [DATASET_PNEUMONIA, DATASET_ARDS, MODEL_NAME_CNN, cnn_method, mode n]
+        """
+        Main training entry point - orchestrates two-stage training.
+        Stage 1: Pneumonia training
+        Stage 2: ARDS training with transfer learning
+        
+        Args:
+            pneumonia_train: Pneumonia dataset for initial training
+            ards_train: ARDS dataset for transfer learning
+            info_list: [DATASET_PNEUMONIA, DATASET_ARDS, MODEL_NAME, method, mode]
+        """
         dataset_pneumonia = info_list[0]
         dataset_ards = info_list[1]
         model_name = info_list[2]
@@ -48,84 +65,117 @@ class ImageModel(Model):
 
         # run twice: one time for pneumonia and one time for ards with transfer learning
         for disease in ['PNEUMONIA', 'ARDS']:
-            method = info_list[3][0] if disease == 'PNEUMONIA' else info_list[3][1]
-            dataset_train = pneumonia_train if disease == 'PNEUMONIA' else ards_train
-            dataset_name = dataset_pneumonia if disease == 'PNEUMONIA' else dataset_pneumonia+'_'+dataset_ards
-            num_epochs = self.num_epochs_pneumonia if disease == 'PNEUMONIA' else self.num_epochs_ards 
-            batch_size = self.batch_size_pneumonia if disease == 'PNEUMONIA' else self.batch_size_ards
-            SEED = self.SEED_pneumonia if disease == 'PNEUMONIA' else self.SEED_ards
-            PATH_RESULT_MODEL = self.path_models_pneumonia if disease == 'PNEUMONIA' else self.path_models_ards
-            PATH_RESULTS = self.path_results_pneumonia if disease == 'PNEUMONIA' else self.path_results_ards
-
-            if not os.path.isdir(PATH_RESULT_MODEL):
-                os.makedirs(PATH_RESULT_MODEL)
-            if not os.path.isdir(PATH_RESULTS):
-                os.makedirs(PATH_RESULTS)
-
-            # save dataset_name without augmentation label in next line to use the name for test
-            dataset_name_og = dataset_name
-            
-            # add augmentation to the dataset_name if training data is augmented for ARDS dataset
-            if disease == 'ARDS':
-                if (mode == 'mode3') or (mode == 'mode4'):
-                    dataset_name = dataset_name+'_aug'
-                else:
-                    dataset_name = dataset_name
-        
-            # start operations by setting cpu, gpu and seeds
-            self.run_gpu()
-            device = self.get_device()
-            self.set_all_seeds(SEED)
-
-            print("SETUP:", flush=True)
-            print("model: {}, dataset: {}, LR: {}, batch_size: {}, num_epochs: {}, k_folds: {}".format(model_name, dataset_name_og, self.learning_rate, batch_size, num_epochs, self.k_folds), flush=True)
-
-            torch.cuda.empty_cache()
-            gc.collect() 
-
-            if disease == 'PNEUMONIA':
-                model = self.create_model(model_name, dataset_name, method, dataset_train, info_list, device, PATH_RESULT_MODEL, mode)
+            # Handle method parameter (can be single value or list)
+            if isinstance(method, list):
+                current_method = method[0] if disease == 'PNEUMONIA' else method[1]
             else:
-                model = self.get_created_model(device, model_name, dataset_pneumonia, method, mode)
-
-            loss_fn, kfold, optimizer, scheduler = self.get_helpers(model)
-
-            # only train, if the specific training was not already done before and saved in the folder
-            path = '{name}_{dataset}_{method}.pt'.format(name=model_name, dataset=dataset_name, method=method)
-            if not os.path.isfile(os.path.join(PATH_RESULT_MODEL, path)):
-                print("")
-                print("###############################", flush=True)
-                print("Starting Training for "+ disease, flush=True)
-
-                history = {'epoch':[],'train_loss': [], 'valid_loss': [],'train_acc':[],'valid_acc':[],'train_prec':[], 'valid_prec':[],'train_recall':[], 'valid_recall':[], 'train_specificity':[], 'valid_specificity':[], 'valid_auroc':[], 'valid_f1':[], 'train_time': []}
+                current_method = method
                 
-                best_acc, best_auroc = 0., 0.
-                # run training and validation for n folds
-                for fold, (train_idx, val_idx) in enumerate(kfold.split(dataset_train)):
-                    print(f"FOLD {fold+1}", flush=True)
-                    print("###############################", flush=True)
+            self._train_single_stage(
+                disease=disease,
+                pneumonia_train=pneumonia_train,
+                ards_train=ards_train,
+                dataset_pneumonia=dataset_pneumonia,
+                dataset_ards=dataset_ards,
+                model_name=model_name,
+                method=current_method,
+                mode=mode
+            )
 
-                    # split training data into training and validation
-                    train_subsampler = SubsetRandomSampler(train_idx)
-                    valid_subsampler = SubsetRandomSampler(val_idx)
-                    train_dataloader = DataLoader(dataset_train, batch_size=batch_size, sampler=train_subsampler)
-                    valid_dataloader = DataLoader(dataset_train, batch_size=batch_size, sampler=valid_subsampler)
+    # ==================== TEMPLATE METHODS ====================
 
-                    model.to(device)
-
-                    for epoch in range(num_epochs):
-                        print(f"Epoch {epoch+1}\n-------------------------------", flush=True)
-                        self.perform_training(device, train_dataloader, model, valid_dataloader, loss_fn, optimizer, scheduler, epoch, history, model_name, dataset_name, method, PATH_RESULT_MODEL, PATH_RESULTS, best_acc, best_auroc, mode)
-
-                    # show average of validation
-                    avg_acc = np.mean(history['valid_acc'])
-                    avg_loss = np.mean(history['valid_loss'])
-                    print(f"Average scores \n-------------------------------", flush=True)
-                    print(f'> Accuracy: {avg_acc}')
-                    print(f'> Loss: {avg_loss} \n-------------------------------', flush=True)
-            else:
-                print("Training alrady succeded.")
-
+    def _train_single_stage(self, disease, pneumonia_train, ards_train, 
+                           dataset_pneumonia, dataset_ards, model_name, method, mode):
+        """Template method for single training stage"""
+        
+        # Setup parameters based on disease
+        dataset_train = pneumonia_train if disease == 'PNEUMONIA' else ards_train
+        dataset_name = dataset_pneumonia if disease == 'PNEUMONIA' else f"{dataset_pneumonia}_{dataset_ards}"
+        num_epochs = self.num_epochs_pneumonia if disease == 'PNEUMONIA' else self.num_epochs_ards
+        batch_size = self.batch_size_pneumonia if disease == 'PNEUMONIA' else self.batch_size_ards
+        SEED = self.SEED_pneumonia if disease == 'PNEUMONIA' else self.SEED_ards
+        PATH_MODEL = self.path_models_pneumonia if disease == 'PNEUMONIA' else self.path_models_ards
+        PATH_RESULTS = self.path_results_pneumonia if disease == 'PNEUMONIA' else self.path_results_ards
+        
+        # Handle augmentation naming for ARDS
+        dataset_name_og = dataset_name
+        if disease == 'ARDS' and mode in ['mode3', 'mode4']:
+            dataset_name = f"{dataset_name}_aug"
+        
+        # Create directories
+        os.makedirs(PATH_MODEL, exist_ok=True)
+        os.makedirs(PATH_RESULTS, exist_ok=True)
+        
+        # Setup environment
+        self.run_gpu()
+        device = self.get_device()
+        self.set_all_seeds(SEED)
+        
+        print("SETUP:", flush=True)
+        print(f"model: {model_name}, dataset: {dataset_name_og}, LR: {self.learning_rate}, "
+              f"batch_size: {batch_size}, num_epochs: {num_epochs}, k_folds: {self.k_folds}", flush=True)
+        
+        torch.cuda.empty_cache()
+        gc.collect()
+        
+        # Create/load model (subclass-specific)
+        info_list_full = [dataset_pneumonia, dataset_ards, model_name, method, mode]
+        if disease == 'PNEUMONIA':
+            model = self.create_model(model_name, dataset_name, method, 
+                                     dataset_train, info_list_full, 
+                                     device, PATH_MODEL, mode)
+        else:
+            model = self.get_created_model(device, model_name, dataset_pneumonia, method, mode)
+        
+        # Get training helpers (subclass-specific: loss, optimizer, etc.)
+        loss_fn, kfold, optimizer, scheduler = self.get_helpers(model)
+        
+        # Check if already trained
+        model_path = f'{model_name}_{dataset_name}_{method}.pt'
+        if os.path.isfile(os.path.join(PATH_MODEL, model_path)):
+            print(f"Training already succeeded for {disease}.")
+            self.model = model
+            return
+        
+        print("")
+        print("###############################", flush=True)
+        print(f"Starting Training for {disease}", flush=True)
+        
+        history = {
+            'epoch': [], 'train_loss': [], 'valid_loss': [],
+            'train_acc': [], 'valid_acc': [], 'train_prec': [], 'valid_prec': [],
+            'train_recall': [], 'valid_recall': [], 'train_specificity': [], 'valid_specificity': [],
+            'valid_auroc': [], 'valid_f1': [], 'train_time': []
+        }
+        
+        best_acc, best_auroc = 0.0, 0.0
+        
+        # K-fold cross validation
+        for fold, (train_idx, val_idx) in enumerate(kfold.split(dataset_train)):
+            print(f"FOLD {fold+1}", flush=True)
+            print("###############################", flush=True)
+            
+            train_loader = DataLoader(dataset_train, batch_size=batch_size, 
+                                     sampler=SubsetRandomSampler(train_idx))
+            valid_loader = DataLoader(dataset_train, batch_size=batch_size, 
+                                     sampler=SubsetRandomSampler(val_idx))
+            
+            model.to(device)
+            
+            for epoch in range(num_epochs):
+                print(f"Epoch {epoch+1}\n-------------------------------", flush=True)
+                self.perform_training(device, train_loader, model, valid_loader, loss_fn, 
+                                    optimizer, scheduler, epoch, history, model_name, 
+                                    dataset_name, method, PATH_MODEL, PATH_RESULTS, 
+                                    best_acc, best_auroc, mode)
+            
+            # Show average of validation
+            avg_acc = np.mean(history['valid_acc'])
+            avg_loss = np.mean(history['valid_loss'])
+            print(f"Average scores\n-------------------------------", flush=True)
+            print(f'> Accuracy: {avg_acc}')
+            print(f'> Loss: {avg_loss}\n-------------------------------', flush=True)
+        
         self.model = model
 
     def test_image_model(self, ards_test, info_list):
@@ -198,11 +248,12 @@ class ImageModel(Model):
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
 
+    
     def get_model(self, device, model_name, dataset_name, method, mode):
         """
-        Function for getting the pretrained ViT model for transfer learning with pneumonia
+        Function for getting the pretrained model for transfer learning with pneumonia
         
-        :param device: (str) The device which is being used, wither cuda or cpu
+        :param device: (str) The device which is being used, either cuda or cpu
         :param model_name: (str) The models name used to generate model
         :return: model is the model generated
         """
@@ -219,23 +270,41 @@ class ImageModel(Model):
 
         return model
     
+    # ==================== ABSTRACT METHODS (Subclass must implement) ====================
+    
+    @abstractmethod
     def build_model(self, model_name):
+        """Build the neural network architecture"""
         raise NotImplementedError
     
+    @abstractmethod
     def get_helpers(self, model):
+        """Return (loss_fn, kfold, optimizer, scheduler)"""
         raise NotImplementedError
     
-    def perform_training(self, device, train_dataloader, model, valid_dataloader, loss_fn, optimizer, scheduler, epoch, history, model_name, dataset_name, method, PATH_RESULT_MODEL, PATH_RESULTS, best_acc, best_auroc, mode):
+    @abstractmethod
+    def perform_training(self, device, train_dataloader, model, valid_dataloader, loss_fn, optimizer, 
+                        scheduler, epoch, history, model_name, dataset_name, method, PATH_RESULT_MODEL, 
+                        PATH_RESULTS, best_acc, best_auroc, mode):
+        """Perform one epoch of training and validation"""
         raise NotImplementedError
     
+    @abstractmethod
     def perform_testing(self, device, test_dataloader, loss_fn, test_model):
+        """Perform testing on test dataset"""
         raise NotImplementedError
     
+    @abstractmethod
     def create_model(self, model_name, dataset_name, method, dataset_train, info_list, device, PATH_RESULT_MODEL, mode):
+        """Create model for stage 1 (can include pretraining)"""
         raise NotImplementedError
     
+    @abstractmethod
     def get_created_model(self, device, model_name, dataset_pneumonia, method, mode):
+        """Load model for stage 2 (transfer learning)"""
         raise NotImplementedError
+    
+    # ==================== UTILITY METHODS ====================
     
     @property
     def storage_location(self):

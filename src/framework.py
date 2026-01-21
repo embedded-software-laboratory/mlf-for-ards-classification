@@ -446,24 +446,52 @@ class Framework:
         logger.info(f"Image models loaded successfully for stage: {stage}")
 
     def train_image_models(self):
-        """
-        Trains image classification models.
-        Currently not implemented.
-        """
+        """Trains image classification models"""
         logger.info("=" * 80)
         logger.info("STEP 7: Training Image Models")
         logger.info("=" * 80)
-        model_dict = self.ImageModelManager.create_models_from_config(self.image_models_to_train,
-                                                                    self.image_model_use_config["base_path_config"]["to_train"])
+        
+        model_dict = self.ImageModelManager.create_models_from_config(
+            self.image_models_to_train,
+            self.image_model_use_config["base_path_config"]["to_train"]
+        )
+        
         total_models = sum(len(models) for models in model_dict.values())
         current_model = 0
-
-        logger.debug(f"Image models to train: {model_dict}")
-
-        # logger.info(f"Model training completed. Total models trained: {total_models}")
-
-        logger.warning("learn_image_models: Feature not yet implemented")
-        raise NotImplementedError
+        
+        for model_type, models in model_dict.items():
+            for model in models:
+                current_model += 1
+                logger.info(f"[{current_model}/{total_models}] Starting training of '{model.name}' (Architecture: {model_type})")
+                
+                # Prepare info_list
+                info_list = [
+                    self.pneumonia_image_dataset,
+                    self.ards_image_dataset,
+                    model.name,
+                    self.method,
+                    self.mode
+                ]
+                
+                # Train the model
+                model.train_image_model(
+                    self.image_pneumonia_training_data,
+                    self.image_ards_training_data,
+                    info_list
+                )
+                
+                # Save if configured
+                if self.process["save_models"]:
+                    save_path = (self.config["algorithm_base_path"].get(model_type, "default")
+                               if self.config["algorithm_base_path"].get(model_type, "default") != "default"
+                               else self.outdir)
+                    # Model is already saved during training
+                    logger.info(f"Model '{model.name}' saved to: {save_path}")
+                
+                logger.info(f"[{current_model}/{total_models}] Successfully trained '{model.name}'")
+                self.available_image_models[model_type].append(model)
+        
+        logger.info(f"Model training completed. Total models trained: {total_models}")
 
     def execute_image_models(self):
         """
