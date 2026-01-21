@@ -203,7 +203,7 @@ class ImageModel(Model):
         for test_model in test_model_list:
             
             # load model
-            self.model.load_state_dict(torch.load(os.path.join(self.path_results_ards, test_model)))
+            self.model.load_state_dict(torch.load(os.path.join(self.path_results_ards, test_model), weights_only=False))
             self.model.to(device)
             
             # Testing
@@ -265,7 +265,7 @@ class ImageModel(Model):
         # load model weights saved in state dict
         print(dataset_name)
         path = '{name}_{dataset}_{method}_{mode}.pt'.format(name=model_name, dataset=dataset_name, method=method, mode=mode)
-        state_dict = torch.load(os.path.join(self.path_models_pneumonia, path), map_location=device)
+        state_dict = torch.load(os.path.join(self.path_models_pneumonia, path), map_location=device, weights_only=False)
         model.load_state_dict(state_dict)
 
         return model

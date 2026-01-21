@@ -114,7 +114,7 @@ class CNN(ImageModel):
 
         base_model = base_model.to(device)
         path = '{name}_{dataset}_{method}_{mode}_pretrained.pt'.format(name=model_name, dataset=dataset_name, method=method, mode=mode)
-        base_model.load_state_dict(torch.load(os.path.join(PATH_RESULT_MODEL, path)), strict=False)
+        base_model.load_state_dict(torch.load(os.path.join(PATH_RESULT_MODEL, path), weights_only=False), strict=False)
 
         return base_model
     

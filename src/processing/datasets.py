@@ -217,7 +217,7 @@ class ImageDataset(Dataset):
         
         # generate the image and modify it according to the method used
         image_file_path = self.path_walk_image[index]
-        image = torch.load(image_file_path)
+        image = torch.load(image_file_path, weights_only=False)
         image = (image * 255).astype('uint8') if image.max() <= 1 else image
         
         if self.dl_method == 'ResNet' or self.dl_method == 'DenseNet':
@@ -229,7 +229,7 @@ class ImageDataset(Dataset):
 
         # get the label of the image
         label_file_path = self.path_walk_label[index]
-        label = torch.tensor(torch.load(label_file_path))
+        label = torch.tensor(torch.load(label_file_path, weights_only=False))
 
         return [image, label]
     
