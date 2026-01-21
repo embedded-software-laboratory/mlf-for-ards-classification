@@ -24,9 +24,16 @@ class ResNet50(nn.Module):
         super(ResNet50, self).__init__()
         self.resnet50 = torchvision.models.resnet50(pretrained=True)
         
+        # Modify first conv layer to accept 1-channel (grayscale) input instead of 3-channel (RGB)
+        self.resnet50.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
+        
         # freeze all layer except for fully connected layer
         for param in self.resnet50.parameters():
             param.requires_grad = False
+        
+        # Unfreeze the modified first conv layer so it can learn from 1-channel input
+        for param in self.resnet50.conv1.parameters():
+            param.requires_grad = True
 
         # define average pool layer
         self.resnet50.avgpool = nn.AdaptiveAvgPool2d((1,1))
@@ -59,9 +66,16 @@ class DenseNet121(nn.Module):
         super().__init__()
         model_ft = torchvision.models.densenet121(pretrained=True)
         
+        # Modify first conv layer to accept 1-channel (grayscale) input instead of 3-channel (RGB)
+        model_ft.features.conv0 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
+        
         # freeze all layer except for fully connected layer
         for param in model_ft.parameters():
             param.requires_grad = False
+        
+        # Unfreeze the modified first conv layer so it can learn from 1-channel input
+        for param in model_ft.features.conv0.parameters():
+            param.requires_grad = True
 
         # define average pool layer
         model_ft.features.avgpool = nn.AdaptiveAvgPool2d((1,1))
@@ -127,11 +141,14 @@ class CNN(ImageModel):
                 model_name (str) contains the model name which we are using
         """
         
-        # build model for CNN with resnet50 or densenet121
-        if model_name == 'resnet50':
+        # build model for CNN with resnet50 or densenet121 (case-insensitive)
+        model_name_lower = model_name.lower()
+        if 'resnet' in model_name_lower:
             base_model = ResNet50()
-        else: 
+        elif 'densenet' in model_name_lower:
             base_model = DenseNet121()
+        else:
+            raise ValueError(f"Unknown CNN model type: {model_name}. Expected 'ResNet' or 'DenseNet'.")
                 
         print("Selected model: {}".format(model_name))
 
