@@ -1,4 +1,4 @@
-from ml_models.image_model_interface import ImageModel
+from ml_models.image_model import ImageModel
 import torch
 from processing.datasets import ImageDataset
 from torch import nn

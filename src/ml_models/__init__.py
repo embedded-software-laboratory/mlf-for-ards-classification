@@ -1,6 +1,6 @@
 from ml_models.model_interface import Model
 from ml_models.timeseries_model import TimeSeriesModel, TimeSeriesProbaModel
-from ml_models.image_model_interface import ImageModel
+from ml_models.image_model import ImageModel
 from ml_models.TimeSeriesModelManager import TimeSeriesModelManager
 from ml_models.ImageModelManager import ImageModelManager
 from ml_models.ModelMetaData import ModelMetaDataFactory, ModelMetadata

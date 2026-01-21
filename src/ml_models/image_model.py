@@ -236,3 +236,11 @@ class ImageModel(Model):
     
     def get_created_model(self, device, model_name, dataset_pneumonia, method, mode):
         raise NotImplementedError
+    
+    @property
+    def storage_location(self):
+        return self._storage_location
+
+    @storage_location.setter
+    def storage_location(self, location):
+        self._storage_location = location
