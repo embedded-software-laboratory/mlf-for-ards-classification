@@ -167,13 +167,13 @@ models:
       to_train: Data/Models/ImageModels/Config/Training/
     to_train:
       ResNet:
-        Active: true
+        Active: false
         Configs:
         - default
         Names:
         - ResNet
       DenseNet:
-        Active: true
+        Active: false
         Configs:
         - default
         Names:
