@@ -54,7 +54,7 @@ class TimeSeriesModelManager:
             Dictionary mapping model types to lists of configured model instances
         """
         logger.info("=" * 80)
-        logger.info("Creating Models from Configuration")
+        logger.info("Creating Time-Series Models from Configuration")
         logger.info("=" * 80)
         
         models = {}

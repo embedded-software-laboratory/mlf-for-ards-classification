@@ -79,7 +79,7 @@ class ImageModelManager:
         logger.info("=" * 80)
 
         models = {}
-        total_models = sum(len(needed_models[mt]["Names"]) for mt in needed_models)
+        total_models = sum(len(needed_models[model_type]["Names"]) for model_type in needed_models)
         current = 0
 
         for model_type, spec in needed_models.items():

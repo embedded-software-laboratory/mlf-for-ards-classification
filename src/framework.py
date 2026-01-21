@@ -450,6 +450,18 @@ class Framework:
         Trains image classification models.
         Currently not implemented.
         """
+        logger.info("=" * 80)
+        logger.info("STEP 7: Training Image Models")
+        logger.info("=" * 80)
+        model_dict = self.ImageModelManager.create_models_from_config(self.image_models_to_train,
+                                                                    self.image_model_use_config["base_path_config"]["to_train"])
+        total_models = sum(len(models) for models in model_dict.values())
+        current_model = 0
+
+        logger.debug(f"Image models to train: {model_dict}")
+
+        # logger.info(f"Model training completed. Total models trained: {total_models}")
+
         logger.warning("learn_image_models: Feature not yet implemented")
         raise NotImplementedError
 
