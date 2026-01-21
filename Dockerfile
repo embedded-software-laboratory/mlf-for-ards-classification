@@ -20,13 +20,18 @@ RUN pip install --no-cache-dir \
     pillow \
     pyyaml \
     scikit-image \
-    torch torchvision pyod pytorch-lightning \
+    pyod \
+    pytorch-lightning \
     timm \
     albumentations \
     torchmetrics \
     tqdm \
     opencv-python-headless \
     libauc
+
+# Install PyTorch with CUDA 12.1 support (compatible with CUDA 12.8 driver)
+RUN pip install --no-cache-dir \
+    torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 
 RUN pip uninstall --yes numpy
 RUN pip install "numpy <=1.24.3, >=1.22.3"
