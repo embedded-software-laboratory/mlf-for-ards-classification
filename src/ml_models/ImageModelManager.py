@@ -96,6 +96,12 @@ class ImageModelManager:
         logger.info("Creating Image Models from Configuration")
         logger.info("=" * 80)
 
+        # Extract image_model_parameters from config
+        image_model_parameters = self.config.get("image_model_parameters", {})
+        # Ensure path is set (required by ImageModel base class)
+        if "path" not in image_model_parameters:
+            image_model_parameters["path"] = str(self.outdir)
+        
         models = {}
         total_models = sum(len(needed_models[model_type]["Names"]) for model_type in needed_models)
         current = 0
@@ -114,7 +120,8 @@ class ImageModelManager:
                 current += 1
                 logger.info(f"[{current}/{total_models}] Creating image model '{model_name}' ({model_type})...")
                 try:
-                    model = cls() if callable(cls) else cls
+                    # Instantiate with required parameters for ImageModel-based classes
+                    model = cls(image_model_parameters, model_name) if callable(cls) else cls
                 except Exception as e:
                     logger.error(f"Failed to instantiate {model_type} class: {e}")
                     raise
@@ -187,6 +194,12 @@ class ImageModelManager:
         logger.info("Loading Image Models from Configuration")
         logger.info("=" * 80)
 
+        # Extract image_model_parameters from config
+        image_model_parameters = self.config.get("image_model_parameters", {})
+        # Ensure path is set (required by ImageModel base class)
+        if "path" not in image_model_parameters:
+            image_model_parameters["path"] = str(self.outdir)
+
         total_needed = sum(len(needed_models[mt]["Names"]) for mt in needed_models)
         loaded = 0
         already = 0
@@ -216,7 +229,8 @@ class ImageModelManager:
                     continue
 
                 try:
-                    instance = cls() if callable(cls) else cls
+                    # Instantiate with required parameters for ImageModel-based classes
+                    instance = cls(image_model_parameters, model_name) if callable(cls) else cls
                     instance.name = model_name
                     instance.algorithm = model_type
                     # construct storage path and ensure it exists
