@@ -56,6 +56,7 @@ class ImageModelManager:
             (module_name, model_type + "Model"),
             (module_name, model_type),  # class may be same as module name
         ]
+        logger.debug(f"Attempting to find image model class for type '{model_type}' in candidates: {candidates}")
         for mod_name, class_name in candidates:
             try:
                 module = importlib.import_module(f"ml_models.{mod_name}")
