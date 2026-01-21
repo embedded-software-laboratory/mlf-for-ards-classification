@@ -150,15 +150,23 @@ class ImageModel(Model):
         
         best_acc, best_auroc = 0.0, 0.0
         
+        # Optimize DataLoader settings for faster training
+        num_workers = min(8, os.cpu_count() or 4)  # Use up to 8 workers or available CPUs
+        pin_memory = device.type == 'cuda'  # Only use pin_memory for CUDA devices
+        
         # K-fold cross validation
         for fold, (train_idx, val_idx) in enumerate(kfold.split(dataset_train)):
             print(f"FOLD {fold+1}", flush=True)
             print("###############################", flush=True)
             
             train_loader = DataLoader(dataset_train, batch_size=batch_size, 
-                                     sampler=SubsetRandomSampler(train_idx))
+                                     sampler=SubsetRandomSampler(train_idx),
+                                     num_workers=num_workers, pin_memory=pin_memory,
+                                     persistent_workers=(num_workers > 0))
             valid_loader = DataLoader(dataset_train, batch_size=batch_size, 
-                                     sampler=SubsetRandomSampler(val_idx))
+                                     sampler=SubsetRandomSampler(val_idx),
+                                     num_workers=num_workers, pin_memory=pin_memory,
+                                     persistent_workers=(num_workers > 0))
             
             model.to(device)
             

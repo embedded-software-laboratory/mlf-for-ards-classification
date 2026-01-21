@@ -11,6 +11,7 @@ import csv
 import numpy as np
 from torch.utils.data import DataLoader, random_split
 from sklearn.metrics import roc_auc_score
+from torch.cuda.amp import autocast, GradScaler
 
 class ResNet50(nn.Module):
     """Class for generating the CNN model ResNet50"""
@@ -109,6 +110,8 @@ class CNN(ImageModel):
         self.learning_rate_pre = 1e-3
         self.batch_size_pre = 64
         self.weight_decay_pre = 1e-5
+        self.use_amp = torch.cuda.is_available()  # Enable automatic mixed precision on CUDA
+        self.scaler = GradScaler() if self.use_amp else None
 
     def create_model(self, model_name, dataset_name, method, dataset_train, info_list, device, PATH_RESULT_MODEL, mode):
         """
@@ -288,25 +291,40 @@ class CNN(ImageModel):
         for images, labels in dataloader: 
 
             # load images and labels and run prediction of classification
-            images, labels = images.to(device),labels.to(device)
-            output = model(images)
-            output = output.to(torch.float32)
-            labels = np.reshape(labels.to('cpu'), (labels.to('cpu').size()[0], 1)).to(torch.float32)
-            loss = loss_fn(output.to(device), labels.to(device))
-            optimizer.zero_grad()
+            images, labels = images.to(device, non_blocking=True), labels.to(device, non_blocking=True)
             
-            # update of weights
-            loss.backward()
-            optimizer.step()
+            # Use automatic mixed precision for faster training on GPUs
+            if self.use_amp:
+                with autocast():
+                    output = model(images)
+                    output = output.to(torch.float32)
+                    # Keep labels on GPU - reshape without unnecessary CPU transfer
+                    labels_reshaped = labels.view(-1, 1).to(torch.float32)
+                    loss = loss_fn(output, labels_reshaped)
+                
+                optimizer.zero_grad()
+                self.scaler.scale(loss).backward()
+                self.scaler.step(optimizer)
+                self.scaler.update()
+            else:
+                output = model(images)
+                output = output.to(torch.float32)
+                # Keep labels on GPU - reshape without unnecessary CPU transfer
+                labels_reshaped = labels.view(-1, 1).to(torch.float32)
+                loss = loss_fn(output, labels_reshaped)
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+            
             train_loss += loss.item()
             
             # compute prediction by threshold 0.5
             predictions = (output.data >= 0.5).to(torch.float32)
 
             # compute number of correctly labeled images and load predictions and true values
-            train_correct += torch.sum(predictions.cpu() == labels.cpu())
+            train_correct += torch.sum(predictions == labels_reshaped).item()
             train_prediction = torch.cat((train_prediction, predictions.cpu()),0)   
-            train_true = torch.cat((train_true, labels.cpu()),0)
+            train_true = torch.cat((train_true, labels_reshaped.cpu()),0)
             index += 1
 
         # compoute training loss
@@ -335,24 +353,26 @@ class CNN(ImageModel):
         # evalution mode on
         model.eval()
         index = 0
-        for images, labels in dataloader:
-            
-            # load images and labels and run prediction of classification
-            images,labels = images.to(device), labels.to(device)
-            output = model(images)
-            output = output.to(torch.float32)
-            labels = np.reshape(labels.to('cpu'), (labels.to('cpu').size()[0], 1)).to(torch.float32)
-            loss = loss_fn(output.to(device),labels.to(device))
-            test_loss += loss.item()
-            
-            # compute prediction by threshold 0.5
-            predictions = (output.data >= 0.5).to(torch.float32)
-            
-            # compute number of correctly labeled images and load predictions and true values
-            test_prediction = torch.cat((test_prediction, predictions.cpu()),0)    
-            test_true = torch.cat((test_true, labels.cpu()),0)
-            test_correct += torch.sum(predictions.cpu() == labels.cpu())
-            index += 1
+        with torch.no_grad():  # Disable gradient computation for validation
+            for images, labels in dataloader:
+                
+                # load images and labels and run prediction of classification
+                images, labels = images.to(device, non_blocking=True), labels.to(device, non_blocking=True)
+                output = model(images)
+                output = output.to(torch.float32)
+                # Keep labels on GPU - reshape without unnecessary CPU transfer
+                labels_reshaped = labels.view(-1, 1).to(torch.float32)
+                loss = loss_fn(output, labels_reshaped)
+                test_loss += loss.item()
+                
+                # compute prediction by threshold 0.5
+                predictions = (output.data >= 0.5).to(torch.float32)
+                
+                # compute number of correctly labeled images and load predictions and true values
+                test_prediction = torch.cat((test_prediction, predictions.cpu()),0)    
+                test_true = torch.cat((test_true, labels_reshaped.cpu()),0)
+                test_correct += torch.sum(predictions == labels_reshaped).item()
+                index += 1
             
         test_loss = test_loss / index
         
@@ -385,11 +405,15 @@ class CNN(ImageModel):
         loss_fn = torch.nn.BCELoss()
         optimizer = Adam(model.parameters(), lr=self.learning_rate_pre, weight_decay=self.weight_decay_pre)
 
-        # definition of random dataloader
+        # definition of random dataloader with optimization settings
         size_train = int(len(dataset) * 0.8)
         dataset_test, dataset_train = random_split(dataset, [len(dataset) - size_train , size_train], generator=torch.Generator().manual_seed(42))
-        train_dataloader =  DataLoader(dataset_train, batch_size=32, num_workers=2, shuffle=True)
-        valid_dataloader = DataLoader(dataset_test, batch_size=32, num_workers=2, shuffle=True)
+        # Optimized DataLoader: more workers, pin_memory for faster GPU transfer, persistent_workers to keep workers alive
+        num_workers = min(8, os.cpu_count() or 4)  # Use up to 8 workers or available CPUs
+        train_dataloader =  DataLoader(dataset_train, batch_size=32, num_workers=num_workers, 
+                                       shuffle=True, pin_memory=True, persistent_workers=True)
+        valid_dataloader = DataLoader(dataset_test, batch_size=32, num_workers=num_workers, 
+                                     shuffle=True, pin_memory=True, persistent_workers=True)
 
         best_val_auc = 0 
         # run training and validation for one epoch
@@ -399,16 +423,16 @@ class CNN(ImageModel):
                 # activate training mode
                 model.train()
 
-                # load image and label to gpu device
-                X, y  = X.to(device), y.to(device)
+                # load image and label to gpu device with non_blocking for async transfer
+                X, y  = X.to(device, non_blocking=True), y.to(device, non_blocking=True)
                 
-                # compute prediction
+                # compute prediction and keep on device
                 pred = model(X)
-                pred = pred.to(torch.float32).to('cpu')
-                y = np.reshape(y.to('cpu'), (y.to('cpu').size()[0], 1)).to(torch.float32)
+                pred = pred.to(torch.float32)
+                y_reshaped = y.view(-1, 1).to(torch.float32)
 
                 # compute loss and optimize
-                loss = loss_fn(pred, y)
+                loss = loss_fn(pred, y_reshaped)
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
