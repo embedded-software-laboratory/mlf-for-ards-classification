@@ -41,22 +41,35 @@ class ImageModelManager:
 
     def _instantiate_class_by_name(self, model_type: str):
         """Try to import/instantiate an image model class for model_type."""
-        # Map specific model types to their module names
-        module_name_override = {
-            "ResNet": "cnn",
-            "DenseNet": "cnn",
-            "ViT": "vision_transformer",
+        # Map specific model types to their module names and class names
+        model_type_mapping = {
+            "ResNet": ("cnn", "CNN"),
+            "DenseNet": ("cnn", "CNN"),
+            "ViT": ("vision_transformer", "VisionTransformer"),
         }
         
-        # Determine module name
-        module_name = module_name_override.get(model_type, model_type.lower())
+        # Check if we have a specific mapping for this model type
+        if model_type in model_type_mapping:
+            module_name, class_name = model_type_mapping[model_type]
+            try:
+                module = importlib.import_module(f"ml_models.{module_name}")
+                cls = getattr(module, class_name, None)
+                if cls:
+                    logger.debug(f"Found image model class '{class_name}' in ml_models.{module_name} for type '{model_type}'")
+                    return cls
+            except ModuleNotFoundError:
+                logger.error(f"Module ml_models.{module_name} not found for model type '{model_type}'")
+            except Exception as e:
+                logger.error(f"Error importing ml_models.{module_name}: {e}")
         
+        # Fallback: try generic candidates
+        module_name = model_type.lower()
         candidates = [
             (module_name, model_type + "ImageModel"),
             (module_name, model_type + "Model"),
             (module_name, model_type),  # class may be same as module name
         ]
-        logger.debug(f"Attempting to find image model class for type '{model_type}' in candidates: {candidates}")
+        logger.debug(f"Attempting to find image model class for type '{model_type}' in generic candidates: {candidates}")
         for mod_name, class_name in candidates:
             try:
                 module = importlib.import_module(f"ml_models.{mod_name}")
@@ -70,14 +83,8 @@ class ImageModelManager:
                 logger.debug(f"Error importing ml_models.{mod_name}: {e}")
                 continue
 
-        # last resort: try to eval "<model_type>ImageModel()"
-        try:
-            instance = eval(model_type + "ImageModel()")
-            logger.debug("Instantiated image model via eval fallback")
-            return instance.__class__
-        except Exception as e:
-            logger.error(f"Could not find or instantiate image model class for '{model_type}': {e}")
-            return None
+        logger.error(f"Could not find or instantiate image model class for '{model_type}'")
+        return None
 
     def create_models_from_config(self, needed_models: dict, base_config_path: str):
         """
