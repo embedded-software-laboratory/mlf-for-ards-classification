@@ -152,7 +152,7 @@ class ImageModel(Model):
         
         # Optimize DataLoader settings for faster training
         num_workers = min(8, os.cpu_count() or 4)  # Use up to 8 workers or available CPUs
-        pin_memory = device.type == 'cuda'  # Only use pin_memory for CUDA devices
+        pin_memory = 'cuda' in str(device)  # Only use pin_memory for CUDA devices
         
         # K-fold cross validation
         for fold, (train_idx, val_idx) in enumerate(kfold.split(dataset_train)):
