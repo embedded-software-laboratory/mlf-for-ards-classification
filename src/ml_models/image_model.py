@@ -18,6 +18,13 @@ class ImageModel(Model):
     """Base class for all image classification models with template method pattern"""
 
     def __init__(self, image_model_parameters, model_name):
+        super().__init__()  # Initialize parent Model class
+        
+        # Set model metadata
+        self.name = model_name
+        self.type = 'ImageModel'
+        self.algorithm = model_name  # For image models, algorithm is the same as name (ResNet, DenseNet, ViT)
+        
         # for explanation of the parameters, see the manual for the config file (doc/Anleitung Config-Datei.md)
         self.num_epochs_pneumonia = image_model_parameters["num_epochs_pneumonia"]
         self.num_epochs_ards = image_model_parameters["num_epochs_ards"]
@@ -421,6 +428,13 @@ class ImageModel(Model):
         raise NotImplementedError
     
     # ==================== UTILITY METHODS ====================
+    
+    def has_predict_proba(self):
+        """
+        Image models output probabilities (sigmoid/softmax), so they support predict_proba.
+        Returns True for all image models.
+        """
+        return True
     
     @property
     def storage_location(self):

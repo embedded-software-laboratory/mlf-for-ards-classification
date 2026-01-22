@@ -237,14 +237,14 @@ image_model_parameters:
   mode: mode1
   num_epochs_pneumonia: 20
   num_epochs_ards: 20        
-  batch_size_pneumonia: 32
-  batch_size_ards: 32
+  batch_size_pneumonia: 64
+  batch_size_ards: 8
   SEED_pneumonia: 47
   SEED_ards: 11
   # Model-specific learning rates (CNNs need higher LR than ViT)
-  learning_rate_cnn: 0.05     # For ResNet and DenseNet
-  learning_rate_vit: 0.001    # For Vision Transformer
-  k_folds: 1  # Use 1 for simple 80/20 split (faster), 2+ for k-fold cross-validation
+  learning_rate_cnn: 0.001     # For ResNet and DenseNet
+  learning_rate_vit: 0.0005    # For Vision Transformer
+  k_folds: 1 # Use 1 for simple 80/20 split (faster), 2+ for k-fold cross-validation
 
 # Path to the algorithms if they need to be loaded for execution
 algorithm_base_path:
