@@ -209,7 +209,7 @@ class ImageModel(Model):
         logger.info(f"Batch size: {self.batch_size_ards}")
         
         # find testing models
-        test_model_pattern = '{name}_{dataset}_{method}.pt'.format(name=model_name, dataset=dataset_name, method=method)
+        test_model_pattern = '{name}_{dataset}_{method}_{mode}.pt'.format(name=model_name, dataset=dataset_name, method=method)
         test_model_list = [name for name in os.listdir(self.path_results_ards) if name == test_model_pattern]
         
         if not test_model_list:
