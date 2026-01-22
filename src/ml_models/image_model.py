@@ -210,11 +210,11 @@ class ImageModel(Model):
         
         # find testing models
         test_model_pattern = '{name}_{dataset}_{method}_{mode}.pt'.format(name=model_name, dataset=dataset_name, method=method, mode=mode)
-        test_model_list = [name for name in os.listdir(self.path_results_ards) if name == test_model_pattern]
+        test_model_list = [name for name in os.listdir(self.path_models_ards) if name == test_model_pattern]
         
         if not test_model_list:
             logger.warning(f"No trained model found matching pattern: {test_model_pattern}")
-            logger.warning(f"Searched in: {self.path_results_ards}")
+            logger.warning(f"Searched in: {self.path_models_ards}")
             return
         
         logger.info(f"Found {len(test_model_list)} trained model(s) to test")
@@ -232,7 +232,7 @@ class ImageModel(Model):
             logger.info(f"Testing model {idx}/{len(test_model_list)}: {test_model}")
             
             # load model
-            model_path = os.path.join(self.path_results_ards, test_model)
+            model_path = os.path.join(self.path_models_ards, test_model)
             logger.info(f"Loading model from: {model_path}")
             self.model.load_state_dict(torch.load(model_path, weights_only=False))
             self.model.to(device)
