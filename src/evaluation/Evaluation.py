@@ -179,6 +179,17 @@ class Evaluation:
                     logger.info(f"  AUROC: {test_auroc:.4f}")
                     logger.info(f"  F1: {test_f1:.4f}")
                     
+                    # Store image-specific metadata in the model's additional info
+                    if not hasattr(image_model, 'additional_info'):
+                        image_model.additional_info = {}
+                    image_model.additional_info.update({
+                        'pneumonia_dataset': pneumonia_dataset,
+                        'ards_dataset': ards_dataset,
+                        'unfreeze_method': method,
+                        'augmentation_mode': mode,
+                        'test_loss': test_loss
+                    })
+                    
                     # Create proper metric objects matching timeseries format
                     contained_metrics = {
                         'Accuracy': GenericMetric(
@@ -225,21 +236,13 @@ class Evaluation:
                         contained_splits={'Evaluation split': eval_split}
                     )
                     
-                    # Create metadata for image model
-                    from processing.datasets_metadata import ImageMetaData
-                    image_metadata = ImageMetaData(
-                        datasource=ards_dataset,
-                        dataset_location=image_model.path_results_ards,
-                        disease_type='ARDS',
-                        additional_information=f'pneumonia_dataset:{pneumonia_dataset}|method:{method}|mode:{mode}|model:{image_model.name}|loss:{test_loss:.4f}',
-                        number_of_images=0  # Will be filled if needed
-                    )
-                    
                     # Create EvalResult with proper structure
+                    # Note: For image models, we don't use the same metadata structure as timeseries
+                    # Store image-specific info in the additional_information of the model itself
                     eval_result = EvalResultFactory.factory_method(
                         optimizer_list=[optimizer],
-                        training_set_meta_data=image_metadata,
-                        test_set_meta_data=image_metadata,
+                        training_set_meta_data=None,  # Image models don't use TimeseriesMetaData
+                        test_set_meta_data=None,  # Image models don't use TimeseriesMetaData
                         evaltype='Evaluation',
                         crossvalidation_performed=False,
                         evaluation_performed=True
