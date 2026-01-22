@@ -131,6 +131,28 @@ class EvalResult(BaseModel):
             raise ValueError("CV and Eval can not be performed in the same Evaluation")
         return self
 
+    @model_serializer
+    def serialize_model(self):
+        """Custom serializer to exclude cross-validation fields when crossvalidation_performed is False"""
+        data = {
+            'eval_type': self.eval_type,
+            'training_dataset': self.training_dataset,
+            'test_dataset': self.test_dataset,
+            'contained_optimizers': self.contained_optimizers,
+            'evaluation_performed': self.evaluation_performed,
+        }
+        
+        # Only include cross-validation fields if cross-validation was performed
+        if self.crossvalidation_performed:
+            data['crossvalidation_performed'] = True
+            data['crossvalidation_random_state'] = self.crossvalidation_random_state
+            data['crossvalidation_shuffle'] = self.crossvalidation_shuffle
+            data['crossvalidation_splits'] = self.crossvalidation_splits
+        else:
+            data['crossvalidation_performed'] = False
+        
+        return data
+
 
 
 

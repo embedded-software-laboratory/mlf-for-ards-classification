@@ -95,7 +95,8 @@ class Evaluation:
         return overall_result
 
     def evaluate_image_models(self, models_to_evaluate_dict: dict[str, list[Model]], 
-                             pneumonia_dataset: str, ards_dataset: str, method: str, mode: str) -> ExperimentResult:
+                             pneumonia_dataset: str, ards_dataset: str, method: str, mode: str,
+                             pneumonia_train_size: int = 0, ards_train_size: int = 0, ards_test_size: int = 0) -> ExperimentResult:
         """
         Evaluates a set of image models by reading their pre-computed test metrics from CSV files.
         Image models save their metrics during test_image_model(), so this method reads those
@@ -107,6 +108,9 @@ class Evaluation:
             ards_dataset: Name of the ARDS dataset used
             method: Method name used for training (unfreeze setting)
             mode: Mode used for training (augmentation mode)
+            pneumonia_train_size: Number of images in pneumonia training set
+            ards_train_size: Number of images in ARDS training set
+            ards_test_size: Number of images in ARDS test set
             
         Returns:
             ExperimentResult containing all model evaluations
@@ -173,11 +177,13 @@ class Evaluation:
                     test_specificity = parse_metric_value(test_results['test_specificity'])
                     test_auroc = parse_metric_value(test_results['test_auroc'])
                     test_f1 = parse_metric_value(test_results['test_f1'])
+                    test_mcc = parse_metric_value(test_results['test_mcc'])
                     
                     logger.info(f"Successfully loaded metrics for '{image_model.name}':")
                     logger.info(f"  Accuracy: {test_accuracy:.4f}")
                     logger.info(f"  AUROC: {test_auroc:.4f}")
                     logger.info(f"  F1: {test_f1:.4f}")
+                    logger.info(f"  MCC: {test_mcc:.4f}")
                     
                     # Store image-specific metadata in the model's additional info
                     if not hasattr(image_model, 'additional_info'):
@@ -196,8 +202,8 @@ class Evaluation:
                     # Build comprehensive additional information string
                     additional_info = (
                         f"Model: {image_model.name} | "
-                        f"Pneumonia Dataset: {pneumonia_dataset} | "
-                        f"ARDS Dataset: {ards_dataset} | "
+                        f"Pneumonia Dataset: {pneumonia_dataset} ({pneumonia_train_size} images) | "
+                        f"ARDS Dataset: {ards_dataset} (train: {ards_train_size}, test: {ards_test_size} images) | "
                         f"Unfreeze Method: {method} | "
                         f"Augmentation Mode: {mode} | "
                         f"Test Loss: {test_loss:.4f} | "
@@ -214,7 +220,7 @@ class Evaluation:
                         dataset_location=image_model.path_results_ards,
                         disease_type='ARDS',
                         additional_information=additional_info,
-                        number_of_images=0  # Can be filled if tracking is needed
+                        number_of_images=ards_test_size  # Use actual test set size
                     )
                     
                     # Create proper metric objects matching timeseries format
@@ -246,7 +252,7 @@ class Evaluation:
                         ),
                         'MCC': GenericMetric(
                             metric_name='MCC Evaluation',
-                            metric_value=FloatValue(metric_value=0.0),  # Can calculate from other metrics if needed
+                            metric_value=FloatValue(metric_value=test_mcc),
                             metric_spec=MCC()
                         )
                     }

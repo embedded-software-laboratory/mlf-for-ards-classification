@@ -7,7 +7,7 @@ import time
 import logging
 from abc import abstractmethod
 from torch.utils.data import DataLoader, SubsetRandomSampler
-from torchmetrics import Accuracy, Precision, Recall, Specificity, AUROC, F1Score
+from torchmetrics import Accuracy, Precision, Recall, Specificity, AUROC, F1Score, MatthewsCorrCoef
 from ml_models.model_interface import Model
 import csv
 import sys
@@ -60,6 +60,7 @@ class ImageModel(Model):
         self.specificity = Specificity(task="binary", average='macro')
         self.f1 = F1Score(task="binary")
         self.auroc = AUROC(task="binary")
+        self.mcc = MatthewsCorrCoef(task="binary")
 
         self.model = None
         self._storage_location = None
@@ -316,6 +317,7 @@ class ImageModel(Model):
                 logger.info(f"  Specificity: {test_results['test_specificity'][0]:.4f}")
                 logger.info(f"  AUROC:       {test_results['test_auroc'][0]:.4f}")
                 logger.info(f"  F1-Score:    {test_results['test_f1'][0]:.4f}")
+                logger.info(f"  MCC:         {test_results['test_mcc'][0]:.4f}")
             else:
                 logger.info(f"  Loss:        {test_results['test_loss']:.4f}")
                 logger.info(f"  Accuracy:    {test_results['test_acc']:.4f}")
@@ -324,6 +326,7 @@ class ImageModel(Model):
                 logger.info(f"  Specificity: {test_results['test_specificity']:.4f}")
                 logger.info(f"  AUROC:       {test_results['test_auroc']:.4f}")
                 logger.info(f"  F1-Score:    {test_results['test_f1']:.4f}")
+                logger.info(f"  MCC:         {test_results['test_mcc']:.4f}")
             logger.info("=" * 70)
 
             # save results/metrics for testing

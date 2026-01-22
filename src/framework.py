@@ -568,13 +568,23 @@ class Framework:
         # We pass None for datasets since image models already have their results saved
         evaluator = Evaluation(self.config, dataset_training=None, dataset_test=None)
         
+        # Get dataset sizes for metadata
+        pneumonia_train_size = len(self.image_pneumonia_training_data) if hasattr(self, 'image_pneumonia_training_data') else 0
+        ards_train_size = len(self.image_ards_training_data) if hasattr(self, 'image_ards_training_data') else 0
+        ards_test_size = len(self.image_ards_test_data) if hasattr(self, 'image_ards_test_data') else 0
+        
+        logger.info(f"Dataset sizes - Pneumonia train: {pneumonia_train_size}, ARDS train: {ards_train_size}, ARDS test: {ards_test_size}")
+        
         # Evaluate image models using the new method
         overall_result = evaluator.evaluate_image_models(
             models_to_evaluate_dict,
             self.pneumonia_image_dataset,
             self.ards_image_dataset,
             self.method,
-            self.mode
+            self.mode,
+            pneumonia_train_size,
+            ards_train_size,
+            ards_test_size
         )
         
         # Save results to JSON file

@@ -92,7 +92,7 @@ class ModelResultFactory:
             evaluation.model.storage_location = "Unknown"
             logger.debug("Model storage location was None, set to 'Unknown'")
 
-        if stage == "Evaluation":
+        if stage == "Evaluation" and training_evaluation is not None:
             contained_evals["Training"] = training_evaluation
             logger.debug("Attached Training EvalResult to contained_evals under key 'Training'")
 

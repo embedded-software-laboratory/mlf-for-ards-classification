@@ -340,10 +340,11 @@ class CNN(ImageModel):
         test_specificity = self.specificity(test_true, test_prediction)
         test_auroc = self.auroc(test_true, test_prediction)
         test_f1 = self.f1(test_true, test_prediction)
-        self.accuracy.reset(), self.precision.reset(), self.recall.reset(), self.specificity.reset(), self.auroc.reset(), self.f1.reset()
+        test_mcc = self.mcc(test_true, test_prediction)
+        self.accuracy.reset(), self.precision.reset(), self.recall.reset(), self.specificity.reset(), self.auroc.reset(), self.f1.reset(), self.mcc.reset()
 
         # save metrics in list
-        test_results = {'test_loss': [], 'test_acc':[], 'test_prec':[], 'test_recall':[], 'test_specificity':[], 'test_auroc':[], 'test_f1':[]}
+        test_results = {'test_loss': [], 'test_acc':[], 'test_prec':[], 'test_recall':[], 'test_specificity':[], 'test_auroc':[], 'test_f1':[], 'test_mcc':[]}
         test_results['test_loss'].append(test_loss)
         test_results['test_acc'].append(test_accuracy)
         test_results['test_prec'].append(test_precision)
@@ -351,9 +352,10 @@ class CNN(ImageModel):
         test_results['test_specificity'].append(test_specificity)
         test_results['test_auroc'].append(test_auroc)
         test_results['test_f1'].append(test_f1)
+        test_results['test_mcc'].append(test_mcc)
 
         # show testing metrics
-        print("Model:{} \nTest Loss:{:.3f} AVG Test Acc:{:.2f} Test Precision:{:.3f}  Test Recall:{:.3f} Test Specificity:{:.3f} Test AUROC:{:.3f} Test f1-score: {:.3f}\n".format(
+        print("Model:{} \nTest Loss:{:.3f} AVG Test Acc:{:.2f} Test Precision:{:.3f}  Test Recall:{:.3f} Test Specificity:{:.3f} Test AUROC:{:.3f} Test f1-score: {:.3f} Test MCC: {:.3f}\n".format(
                                                                                                                 test_model,
                                                                                                                 test_loss,
                                                                                                                 test_accuracy,
@@ -361,7 +363,8 @@ class CNN(ImageModel):
                                                                                                                 test_recall,
                                                                                                                 test_specificity,
                                                                                                                 test_auroc,
-                                                                                                                test_f1))
+                                                                                                                test_f1,
+                                                                                                                test_mcc))
         return test_results
 
 
