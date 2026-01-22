@@ -235,8 +235,8 @@ image_model_parameters:
   method: last_block
   # different modes for augmented training/testing
   mode: mode1
-  num_epochs_pneumonia: 25  # Increased from 15 - CNNs converge well, ViT needs more
-  num_epochs_ards: 40        # Increased from 20 - Fine-tuning benefits from more epochs
+  num_epochs_pneumonia: 20  # Increased from 15 - CNNs converge well, ViT needs more
+  num_epochs_ards: 30        # Increased from 20 - Fine-tuning benefits from more epochs
   batch_size_pneumonia: 32
   batch_size_ards: 32
   SEED_pneumonia: 47

@@ -105,8 +105,8 @@ class Evaluation:
             models_to_evaluate_dict: Dictionary mapping model types to lists of models
             pneumonia_dataset: Name of the pneumonia dataset used
             ards_dataset: Name of the ARDS dataset used
-            method: Method name used for training
-            mode: Mode used for training
+            method: Method name used for training (unfreeze setting)
+            mode: Mode used for training (augmentation mode)
             
         Returns:
             ExperimentResult containing all model evaluations
@@ -114,6 +114,8 @@ class Evaluation:
         import csv
         import os
         import re
+        from metrics.Metrics import Accuracy, AUC, F1Score, Sensitivity, Specificity, MCC
+        from metrics.Models import GenericMetric, FloatValue, GenericSplit, GenericThresholdOptimization
         
         def parse_metric_value(value_str):
             """
@@ -164,40 +166,91 @@ class Evaluation:
                         test_results = next(reader)  # Read first (and only) row
                     
                     # Extract metrics - handle tensor strings, lists, or plain floats
-                    test_metrics = {
-                        'test_loss': parse_metric_value(test_results['test_loss']),
-                        'test_accuracy': parse_metric_value(test_results['test_acc']),
-                        'test_precision': parse_metric_value(test_results['test_prec']),
-                        'test_recall': parse_metric_value(test_results['test_recall']),
-                        'test_specificity': parse_metric_value(test_results['test_specificity']),
-                        'test_auroc': parse_metric_value(test_results['test_auroc']),
-                        'test_f1': parse_metric_value(test_results['test_f1'])
-                    }
+                    test_loss = parse_metric_value(test_results['test_loss'])
+                    test_accuracy = parse_metric_value(test_results['test_acc'])
+                    test_precision = parse_metric_value(test_results['test_prec'])
+                    test_recall = parse_metric_value(test_results['test_recall'])
+                    test_specificity = parse_metric_value(test_results['test_specificity'])
+                    test_auroc = parse_metric_value(test_results['test_auroc'])
+                    test_f1 = parse_metric_value(test_results['test_f1'])
                     
                     logger.info(f"Successfully loaded metrics for '{image_model.name}':")
-                    logger.info(f"  Accuracy: {test_metrics['test_accuracy']:.4f}")
-                    logger.info(f"  AUROC: {test_metrics['test_auroc']:.4f}")
-                    logger.info(f"  F1: {test_metrics['test_f1']:.4f}")
+                    logger.info(f"  Accuracy: {test_accuracy:.4f}")
+                    logger.info(f"  AUROC: {test_auroc:.4f}")
+                    logger.info(f"  F1: {test_f1:.4f}")
                     
-                    # Create ModelEvaluationInformation for image model
-                    model_eval_info = ModelEvaluationInformation(self.config, image_model)
-                    
-                    # Create evaluation results structure
-                    # For image models, we have pre-computed metrics, so we create a simplified structure
-                    evaluation_results = {
-                        'Evaluation': {
-                            'Standard': {
-                                'metrics': test_metrics,
-                                'threshold': 0.5  # Standard threshold for binary classification
-                            }
-                        }
+                    # Create proper metric objects matching timeseries format
+                    contained_metrics = {
+                        'Accuracy': GenericMetric(
+                            metric_name='Accuracy Evaluation',
+                            metric_value=FloatValue(metric_value=test_accuracy),
+                            metric_spec=Accuracy()
+                        ),
+                        'AUC': GenericMetric(
+                            metric_name='AUC Evaluation',
+                            metric_value=FloatValue(metric_value=test_auroc),
+                            metric_spec=AUC()
+                        ),
+                        'F1Score': GenericMetric(
+                            metric_name='F1Score Evaluation',
+                            metric_value=FloatValue(metric_value=test_f1),
+                            metric_spec=F1Score()
+                        ),
+                        'Sensitivity': GenericMetric(
+                            metric_name='Sensitivity Evaluation',
+                            metric_value=FloatValue(metric_value=test_recall),
+                            metric_spec=Sensitivity()
+                        ),
+                        'Specificity': GenericMetric(
+                            metric_name='Specificity Evaluation',
+                            metric_value=FloatValue(metric_value=test_specificity),
+                            metric_spec=Specificity()
+                        ),
+                        'MCC': GenericMetric(
+                            metric_name='MCC Evaluation',
+                            metric_value=FloatValue(metric_value=0.0),  # Can calculate from other metrics if needed
+                            metric_spec=MCC()
+                        )
                     }
                     
+                    # Create split (similar to timeseries evaluation split)
+                    eval_split = GenericSplit(
+                        split_name='Evaluation split',
+                        contained_metrics=contained_metrics
+                    )
+                    
+                    # Create optimizer (use "Standard" like timeseries models)
+                    optimizer = GenericThresholdOptimization(
+                        optimization_name='Standard',
+                        contained_splits={'Evaluation split': eval_split}
+                    )
+                    
+                    # Create metadata for image model
+                    from processing.datasets_metadata import ImageMetaData
+                    image_metadata = ImageMetaData(
+                        datasource=ards_dataset,
+                        dataset_location=image_model.path_results_ards,
+                        disease_type='ARDS',
+                        additional_information=f'pneumonia_dataset:{pneumonia_dataset}|method:{method}|mode:{mode}|model:{image_model.name}|loss:{test_loss:.4f}',
+                        number_of_images=0  # Will be filled if needed
+                    )
+                    
+                    # Create EvalResult with proper structure
+                    eval_result = EvalResultFactory.factory_method(
+                        optimizer_list=[optimizer],
+                        training_set_meta_data=image_metadata,
+                        test_set_meta_data=image_metadata,
+                        evaltype='Evaluation',
+                        crossvalidation_performed=False,
+                        evaluation_performed=True
+                    )
+                    
                     # Create ModelResult using factory method
+                    model_eval_info = ModelEvaluationInformation(self.config, image_model)
                     model_result = ModelResultFactory.factory_method(
                         model_eval_info,
-                        evaluation_results,
-                        training_evaluation=None,  # Image models don't store training evaluation the same way
+                        {'Evaluation': eval_result},
+                        training_evaluation=None,
                         stage="Evaluation"
                     )
                     
@@ -206,6 +259,7 @@ class Evaluation:
                     
                 except Exception as e:
                     logger.error(f"Failed to read or process metrics for '{image_model.name}': {e}")
+                    logger.exception("Full traceback:")
                     logger.warning(f"Skipping evaluation for this model")
                     continue
         
