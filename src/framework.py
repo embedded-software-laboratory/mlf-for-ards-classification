@@ -538,8 +538,7 @@ class Framework:
     def evaluate_image_models(self):
         """
         Evaluates trained image classification models using the same evaluation framework
-        as timeseries models. Note: Image models save their test metrics during test_image_model(),
-        so this method primarily aggregates those results into the standard evaluation format.
+        as timeseries models. Reads test metrics from CSV files and creates a JSON results file.
         """
         logger.info("=" * 80)
         logger.info("STEP 9: Evaluating Image Models")
@@ -564,18 +563,31 @@ class Framework:
             return
             
         logger.info(f"Starting evaluation of {total_eval_models} image models...")
-        logger.info("Note: Image models save detailed metrics during testing.")
-        logger.info("This evaluation step aggregates results for consistency with framework structure.")
         
-        # Image models handle their own evaluation during test_image_model()
-        # The metrics are saved to CSV files in the model's results directory
-        # For now, we just log that evaluation has been completed during testing
-        for model_type, models in models_to_evaluate_dict.items():
-            for model in models:
-                logger.info(f"Image model '{model.name}' ({model_type}): Metrics saved in {model.path_results_ards}")
+        # Create evaluator - Note: image models don't use the same dataset structure as timeseries
+        # We pass None for datasets since image models already have their results saved
+        evaluator = Evaluation(self.config, dataset_training=None, dataset_test=None)
         
-        logger.info(f"Evaluation references completed for {total_eval_models} models")
-        logger.info("Detailed metrics are available in each model's results directory")
+        # Evaluate image models using the new method
+        overall_result = evaluator.evaluate_image_models(
+            models_to_evaluate_dict,
+            self.pneumonia_image_dataset,
+            self.ards_image_dataset,
+            self.method,
+            self.mode
+        )
+        
+        # Save results to JSON file
+        eval_name = self.config['evaluation']['evaluation_name']
+        eval_name = eval_name.replace(" ", "_")
+        result_location = self.outdir + f'{eval_name}_image_results.json'
+        
+        logger.info(f"Saving image model results to: {result_location}")
+        with open(result_location, 'w', encoding='utf-8') as f:
+            f.write(overall_result.model_dump_json(indent=4))
+        
+        logger.info(f"Evaluation completed for {total_eval_models} image models")
+        logger.info(f"Results saved to: {result_location}")
 
     # ███████╗██████╗  █████╗ ███╗   ███╗███████╗██╗    ██╗ ██████╗ ██████╗ ██╗  ██╗    ██████╗ ██╗   ██╗███╗   ██╗
     # ██╔════╝██╔══██╗██╔══██╗████╗ ████║██╔════╝██║    ██║██╔═══██╗██╔══██╗██║ ██╔╝    ██╔══██╗██║   ██║████╗  ██║

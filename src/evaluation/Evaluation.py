@@ -94,6 +94,99 @@ class Evaluation:
         overall_result = ResultManagement().factory_method("new", ingredients)
         return overall_result
 
+    def evaluate_image_models(self, models_to_evaluate_dict: dict[str, list[Model]], 
+                             pneumonia_dataset: str, ards_dataset: str, method: str, mode: str) -> ExperimentResult:
+        """
+        Evaluates a set of image models by reading their pre-computed test metrics from CSV files.
+        Image models save their metrics during test_image_model(), so this method reads those
+        results and packages them into the standard ExperimentResult format.
+        
+        Args:
+            models_to_evaluate_dict: Dictionary mapping model types to lists of models
+            pneumonia_dataset: Name of the pneumonia dataset used
+            ards_dataset: Name of the ARDS dataset used
+            method: Method name used for training
+            mode: Mode used for training
+            
+        Returns:
+            ExperimentResult containing all model evaluations
+        """
+        import csv
+        import os
+        
+        logger.info("Starting evaluation of image models...")
+        for model_algorithm in models_to_evaluate_dict:
+            logger.info(f"Evaluating models for algorithm {model_algorithm}")
+            for image_model in models_to_evaluate_dict[model_algorithm]:
+                logger.info(f"Evaluating model: {image_model.name}")
+                
+                # Construct the path to the saved metrics file
+                dataset_name = f"{pneumonia_dataset}_{ards_dataset}"
+                metrics_filename = f'test_metrics_{image_model.name}_{dataset_name}_{method}_{mode}.pt'
+                metrics_path = os.path.join(image_model.path_results_ards, metrics_filename)
+                
+                if not os.path.exists(metrics_path):
+                    logger.warning(f"Metrics file not found for model '{image_model.name}': {metrics_path}")
+                    logger.warning(f"Skipping evaluation for this model")
+                    continue
+                
+                # Read the CSV file with test metrics
+                try:
+                    with open(metrics_path, 'r') as f:
+                        reader = csv.DictReader(f)
+                        test_results = next(reader)  # Read first (and only) row
+                    
+                    # Extract metrics - they're stored as lists with single values
+                    test_metrics = {
+                        'test_loss': float(test_results['test_loss'].strip('[]')) if isinstance(test_results['test_loss'], str) else float(test_results['test_loss']),
+                        'test_accuracy': float(test_results['test_acc'].strip('[]')) if isinstance(test_results['test_acc'], str) else float(test_results['test_acc']),
+                        'test_precision': float(test_results['test_prec'].strip('[]')) if isinstance(test_results['test_prec'], str) else float(test_results['test_prec']),
+                        'test_recall': float(test_results['test_recall'].strip('[]')) if isinstance(test_results['test_recall'], str) else float(test_results['test_recall']),
+                        'test_specificity': float(test_results['test_specificity'].strip('[]')) if isinstance(test_results['test_specificity'], str) else float(test_results['test_specificity']),
+                        'test_auroc': float(test_results['test_auroc'].strip('[]')) if isinstance(test_results['test_auroc'], str) else float(test_results['test_auroc']),
+                        'test_f1': float(test_results['test_f1'].strip('[]')) if isinstance(test_results['test_f1'], str) else float(test_results['test_f1'])
+                    }
+                    
+                    logger.info(f"Successfully loaded metrics for '{image_model.name}':")
+                    logger.info(f"  Accuracy: {test_metrics['test_accuracy']:.4f}")
+                    logger.info(f"  AUROC: {test_metrics['test_auroc']:.4f}")
+                    logger.info(f"  F1: {test_metrics['test_f1']:.4f}")
+                    
+                    # Create ModelEvaluationInformation for image model
+                    model_eval_info = ModelEvaluationInformation(self.config, image_model)
+                    
+                    # Create evaluation results structure
+                    # For image models, we have pre-computed metrics, so we create a simplified structure
+                    evaluation_results = {
+                        'Evaluation': {
+                            'Standard': {
+                                'metrics': test_metrics,
+                                'threshold': 0.5  # Standard threshold for binary classification
+                            }
+                        }
+                    }
+                    
+                    # Create ModelResult using factory method
+                    model_result = ModelResultFactory.factory_method(
+                        model_eval_info,
+                        evaluation_results,
+                        training_evaluation=None,  # Image models don't store training evaluation the same way
+                        stage="Evaluation"
+                    )
+                    
+                    self.model_results[image_model.name] = model_result
+                    logger.info(f"Stored evaluation result for model: {image_model.name}")
+                    
+                except Exception as e:
+                    logger.error(f"Failed to read or process metrics for '{image_model.name}': {e}")
+                    logger.warning(f"Skipping evaluation for this model")
+                    continue
+        
+        ingredients = {"EvaluationInformation": self.eval_info, "model_results": self.model_results}
+        overall_result = ResultManagement().factory_method("new", ingredients)
+        logger.info("Image model evaluation completed.")
+        return overall_result
+
 
 class ModelEvaluation:
     """
