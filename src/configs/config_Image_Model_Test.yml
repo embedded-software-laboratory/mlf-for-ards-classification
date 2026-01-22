@@ -263,7 +263,7 @@ image_model_parameters:
   SEED_pneumonia: 47
   
   # ARDS fine-tuning stage
-  num_epochs_ards: 10
+  num_epochs_ards: 30
   batch_size_ards: 8
   SEED_ards: 11
   

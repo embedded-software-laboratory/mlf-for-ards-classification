@@ -215,7 +215,25 @@ class Evaluation:
                         f"K-Folds: {self.config.get('image_model_parameters', {}).get('k_folds', 'N/A')}"
                     )
                     
-                    image_metadata = ImageMetaData(
+                    # Create separate metadata for training and test datasets
+                    pneumonia_metadata = ImageMetaData(
+                        datasource=pneumonia_dataset,
+                        dataset_location=image_model.path_results_pneumonia,
+                        disease_type='PNEUMONIA',
+                        additional_information=additional_info,
+                        number_of_images=pneumonia_train_size  # Use actual training set size
+                    )
+
+                    # Create separate metadata for training and test datasets
+                    ards_training_metadata = ImageMetaData(
+                        datasource=ards_dataset,
+                        dataset_location=image_model.path_results_ards,
+                        disease_type='ARDS',
+                        additional_information=additional_info,
+                        number_of_images=ards_train_size  # Use actual training set size
+                    )
+                    
+                    ards_test_metadata = ImageMetaData(
                         datasource=ards_dataset,
                         dataset_location=image_model.path_results_ards,
                         disease_type='ARDS',
@@ -272,8 +290,8 @@ class Evaluation:
                     # Create EvalResult with proper ImageMetaData structure
                     eval_result = EvalResultFactory.factory_method(
                         optimizer_list=[optimizer],
-                        training_set_meta_data=image_metadata,  # Now using ImageMetaData
-                        test_set_meta_data=image_metadata,  # Same metadata for both
+                        training_set_meta_data=ards_training_metadata,  # Use training dataset size
+                        test_set_meta_data=ards_test_metadata,  # Use test dataset size
                         evaltype='Evaluation',
                         crossvalidation_performed=False,
                         evaluation_performed=True

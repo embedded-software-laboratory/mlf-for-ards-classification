@@ -399,6 +399,7 @@ class CNN(ImageModel):
         model.train()
         train_loss = 0
         index = 0
+        total_samples = 0  # Track actual number of samples processed
         total_batches = len(dataloader)
         batch_start_time = time.perf_counter()
         
@@ -441,6 +442,7 @@ class CNN(ImageModel):
             train_correct += torch.sum(predictions == labels_reshaped).item()
             train_prediction = torch.cat((train_prediction, predictions.cpu()),0)   
             train_true = torch.cat((train_true, labels_reshaped.cpu()),0)
+            total_samples += images.size(0)  # Track actual samples in this batch
             index += 1
             
             # Debug output every 10 batches or last batch
@@ -448,7 +450,7 @@ class CNN(ImageModel):
                 batch_time = time.perf_counter() - batch_start_time
                 avg_batch_time = batch_time / index
                 current_loss = train_loss / index
-                current_acc = train_correct / (index * images.size(0))
+                current_acc = train_correct / total_samples  # Use actual sample count
                 
                 debug_msg = f"    Batch {index}/{total_batches} - Loss: {current_loss:.4f}, Acc: {current_acc:.3f}, Time: {avg_batch_time:.3f}s/batch"
                 
@@ -487,6 +489,7 @@ class CNN(ImageModel):
         # evalution mode on
         model.eval()
         index = 0
+        total_samples = 0  # Track actual number of samples processed
         total_batches = len(dataloader)
         val_start_time = time.perf_counter()
         
@@ -511,12 +514,13 @@ class CNN(ImageModel):
                 test_prediction = torch.cat((test_prediction, predictions.cpu()),0)    
                 test_true = torch.cat((test_true, labels_reshaped.cpu()),0)
                 test_correct += torch.sum(predictions == labels_reshaped).item()
+                total_samples += images.size(0)  # Track actual samples in this batch
                 index += 1
                 
                 # Debug output every 10 batches or last batch
                 if index % 10 == 0 or index == total_batches:
                     current_loss = test_loss / index
-                    current_acc = test_correct / (index * images.size(0))
+                    current_acc = test_correct / total_samples  # Use actual sample count
                     print(f"    Batch {index}/{total_batches} - Loss: {current_loss:.4f}, Acc: {current_acc:.3f}", flush=True)
             
         test_loss = test_loss / index

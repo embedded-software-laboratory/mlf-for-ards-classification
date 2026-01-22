@@ -212,6 +212,7 @@ class VisionTransformer(ImageModel):
         model.train()
         size = len(dataloader.dataset)
         num_batches = len(dataloader)
+        total_samples = 0  # Track actual number of samples processed
         batch_start_time = time.perf_counter()
         
         print(f"  Training: Processing {num_batches} batches...", flush=True)
@@ -259,12 +260,14 @@ class VisionTransformer(ImageModel):
             self.recall.update(pred.to('cpu'),y.to('cpu'))
             self.specificity.update(pred.to('cpu'),y.to('cpu'))
             
+            total_samples += X.size(0)  # Track actual samples in this batch
+            
             # Debug output every 10 batches or last batch
             if (batch + 1) % 10 == 0 or (batch + 1) == num_batches:
                 batch_time = time.perf_counter() - batch_start_time
                 avg_batch_time = batch_time / (batch + 1)
                 current_loss = train_loss / (batch + 1)
-                current_acc = train_correct / ((batch + 1) * X.size(0))
+                current_acc = train_correct / total_samples  # Use actual sample count
                 
                 debug_msg = f"    Batch {batch + 1}/{num_batches} - Loss: {current_loss:.4f}, Acc: {current_acc:.3f}, Time: {avg_batch_time:.3f}s/batch"
                 
@@ -301,6 +304,7 @@ class VisionTransformer(ImageModel):
         model.eval()
         size = len(dataloader.dataset)
         num_batches = len(dataloader)
+        total_samples = 0  # Track actual number of samples processed
         val_start_time = time.perf_counter()
         
         print(f"  Validation: Processing {num_batches} batches...", flush=True)
@@ -327,10 +331,12 @@ class VisionTransformer(ImageModel):
                 self.f1.update(pred.to('cpu'),y.to('cpu'))
                 self.mcc.update(pred.to('cpu'),y.to('cpu'))
                 
+                total_samples += X.size(0)  # Track actual samples in this batch
+                
                 # Debug output every 10 batches or last batch
                 if (batch + 1) % 10 == 0 or (batch + 1) == num_batches:
                     current_loss = test_loss / (batch + 1)
-                    current_acc = test_correct / ((batch + 1) * X.size(0))
+                    current_acc = test_correct / total_samples  # Use actual sample count
                     print(f"    Batch {batch + 1}/{num_batches} - Loss: {current_loss:.4f}, Acc: {current_acc:.3f}", flush=True)
 
         test_loss /= num_batches

@@ -244,13 +244,24 @@ class ImageModel(Model):
             print(f'> Accuracy: {avg_acc}')
             print(f'> Loss: {avg_loss}\n-------------------------------', flush=True)
             
-            # Save training history to JSON
-            self._save_training_history(disease, history, model_name, dataset_name, method, mode, PATH_RESULTS)
+            # Save training history to JSON (treat as fold 1 for consistency)
+            history_by_fold = {'fold_1': history}
+            self._save_training_history(disease, history_by_fold, model_name, dataset_name, method, mode, PATH_RESULTS)
         else:
             # K-fold cross validation
+            history_by_fold = {}  # Store history for each fold separately
+            
             for fold, (train_idx, val_idx) in enumerate(kfold.split(dataset_train)):
                 print(f"FOLD {fold+1}", flush=True)
                 print("###############################", flush=True)
+                
+                # Create new history dict for this fold
+                fold_history = {
+                    'epoch': [], 'train_loss': [], 'valid_loss': [],
+                    'train_acc': [], 'valid_acc': [], 'train_prec': [], 'valid_prec': [],
+                    'train_recall': [], 'valid_recall': [], 'train_specificity': [], 'valid_specificity': [],
+                    'valid_auroc': [], 'valid_f1': [], 'train_time': []
+                }
                 
                 train_loader = DataLoader(dataset_train, batch_size=batch_size, 
                                          sampler=SubsetRandomSampler(train_idx),
@@ -266,31 +277,46 @@ class ImageModel(Model):
                 for epoch in range(num_epochs):
                     print(f"Epoch {epoch+1}\n-------------------------------", flush=True)
                     self.perform_training(device, train_loader, model, valid_loader, loss_fn, 
-                                        optimizer, scheduler, epoch, history, model_name, 
+                                        optimizer, scheduler, epoch, fold_history, model_name, 
                                         dataset_name, method, PATH_MODEL, PATH_RESULTS, 
                                         best_acc, best_auroc, mode)
                 
-                # Show average of validation
-                avg_acc = np.mean(history['valid_acc'])
-                avg_loss = np.mean(history['valid_loss'])
-                print(f"Average scores\n-------------------------------", flush=True)
+                # Show average of validation for this fold
+                avg_acc = np.mean(fold_history['valid_acc'])
+                avg_loss = np.mean(fold_history['valid_loss'])
+                print(f"Fold {fold+1} average scores\n-------------------------------", flush=True)
                 print(f'> Accuracy: {avg_acc}')
                 print(f'> Loss: {avg_loss}\n-------------------------------', flush=True)
+                
+                # Store this fold's history
+                history_by_fold[f'fold_{fold+1}'] = fold_history
             
-            # Save training history to JSON
-            self._save_training_history(disease, history, model_name, dataset_name, method, mode, PATH_RESULTS)
+            # Save all folds' training history to JSON
+            self._save_training_history(disease, history_by_fold, model_name, dataset_name, method, mode, PATH_RESULTS)
         
         self.model = model
 
-    def _save_training_history(self, disease, history, model_name, dataset_name, method, mode, PATH_RESULTS):
-        """Save training history to JSON file and store in model's training_history dict"""
+    def _save_training_history(self, disease, history_by_fold, model_name, dataset_name, method, mode, PATH_RESULTS):
+        """Save training history to JSON file and store in model's training_history dict
+        
+        Args:
+            disease: 'PNEUMONIA' or 'ARDS'
+            history_by_fold: Dictionary with fold_1, fold_2, etc. as keys, each containing history dict
+            model_name: Name of the model
+            dataset_name: Name of the dataset
+            method: Training method used
+            mode: Augmentation mode
+            PATH_RESULTS: Path to save results
+        """
         # Convert numpy/torch values to native Python types for JSON serialization
         history_json = {}
-        for key, values in history.items():
-            if isinstance(values, list):
-                history_json[key] = [float(v) if hasattr(v, 'item') else v for v in values]
-            else:
-                history_json[key] = values
+        for fold_key, fold_history in history_by_fold.items():
+            history_json[fold_key] = {}
+            for key, values in fold_history.items():
+                if isinstance(values, list):
+                    history_json[fold_key][key] = [float(v) if hasattr(v, 'item') else v for v in values]
+                else:
+                    history_json[fold_key][key] = values
         
         # Save to individual JSON file
         history_filename = f'training_history_{model_name}_{dataset_name}_{method}_{mode}_{disease}.json'
@@ -300,6 +326,7 @@ class ImageModel(Model):
             json.dump(history_json, f, indent=4)
         
         logger.info(f"Training history saved to: {history_path}")
+        logger.info(f"  Saved {len(history_json)} fold(s) with training metrics")
         
         # Store in model's training_history dict for later aggregation
         stage_key = f"{disease}_{dataset_name}_{method}_{mode}"
