@@ -232,10 +232,13 @@ class ImageModel(Model):
             
             for epoch in range(num_epochs):
                 print(f"Epoch {epoch+1}\n-------------------------------", flush=True)
-                self.perform_training(device, train_loader, model, valid_loader, loss_fn, 
+                best_acc, best_auroc, early_stop = self.perform_training(device, train_loader, model, valid_loader, loss_fn, 
                                     optimizer, scheduler, epoch, history, model_name, 
                                     dataset_name, method, PATH_MODEL, PATH_RESULTS, 
                                     best_acc, best_auroc, mode)
+                if early_stop:
+                    print(f"Training stopped early at epoch {epoch+1} due to learning rate reaching 0.", flush=True)
+                    break
             
             # Show final validation metrics
             avg_acc = np.mean(history['valid_acc'])
@@ -276,10 +279,13 @@ class ImageModel(Model):
                 
                 for epoch in range(num_epochs):
                     print(f"Epoch {epoch+1}\n-------------------------------", flush=True)
-                    self.perform_training(device, train_loader, model, valid_loader, loss_fn, 
-                                        optimizer, scheduler, epoch, fold_history, model_name, 
-                                        dataset_name, method, PATH_MODEL, PATH_RESULTS, 
+                    best_acc, best_auroc, early_stop = self.perform_training(device, train_loader, model, valid_loader, loss_fn,
+                                        optimizer, scheduler, epoch, history, model_name,
+                                        dataset_name, method, PATH_MODEL, PATH_RESULTS,
                                         best_acc, best_auroc, mode)
+                    if early_stop:
+                        print(f"Training stopped early at epoch {epoch+1} due to learning rate reaching 0.", flush=True)
+                        break
                 
                 # Show average of validation for this fold
                 avg_acc = np.mean(fold_history['valid_acc'])

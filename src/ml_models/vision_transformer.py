@@ -111,6 +111,12 @@ class VisionTransformer(ImageModel):
         valid_f1 = self.f1.compute()
         self.accuracy.reset(), self.precision.reset(), self.recall.reset(), self.specificity.reset(), self.auroc.reset(), self.f1.reset()
         scheduler.step()
+        
+        # Check if learning rate has decayed to 0
+        current_lr = optimizer.param_groups[0]['lr']
+        if current_lr == 0:
+            print(f"\nWARNING: Learning rate has reached 0 after epoch {epoch+1}. Stopping training.", flush=True)
+            return best_acc, best_auroc, True  # Return early_stop=True
 
         # save in a list for metrics
         history['epoch'].append(epoch+1)
@@ -156,6 +162,8 @@ class VisionTransformer(ImageModel):
             w = csv.DictWriter(f, history.keys())
             w.writeheader()
             w.writerow(history)
+        
+        return best_acc, best_auroc, False  # early_stop=False
 
     def perform_testing(self, device, test_dataloader, loss_fn, test_model):
         # Testing
