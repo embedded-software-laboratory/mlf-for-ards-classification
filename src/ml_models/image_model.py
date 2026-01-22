@@ -187,8 +187,9 @@ class ImageModel(Model):
         self.model = model
 
     def test_image_model(self, ards_test, info_list):
-        print("###############################")
-        print("Testing best models")
+        logger.info("=" * 70)
+        logger.info("TESTING IMAGE MODEL")
+        logger.info("=" * 70)
 
         # structure of info_list: [DATASET_PNEUMONIA, DATASET_ARDS, MODEL_NAME_CNN, cnn_method, mode n]
         dataset_pneumonia = info_list[0]
@@ -199,30 +200,82 @@ class ImageModel(Model):
         device = self.get_device()
         dataset_name = dataset_pneumonia+'_'+dataset_ards
         
+        logger.info(f"Model: {model_name}")
+        logger.info(f"Pneumonia dataset: {dataset_pneumonia}")
+        logger.info(f"ARDS dataset: {dataset_ards}")
+        logger.info(f"Method: {method}")
+        logger.info(f"Mode: {mode}")
+        logger.info(f"Test dataset size: {len(ards_test)} samples")
+        logger.info(f"Batch size: {self.batch_size_ards}")
+        
         # find testing models
-        test_model_list = [name for name in os.listdir(self.path_results_ards) if name == '{name}_{dataset}_{method}.pt'.format(name=model_name, dataset=dataset_name, method=method)]
+        test_model_pattern = '{name}_{dataset}_{method}.pt'.format(name=model_name, dataset=dataset_name, method=method)
+        test_model_list = [name for name in os.listdir(self.path_results_ards) if name == test_model_pattern]
+        
+        if not test_model_list:
+            logger.warning(f"No trained model found matching pattern: {test_model_pattern}")
+            logger.warning(f"Searched in: {self.path_results_ards}")
+            return
+        
+        logger.info(f"Found {len(test_model_list)} trained model(s) to test")
+        
         test_dataloader = DataLoader(ards_test, batch_size=self.batch_size_ards, shuffle=True)
+        logger.info(f"Test dataloader created with {len(test_dataloader)} batches")
 
         lr = 1e-2
         batch_size = 64
 
         loss_fn, kfold, optimizer, scheduler = self.get_helpers(self.model)
 
-        for test_model in test_model_list:
+        for idx, test_model in enumerate(test_model_list, 1):
+            logger.info("-" * 70)
+            logger.info(f"Testing model {idx}/{len(test_model_list)}: {test_model}")
             
             # load model
-            self.model.load_state_dict(torch.load(os.path.join(self.path_results_ards, test_model), weights_only=False))
+            model_path = os.path.join(self.path_results_ards, test_model)
+            logger.info(f"Loading model from: {model_path}")
+            self.model.load_state_dict(torch.load(model_path, weights_only=False))
             self.model.to(device)
+            logger.info(f"Model loaded and moved to device: {device}")
             
             # Testing
+            logger.info("Starting model testing on ARDS test data...")
             test_results = self.perform_testing(device, test_dataloader, loss_fn, test_model)
+            
+            # Log the computed metrics
+            logger.info("=" * 70)
+            logger.info("TEST RESULTS:")
+            logger.info("=" * 70)
+            if isinstance(test_results['test_loss'], list):
+                logger.info(f"  Loss:        {test_results['test_loss'][0]:.4f}")
+                logger.info(f"  Accuracy:    {test_results['test_acc'][0]:.4f}")
+                logger.info(f"  Precision:   {test_results['test_prec'][0]:.4f}")
+                logger.info(f"  Recall:      {test_results['test_recall'][0]:.4f}")
+                logger.info(f"  Specificity: {test_results['test_specificity'][0]:.4f}")
+                logger.info(f"  AUROC:       {test_results['test_auroc'][0]:.4f}")
+                logger.info(f"  F1-Score:    {test_results['test_f1'][0]:.4f}")
+            else:
+                logger.info(f"  Loss:        {test_results['test_loss']:.4f}")
+                logger.info(f"  Accuracy:    {test_results['test_acc']:.4f}")
+                logger.info(f"  Precision:   {test_results['test_prec']:.4f}")
+                logger.info(f"  Recall:      {test_results['test_recall']:.4f}")
+                logger.info(f"  Specificity: {test_results['test_specificity']:.4f}")
+                logger.info(f"  AUROC:       {test_results['test_auroc']:.4f}")
+                logger.info(f"  F1-Score:    {test_results['test_f1']:.4f}")
+            logger.info("=" * 70)
 
             # save results/metrics for testing
             path_test_res = 'test_metrics_{name}_{dataset}_{method}_{mode}.pt'.format(name=model_name, dataset=dataset_name, method=method, mode=mode)
-            with open(os.path.join(self.path_results_ards, path_test_res), 'w') as f:
+            output_path = os.path.join(self.path_results_ards, path_test_res)
+            with open(output_path, 'w') as f:
                     w = csv.DictWriter(f, test_results.keys())
                     w.writeheader()
                     w.writerow(test_results)
+            logger.info(f"Test metrics saved to: {output_path}")
+        
+        logger.info("=" * 70)
+        logger.info("TESTING COMPLETED")
+        logger.info("=" * 70)
 
     def run_gpu(self):
         """Function to make sure GPU is running"""
