@@ -5,6 +5,7 @@ import gc
 import os
 import time
 import logging
+import json
 from abc import abstractmethod
 from torch.utils.data import DataLoader, SubsetRandomSampler
 from torchmetrics import Accuracy, Precision, Recall, Specificity, AUROC, F1Score, MatthewsCorrCoef
@@ -64,6 +65,7 @@ class ImageModel(Model):
 
         self.model = None
         self._storage_location = None
+        self.training_history = {}  # Store training histories for both stages
 
     # ==================== PUBLIC API ====================
 
@@ -216,6 +218,9 @@ class ImageModel(Model):
             print(f"Final validation scores\n-------------------------------", flush=True)
             print(f'> Accuracy: {avg_acc}')
             print(f'> Loss: {avg_loss}\n-------------------------------', flush=True)
+            
+            # Save training history to JSON
+            self._save_training_history(disease, history, model_name, dataset_name, method, mode, PATH_RESULTS)
         else:
             # K-fold cross validation
             for fold, (train_idx, val_idx) in enumerate(kfold.split(dataset_train)):
@@ -246,8 +251,34 @@ class ImageModel(Model):
                 print(f"Average scores\n-------------------------------", flush=True)
                 print(f'> Accuracy: {avg_acc}')
                 print(f'> Loss: {avg_loss}\n-------------------------------', flush=True)
+            
+            # Save training history to JSON
+            self._save_training_history(disease, history, model_name, dataset_name, method, mode, PATH_RESULTS)
         
         self.model = model
+
+    def _save_training_history(self, disease, history, model_name, dataset_name, method, mode, PATH_RESULTS):
+        """Save training history to JSON file and store in model's training_history dict"""
+        # Convert numpy/torch values to native Python types for JSON serialization
+        history_json = {}
+        for key, values in history.items():
+            if isinstance(values, list):
+                history_json[key] = [float(v) if hasattr(v, 'item') else v for v in values]
+            else:
+                history_json[key] = values
+        
+        # Save to individual JSON file
+        history_filename = f'training_history_{model_name}_{dataset_name}_{method}_{mode}_{disease}.json'
+        history_path = os.path.join(PATH_RESULTS, history_filename)
+        
+        with open(history_path, 'w') as f:
+            json.dump(history_json, f, indent=4)
+        
+        logger.info(f"Training history saved to: {history_path}")
+        
+        # Store in model's training_history dict for later aggregation
+        stage_key = f"{disease}_{dataset_name}_{method}_{mode}"
+        self.training_history[stage_key] = history_json
 
     def test_image_model(self, ards_test, info_list):
         logger.info("=" * 70)

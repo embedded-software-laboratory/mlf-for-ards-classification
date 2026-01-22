@@ -445,6 +445,46 @@ class Framework:
         self.available_image_models = self.ImageModelManager.load_models(needed_models, self.available_image_models, self.model_base_paths)
         logger.info(f"Image models loaded successfully for stage: {stage}")
 
+    def _save_aggregated_training_histories(self, model_dict):
+        """
+        Aggregate all training histories from all models into a single JSON file.
+        This allows easy comparison of training curves across models.
+        """
+        logger.info("=" * 80)
+        logger.info("Aggregating training histories from all models...")
+        
+        aggregated_histories = {}
+        
+        for model_type, models in model_dict.items():
+            for model in models:
+                model_key = f"{model.name}"
+                
+                if hasattr(model, 'training_history') and model.training_history:
+                    aggregated_histories[model_key] = {
+                        'model_type': model_type,
+                        'model_algorithm': model.algorithm,
+                        'training_stages': model.training_history
+                    }
+                    logger.info(f"Collected training history for '{model.name}' with {len(model.training_history)} stage(s)")
+                else:
+                    logger.warning(f"No training history found for '{model.name}'")
+        
+        if aggregated_histories:
+            # Save aggregated training histories
+            eval_name = self.config['evaluation']['evaluation_name']
+            eval_name = eval_name.replace(" ", "_")
+            history_location = self.outdir + f'{eval_name}_training_histories.json'
+            
+            with open(history_location, 'w', encoding='utf-8') as f:
+                json.dump(aggregated_histories, f, indent=4)
+            
+            logger.info(f"Aggregated training histories saved to: {history_location}")
+            logger.info(f"Total models with training history: {len(aggregated_histories)}")
+        else:
+            logger.warning("No training histories found to aggregate")
+        
+        logger.info("=" * 80)
+
     def train_image_models(self):
         """Trains image classification models"""
         logger.info("=" * 80)
@@ -496,6 +536,9 @@ class Framework:
                 self.available_image_models[model_type].append(model)
         
         logger.info(f"Model training completed. Total models trained: {total_models}")
+        
+        # Aggregate all training histories into a single JSON file
+        self._save_aggregated_training_histories(model_dict)
 
     def execute_image_models(self):
         """
