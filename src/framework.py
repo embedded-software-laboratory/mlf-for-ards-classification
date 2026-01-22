@@ -402,6 +402,10 @@ class Framework:
         for dl_method in self.image_models_to_train:
             logger.info(f"Building datasets for DL method: {dl_method}")
             
+            # Determine augmentation based on mode
+            use_ards_train_augmentation = self._should_use_augmentation('ARDS', self.mode)
+            use_ards_test_augmentation = use_ards_train_augmentation and self.mode == 'mode4'
+            
             logger.info(f"Building PNEUMONIA training dataset: '{self.pneumonia_image_dataset}' (augment=False)")
             self.image_pneumonia_training_data = self.dataset_generator.build_dataset(self.pneumonia_image_dataset, dl_method,
                                                                                       'PNEUMONIA',
@@ -409,15 +413,15 @@ class Framework:
                                                                                       augment=False)
             logger.info(f"PNEUMONIA training dataset built successfully. Size: {len(self.image_pneumonia_training_data)}")
             
-            logger.info(f"Building ARDS training dataset: '{self.ards_image_dataset}' (augment=False)")
+            logger.info(f"Building ARDS training dataset: '{self.ards_image_dataset}' (augment={use_ards_train_augmentation}, mode={self.mode})")
             self.image_ards_training_data = self.dataset_generator.build_dataset(self.ards_image_dataset, dl_method, 'ARDS',
                                                                                  path=self.image_file_path,
-                                                                                 augment=False)
+                                                                                 augment=use_ards_train_augmentation)
             logger.info(f"ARDS training dataset built successfully. Size: {len(self.image_ards_training_data)}")
             
-            logger.info(f"Building ARDS test dataset: 'test' (augment=False)")
+            logger.info(f"Building ARDS test dataset: 'test' (augment={use_ards_test_augmentation}, mode={self.mode})")
             self.image_ards_test_data = self.dataset_generator.build_dataset('test', dl_method, 'ARDS',
-                                                                             path=self.image_file_path, augment=False)
+                                                                             path=self.image_file_path, augment=use_ards_test_augmentation)
             logger.info(f"ARDS test dataset built successfully. Size: {len(self.image_ards_test_data)}")
 
 
@@ -444,6 +448,28 @@ class Framework:
             
         self.available_image_models = self.ImageModelManager.load_models(needed_models, self.available_image_models, self.model_base_paths)
         logger.info(f"Image models loaded successfully for stage: {stage}")
+
+    def _should_use_augmentation(self, disease, mode):
+        """
+        Determines if data augmentation should be used based on disease type and mode.
+        
+        Mode definitions:
+        - mode1: No augmentation (standard training)
+        - mode2: Augmentation during training only
+        - mode3: Augmentation for ARDS training data
+        - mode4: Augmentation for ARDS training and test data
+        
+        Args:
+            disease: 'PNEUMONIA' or 'ARDS'
+            mode: Current augmentation mode from config
+            
+        Returns:
+            bool: True if augmentation should be used, False otherwise
+        """
+        # Currently only ARDS supports augmentation in modes 3 and 4
+        if disease == 'ARDS' and mode in ['mode3', 'mode4']:
+            return True
+        return False
 
     def _save_aggregated_training_histories(self, model_dict):
         """

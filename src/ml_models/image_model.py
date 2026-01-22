@@ -35,14 +35,14 @@ class ImageModel(Model):
             # ViT-specific parameters
             self.learning_rate = image_model_parameters.get("learning_rate_vit", 0.0005)
             self.batch_size = image_model_parameters.get("batch_size_vit", 32)
-            self.num_epochs = image_model_parameters.get("num_epochs_vit", 10)
             self.k_folds = image_model_parameters.get("k_folds_vit", 5)
-            # ViT uses same parameters for both stages
-            self.num_epochs_pneumonia = self.num_epochs
-            self.num_epochs_ards = self.num_epochs
+            # ViT uses same epoch parameters as CNN models
+            self.num_epochs_pneumonia = image_model_parameters.get("num_epochs_pneumonia", 20)
+            self.num_epochs_ards = image_model_parameters.get("num_epochs_ards", 10)
             self.batch_size_pneumonia = self.batch_size
             self.batch_size_ards = self.batch_size
-            print(f"Using ViT-specific parameters: LR={self.learning_rate}, batch_size={self.batch_size}, epochs={self.num_epochs}")
+            print(f"Using ViT-specific parameters: LR={self.learning_rate}, batch_size={self.batch_size}, "
+                  f"epochs_pneumonia={self.num_epochs_pneumonia}, epochs_ards={self.num_epochs_ards}")
         elif is_cnn:
             # CNN-specific parameters
             self.learning_rate = image_model_parameters.get("learning_rate_cnn", 0.05)

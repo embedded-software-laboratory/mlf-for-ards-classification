@@ -234,7 +234,13 @@ image_model_parameters:
   # defines the method for fine-tuning for the dl models
   # Options: last_layer, last_block, model
   method: last_block
-  # different modes for augmented training/testing
+  
+  # Data augmentation modes (controls which datasets use augmented data)
+  # mode1: No augmentation - standard training with original images
+  # mode2: Reserved for future use (augmentation during training only via transforms)
+  # mode3: ARDS training data uses pre-augmented dataset (MIMIC-DB-AUG folder)
+  # mode4: ARDS training AND test data use pre-augmented datasets
+  # Note: PNEUMONIA training always uses non-augmented data (CheXpert-DB-PNEUMONIA)
   mode: mode1
   
   # =========================
@@ -269,7 +275,6 @@ image_model_parameters:
   # =========================
   learning_rate_vit: 0.0005
   batch_size_vit: 32
-  num_epochs_vit: 10
   k_folds_vit: 5
 
 # Path to the algorithms if they need to be loaded for execution
