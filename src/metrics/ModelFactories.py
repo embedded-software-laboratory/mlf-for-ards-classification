@@ -6,6 +6,7 @@ from metrics.Metrics import *
 from metrics.ThresholdOptimizer import *
 
 from processing import TimeseriesMetaData, TimeSeriesMetaDataManagement
+from processing.datasets_metadata import ImageMetaData
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -55,10 +56,20 @@ class EvalResultFactory:
         for optimizer in eval_dict["contained_optimizers"]:
              contained_optimizers[optimizer] = OptimizerFactory.from_dict(eval_dict["contained_optimizers"][optimizer])
 
+        # Handle both TimeseriesMetaData and ImageMetaData
+        def load_metadata(metadata_dict):
+            if metadata_dict is None:
+                return None
+            # Check if it's ImageMetaData by looking for disease_type field
+            if 'disease_type' in metadata_dict:
+                return ImageMetaData(**metadata_dict)
+            else:
+                return TimeSeriesMetaDataManagement.load_from_dict(metadata_dict)
+
         content = {
             "eval_type": eval_dict["eval_type"],
-            "training_dataset": TimeSeriesMetaDataManagement.load_from_dict(eval_dict["training_dataset"]),
-            "test_dataset": TimeSeriesMetaDataManagement.load_from_dict(eval_dict["test_dataset"]),
+            "training_dataset": load_metadata(eval_dict.get("training_dataset")),
+            "test_dataset": load_metadata(eval_dict.get("test_dataset")),
             "contained_optimizers": contained_optimizers,
             "crossvalidation_performed": eval_dict["crossvalidation_performed"],
             "crossvalidation_random_state": eval_dict["crossvalidation_random_state"],

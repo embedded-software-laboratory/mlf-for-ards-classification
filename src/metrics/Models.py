@@ -4,6 +4,7 @@ from pydantic import BaseModel, ValidationInfo, field_validator, model_serialize
 from typing import Any,  Union
 
 from processing import TimeseriesMetaData
+from processing.datasets_metadata import ImageMetaData
 
 
 class GenericSplit(BaseModel):
@@ -94,8 +95,8 @@ class EvalResult(BaseModel):
 
     eval_type: str
 
-    training_dataset: TimeseriesMetaData = None
-    test_dataset: TimeseriesMetaData = None
+    training_dataset: Union[TimeseriesMetaData, ImageMetaData, None] = None
+    test_dataset: Union[TimeseriesMetaData, ImageMetaData, None] = None
 
     contained_optimizers: dict[str, GenericThresholdOptimization]
 

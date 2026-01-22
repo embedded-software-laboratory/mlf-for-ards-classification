@@ -190,6 +190,33 @@ class Evaluation:
                         'test_loss': test_loss
                     })
                     
+                    # Create proper metadata for image model evaluation
+                    from processing.datasets_metadata import ImageMetaData
+                    
+                    # Build comprehensive additional information string
+                    additional_info = (
+                        f"Model: {image_model.name} | "
+                        f"Pneumonia Dataset: {pneumonia_dataset} | "
+                        f"ARDS Dataset: {ards_dataset} | "
+                        f"Unfreeze Method: {method} | "
+                        f"Augmentation Mode: {mode} | "
+                        f"Test Loss: {test_loss:.4f} | "
+                        f"Learning Rate CNN: {self.config.get('image_model_parameters', {}).get('learning_rate_cnn', 'N/A')} | "
+                        f"Learning Rate ViT: {self.config.get('image_model_parameters', {}).get('learning_rate_vit', 'N/A')} | "
+                        f"Epochs Pneumonia: {self.config.get('image_model_parameters', {}).get('num_epochs_pneumonia', 'N/A')} | "
+                        f"Epochs ARDS: {self.config.get('image_model_parameters', {}).get('num_epochs_ards', 'N/A')} | "
+                        f"Batch Size: {self.config.get('image_model_parameters', {}).get('batch_size_ards', 'N/A')} | "
+                        f"K-Folds: {self.config.get('image_model_parameters', {}).get('k_folds', 'N/A')}"
+                    )
+                    
+                    image_metadata = ImageMetaData(
+                        datasource=ards_dataset,
+                        dataset_location=image_model.path_results_ards,
+                        disease_type='ARDS',
+                        additional_information=additional_info,
+                        number_of_images=0  # Can be filled if tracking is needed
+                    )
+                    
                     # Create proper metric objects matching timeseries format
                     contained_metrics = {
                         'Accuracy': GenericMetric(
@@ -236,13 +263,11 @@ class Evaluation:
                         contained_splits={'Evaluation split': eval_split}
                     )
                     
-                    # Create EvalResult with proper structure
-                    # Note: For image models, we don't use the same metadata structure as timeseries
-                    # Store image-specific info in the additional_information of the model itself
+                    # Create EvalResult with proper ImageMetaData structure
                     eval_result = EvalResultFactory.factory_method(
                         optimizer_list=[optimizer],
-                        training_set_meta_data=None,  # Image models don't use TimeseriesMetaData
-                        test_set_meta_data=None,  # Image models don't use TimeseriesMetaData
+                        training_set_meta_data=image_metadata,  # Now using ImageMetaData
+                        test_set_meta_data=image_metadata,  # Same metadata for both
                         evaltype='Evaluation',
                         crossvalidation_performed=False,
                         evaluation_performed=True
