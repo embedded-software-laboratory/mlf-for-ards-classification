@@ -232,19 +232,45 @@ models:
 
 image_model_parameters:
   # defines the method for fine-tuning for the dl models
+  # Options: last_layer, last_block, model
   method: last_block
   # different modes for augmented training/testing
   mode: mode1
+  
+  # =========================
+  # CNN Models (ResNet, DenseNet)
+  # =========================
+  # Pretraining parameters
+  learning_rate_pre_cnn: 0.001
+  batch_size_pre_cnn: 64
+  weight_decay_pre_cnn: 0.00001
+  
+  # Main training parameters
+  learning_rate_cnn: 0.05
+  epoch_decay_cnn: 0.002 
+  weight_decay_cnn: 0.00001
+  margin_cnn: 1.0
+  
+  # Pneumonia pretraining stage
   num_epochs_pneumonia: 20
-  num_epochs_ards: 20        
-  batch_size_pneumonia: 64
-  batch_size_ards: 8
+  batch_size_pneumonia: 128
   SEED_pneumonia: 47
+  
+  # ARDS fine-tuning stage
+  num_epochs_ards: 10
+  batch_size_ards: 8
   SEED_ards: 11
-  # Model-specific learning rates (CNNs need higher LR than ViT)
-  learning_rate_cnn: 0.05     # For ResNet and DenseNet
-  learning_rate_vit: 0.0005    # For Vision Transformer
-  k_folds: 1 # Use 1 for simple 80/20 split (faster), 2+ for k-fold cross-validation
+  
+  # Cross-validation
+  k_folds: 5  # Use 1 for simple 80/20 split (faster), 2+ for k-fold cross-validation
+  
+  # =========================
+  # ViT Models (Vision Transformer)
+  # =========================
+  learning_rate_vit: 0.0005
+  batch_size_vit: 32
+  num_epochs_vit: 10
+  k_folds_vit: 5
 
 # Path to the algorithms if they need to be loaded for execution
 algorithm_base_path:

@@ -122,12 +122,21 @@ class CNN(ImageModel):
 
     def __init__(self, image_model_parameters, model_name):
         super().__init__(image_model_parameters, model_name)
-        self.margin = 1.0
-        self.epoch_decay = 2e-3
-        self.weight_decay = 1e-5
-        self.learning_rate_pre = 1e-3
-        self.batch_size_pre = 64
-        self.weight_decay_pre = 1e-5
+        # Note: margin, epoch_decay, weight_decay, learning_rate_pre, batch_size_pre, weight_decay_pre
+        # are now set in the parent ImageModel.__init__ from config
+        # Set defaults only if not already set (for backward compatibility)
+        if not hasattr(self, 'margin'):
+            self.margin = 1.0
+        if not hasattr(self, 'epoch_decay'):
+            self.epoch_decay = 2e-3
+        if not hasattr(self, 'weight_decay'):
+            self.weight_decay = 1e-5
+        if not hasattr(self, 'learning_rate_pre'):
+            self.learning_rate_pre = 1e-3
+        if not hasattr(self, 'batch_size_pre'):
+            self.batch_size_pre = 64
+        if not hasattr(self, 'weight_decay_pre'):
+            self.weight_decay_pre = 1e-5
         self.use_amp = torch.cuda.is_available()  # Enable automatic mixed precision on CUDA
         self.scaler = GradScaler() if self.use_amp else None
 

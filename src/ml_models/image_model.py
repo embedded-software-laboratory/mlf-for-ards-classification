@@ -26,28 +26,53 @@ class ImageModel(Model):
         self.type = 'ImageModel'
         self.algorithm = model_name  # For image models, algorithm is the same as name (ResNet, DenseNet, ViT)
         
-        # for explanation of the parameters, see the manual for the config file (doc/Anleitung Config-Datei.md)
-        self.num_epochs_pneumonia = image_model_parameters["num_epochs_pneumonia"]
-        self.num_epochs_ards = image_model_parameters["num_epochs_ards"]
-        self.batch_size_pneumonia = image_model_parameters["batch_size_pneumonia"]
-        self.batch_size_ards = image_model_parameters["batch_size_ards"]
-        self.SEED_pneumonia = image_model_parameters["SEED_pneumonia"]
-        self.SEED_ards = image_model_parameters["SEED_ards"]
+        # Determine if this is a ViT or CNN model
+        is_vit = 'vit' in model_name.lower()
+        is_cnn = ('resnet' in model_name.lower() or 'densenet' in model_name.lower())
         
-        # Use model-specific learning rate if available, fallback to generic
-        if 'vit' in model_name.lower() and 'learning_rate_vit' in image_model_parameters:
-            self.learning_rate = image_model_parameters["learning_rate_vit"]
-            print(f"Using ViT-specific learning rate: {self.learning_rate}")
-        elif ('resnet' in model_name.lower() or 'densenet' in model_name.lower()) and 'learning_rate_cnn' in image_model_parameters:
-            self.learning_rate = image_model_parameters["learning_rate_cnn"]
-            print(f"Using CNN-specific learning rate: {self.learning_rate}")
-        elif 'learning_rate' in image_model_parameters:
-            self.learning_rate = image_model_parameters["learning_rate"]  # Fallback
-            print(f"Using generic learning rate: {self.learning_rate}")
+        # Model-specific parameters
+        if is_vit:
+            # ViT-specific parameters
+            self.learning_rate = image_model_parameters.get("learning_rate_vit", 0.0005)
+            self.batch_size = image_model_parameters.get("batch_size_vit", 32)
+            self.num_epochs = image_model_parameters.get("num_epochs_vit", 10)
+            self.k_folds = image_model_parameters.get("k_folds_vit", 5)
+            # ViT uses same parameters for both stages
+            self.num_epochs_pneumonia = self.num_epochs
+            self.num_epochs_ards = self.num_epochs
+            self.batch_size_pneumonia = self.batch_size
+            self.batch_size_ards = self.batch_size
+            print(f"Using ViT-specific parameters: LR={self.learning_rate}, batch_size={self.batch_size}, epochs={self.num_epochs}")
+        elif is_cnn:
+            # CNN-specific parameters
+            self.learning_rate = image_model_parameters.get("learning_rate_cnn", 0.05)
+            self.learning_rate_pre = image_model_parameters.get("learning_rate_pre_cnn", 0.001)
+            self.weight_decay = image_model_parameters.get("weight_decay_cnn", 1e-5)
+            self.weight_decay_pre = image_model_parameters.get("weight_decay_pre_cnn", 1e-5)
+            self.epoch_decay = image_model_parameters.get("epoch_decay_cnn", 0.002)
+            self.margin = image_model_parameters.get("margin_cnn", 1.0)
+            # Stage-specific parameters
+            self.num_epochs_pneumonia = image_model_parameters.get("num_epochs_pneumonia", 20)
+            self.num_epochs_ards = image_model_parameters.get("num_epochs_ards", 10)
+            self.batch_size_pneumonia = image_model_parameters.get("batch_size_pneumonia", 128)
+            self.batch_size_ards = image_model_parameters.get("batch_size_ards", 8)
+            self.batch_size_pre = image_model_parameters.get("batch_size_pre_cnn", 64)
+            self.k_folds = image_model_parameters.get("k_folds", 5)
+            print(f"Using CNN-specific parameters: LR={self.learning_rate}, LR_pre={self.learning_rate_pre}, "
+                  f"weight_decay={self.weight_decay}, margin={self.margin}")
         else:
-            raise ValueError(f"No learning rate specified for model {model_name}")
+            # Fallback to old behavior
+            self.learning_rate = image_model_parameters.get("learning_rate", 0.001)
+            self.num_epochs_pneumonia = image_model_parameters["num_epochs_pneumonia"]
+            self.num_epochs_ards = image_model_parameters["num_epochs_ards"]
+            self.batch_size_pneumonia = image_model_parameters["batch_size_pneumonia"]
+            self.batch_size_ards = image_model_parameters["batch_size_ards"]
+            self.k_folds = image_model_parameters.get("k_folds", 1)
+            print(f"Using generic parameters: LR={self.learning_rate}")
         
-        self.k_folds = image_model_parameters["k_folds"]
+        # Common parameters for all models
+        self.SEED_pneumonia = image_model_parameters.get("SEED_pneumonia", 123)
+        self.SEED_ards = image_model_parameters.get("SEED_ards", 105)
         self.path = image_model_parameters["path"]
         self.model_name = model_name
         self.path_models_pneumonia =  os.path.join(self.path,'models/'+ model_name+'/pneumonia/main')
