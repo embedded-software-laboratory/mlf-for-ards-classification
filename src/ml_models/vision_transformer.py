@@ -73,8 +73,13 @@ class VisionTransformer(ImageModel):
             kfold = None  # Signal to use simple split instead of k-fold
         else:
             kfold = KFold(n_splits=self.k_folds, shuffle=True)
-        optimizer = torch.optim.AdamW(model.parameters(), lr=self.learning_rate)
-        scheduler = ExponentialLR(optimizer=optimizer, gamma=0.96)
+        
+        # Use AdamW with weight decay for better regularization
+        optimizer = torch.optim.AdamW(model.parameters(), lr=self.learning_rate, weight_decay=0.01)
+        
+        # Cosine annealing with warmup is better for ViT than exponential decay
+        from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
+        scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=10, T_mult=2, eta_min=1e-6)
 
         return loss_fn, kfold, optimizer, scheduler
     
@@ -222,6 +227,9 @@ class VisionTransformer(ImageModel):
                 
                 optimizer.zero_grad()
                 self.scaler.scale(loss).backward()
+                # Gradient clipping to prevent exploding gradients
+                self.scaler.unscale_(optimizer)
+                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
                 self.scaler.step(optimizer)
                 self.scaler.update()
             else:
@@ -233,6 +241,8 @@ class VisionTransformer(ImageModel):
                 loss = loss_fn(pred, y)
                 optimizer.zero_grad()
                 loss.backward()
+                # Gradient clipping to prevent exploding gradients
+                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
                 optimizer.step()
             
             # Update values

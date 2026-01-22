@@ -241,7 +241,7 @@ image_model_parameters:
   batch_size_ards: 32
   SEED_pneumonia: 47
   SEED_ards: 11
-  learning_rate: 0.05 
+  learning_rate: 0.001
   k_folds: 1  # Use 1 for simple 80/20 split (faster), 2+ for k-fold cross-validation
 
 # Path to the algorithms if they need to be loaded for execution
