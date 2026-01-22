@@ -25,7 +25,20 @@ class ImageModel(Model):
         self.batch_size_ards = image_model_parameters["batch_size_ards"]
         self.SEED_pneumonia = image_model_parameters["SEED_pneumonia"]
         self.SEED_ards = image_model_parameters["SEED_ards"]
-        self.learning_rate = image_model_parameters["learning_rate"]
+        
+        # Use model-specific learning rate if available, fallback to generic
+        if 'vit' in model_name.lower() and 'learning_rate_vit' in image_model_parameters:
+            self.learning_rate = image_model_parameters["learning_rate_vit"]
+            print(f"Using ViT-specific learning rate: {self.learning_rate}")
+        elif ('resnet' in model_name.lower() or 'densenet' in model_name.lower()) and 'learning_rate_cnn' in image_model_parameters:
+            self.learning_rate = image_model_parameters["learning_rate_cnn"]
+            print(f"Using CNN-specific learning rate: {self.learning_rate}")
+        elif 'learning_rate' in image_model_parameters:
+            self.learning_rate = image_model_parameters["learning_rate"]  # Fallback
+            print(f"Using generic learning rate: {self.learning_rate}")
+        else:
+            raise ValueError(f"No learning rate specified for model {model_name}")
+        
         self.k_folds = image_model_parameters["k_folds"]
         self.path = image_model_parameters["path"]
         self.model_name = model_name
