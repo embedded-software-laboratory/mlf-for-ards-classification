@@ -113,6 +113,33 @@ class Evaluation:
         """
         import csv
         import os
+        import re
+        
+        def parse_metric_value(value_str):
+            """
+            Parse metric value that can be in different formats:
+            - 'tensor(0.8614)' -> 0.8614
+            - 'tensor(0.8614, device='cuda:0')' -> 0.8614
+            - '[0.8614]' -> 0.8614
+            - '0.8614' -> 0.8614
+            """
+            if not isinstance(value_str, str):
+                return float(value_str)
+            
+            # Remove whitespace
+            value_str = value_str.strip()
+            
+            # Handle tensor format: tensor(0.8614) or tensor(0.8614, device='cuda:0')
+            tensor_match = re.search(r'tensor\(([-+]?[0-9]*\.?[0-9]+)', value_str)
+            if tensor_match:
+                return float(tensor_match.group(1))
+            
+            # Handle list format: [0.8614]
+            if value_str.startswith('[') and value_str.endswith(']'):
+                value_str = value_str.strip('[]').strip()
+            
+            # Handle regular float
+            return float(value_str)
         
         logger.info("Starting evaluation of image models...")
         for model_algorithm in models_to_evaluate_dict:
@@ -136,15 +163,15 @@ class Evaluation:
                         reader = csv.DictReader(f)
                         test_results = next(reader)  # Read first (and only) row
                     
-                    # Extract metrics - they're stored as lists with single values
+                    # Extract metrics - handle tensor strings, lists, or plain floats
                     test_metrics = {
-                        'test_loss': float(test_results['test_loss'].strip('[]')) if isinstance(test_results['test_loss'], str) else float(test_results['test_loss']),
-                        'test_accuracy': float(test_results['test_acc'].strip('[]')) if isinstance(test_results['test_acc'], str) else float(test_results['test_acc']),
-                        'test_precision': float(test_results['test_prec'].strip('[]')) if isinstance(test_results['test_prec'], str) else float(test_results['test_prec']),
-                        'test_recall': float(test_results['test_recall'].strip('[]')) if isinstance(test_results['test_recall'], str) else float(test_results['test_recall']),
-                        'test_specificity': float(test_results['test_specificity'].strip('[]')) if isinstance(test_results['test_specificity'], str) else float(test_results['test_specificity']),
-                        'test_auroc': float(test_results['test_auroc'].strip('[]')) if isinstance(test_results['test_auroc'], str) else float(test_results['test_auroc']),
-                        'test_f1': float(test_results['test_f1'].strip('[]')) if isinstance(test_results['test_f1'], str) else float(test_results['test_f1'])
+                        'test_loss': parse_metric_value(test_results['test_loss']),
+                        'test_accuracy': parse_metric_value(test_results['test_acc']),
+                        'test_precision': parse_metric_value(test_results['test_prec']),
+                        'test_recall': parse_metric_value(test_results['test_recall']),
+                        'test_specificity': parse_metric_value(test_results['test_specificity']),
+                        'test_auroc': parse_metric_value(test_results['test_auroc']),
+                        'test_f1': parse_metric_value(test_results['test_f1'])
                     }
                     
                     logger.info(f"Successfully loaded metrics for '{image_model.name}':")
