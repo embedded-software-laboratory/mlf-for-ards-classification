@@ -68,7 +68,11 @@ class VisionTransformer(ImageModel):
     
     def get_helpers(self, model):
         loss_fn = nn.CrossEntropyLoss()
-        kfold = KFold(n_splits=self.k_folds, shuffle=True)
+        # Handle k_folds=1 as simple train/validation split (no cross-validation)
+        if self.k_folds == 1:
+            kfold = None  # Signal to use simple split instead of k-fold
+        else:
+            kfold = KFold(n_splits=self.k_folds, shuffle=True)
         optimizer = torch.optim.AdamW(model.parameters(), lr=self.learning_rate)
         scheduler = ExponentialLR(optimizer=optimizer, gamma=0.96)
 

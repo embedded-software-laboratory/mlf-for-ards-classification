@@ -175,7 +175,11 @@ class CNN(ImageModel):
     
     def get_helpers(self, model):
         loss_fn = AUCMLoss()
-        kfold = KFold(n_splits=self.k_folds, shuffle=True, random_state=42)
+        # Handle k_folds=1 as simple train/validation split (no cross-validation)
+        if self.k_folds == 1:
+            kfold = None  # Signal to use simple split instead of k-fold
+        else:
+            kfold = KFold(n_splits=self.k_folds, shuffle=True, random_state=42)
         optimizer = PESG(model.parameters(), loss_fn=loss_fn, lr=self.learning_rate, margin=self.margin, epoch_decay=self.epoch_decay, weight_decay=self.weight_decay)
         scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=0.96)
 

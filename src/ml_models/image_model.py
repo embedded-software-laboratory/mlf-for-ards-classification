@@ -154,10 +154,22 @@ class ImageModel(Model):
         num_workers = min(8, os.cpu_count() or 4)  # Use up to 8 workers or available CPUs
         pin_memory = 'cuda' in str(device)  # Only use pin_memory for CUDA devices
         
-        # K-fold cross validation
-        for fold, (train_idx, val_idx) in enumerate(kfold.split(dataset_train)):
-            print(f"FOLD {fold+1}", flush=True)
+        # Handle k_folds=1 as simple train/validation split (80/20)
+        if kfold is None:
+            print("Using simple 80/20 train/validation split (k_folds=1)", flush=True)
             print("###############################", flush=True)
+            
+            # Simple 80/20 split
+            dataset_size = len(dataset_train)
+            train_size = int(0.8 * dataset_size)
+            val_size = dataset_size - train_size
+            
+            # Create indices for train and validation
+            indices = list(range(dataset_size))
+            np.random.seed(SEED)
+            np.random.shuffle(indices)
+            train_idx = indices[:train_size]
+            val_idx = indices[train_size:]
             
             train_loader = DataLoader(dataset_train, batch_size=batch_size, 
                                      sampler=SubsetRandomSampler(train_idx),
@@ -177,12 +189,42 @@ class ImageModel(Model):
                                     dataset_name, method, PATH_MODEL, PATH_RESULTS, 
                                     best_acc, best_auroc, mode)
             
-            # Show average of validation
+            # Show final validation metrics
             avg_acc = np.mean(history['valid_acc'])
             avg_loss = np.mean(history['valid_loss'])
-            print(f"Average scores\n-------------------------------", flush=True)
+            print(f"Final validation scores\n-------------------------------", flush=True)
             print(f'> Accuracy: {avg_acc}')
             print(f'> Loss: {avg_loss}\n-------------------------------', flush=True)
+        else:
+            # K-fold cross validation
+            for fold, (train_idx, val_idx) in enumerate(kfold.split(dataset_train)):
+                print(f"FOLD {fold+1}", flush=True)
+                print("###############################", flush=True)
+                
+                train_loader = DataLoader(dataset_train, batch_size=batch_size, 
+                                         sampler=SubsetRandomSampler(train_idx),
+                                         num_workers=num_workers, pin_memory=pin_memory,
+                                         persistent_workers=(num_workers > 0))
+                valid_loader = DataLoader(dataset_train, batch_size=batch_size, 
+                                         sampler=SubsetRandomSampler(val_idx),
+                                         num_workers=num_workers, pin_memory=pin_memory,
+                                         persistent_workers=(num_workers > 0))
+                
+                model.to(device)
+                
+                for epoch in range(num_epochs):
+                    print(f"Epoch {epoch+1}\n-------------------------------", flush=True)
+                    self.perform_training(device, train_loader, model, valid_loader, loss_fn, 
+                                        optimizer, scheduler, epoch, history, model_name, 
+                                        dataset_name, method, PATH_MODEL, PATH_RESULTS, 
+                                        best_acc, best_auroc, mode)
+                
+                # Show average of validation
+                avg_acc = np.mean(history['valid_acc'])
+                avg_loss = np.mean(history['valid_loss'])
+                print(f"Average scores\n-------------------------------", flush=True)
+                print(f'> Accuracy: {avg_acc}')
+                print(f'> Loss: {avg_loss}\n-------------------------------', flush=True)
         
         self.model = model
 
