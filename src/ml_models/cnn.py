@@ -144,7 +144,7 @@ class CNN(ImageModel):
             self.pretraining(device, dataset_train, info_list)
         
         base_model = self.build_model(model_name)
-
+        base_model = self.unfreeze_model(base_model, model_name, method)
         base_model = base_model.to(device)
         path = '{name}_{dataset}_{method}_{mode}_pretrained.pt'.format(name=model_name, dataset=dataset_name, method=method, mode=mode)
         base_model.load_state_dict(torch.load(os.path.join(PATH_RESULT_MODEL, path), weights_only=False), strict=False)
@@ -172,6 +172,78 @@ class CNN(ImageModel):
         print("Selected model: {}".format(model_name))
 
         return base_model
+    
+    def unfreeze_model(self, model, model_name, unfreeze_setting):
+        """
+        This function configures which layers to train for transfer learning of CNN models.
+        
+        :param model: (nn.Module) The CNN model (ResNet50 or DenseNet121)
+        :param model_name: (str) The model name to determine architecture
+        :param unfreeze_setting: (str) The layers to train: 'last_layer', 'last_block', or 'model'
+        :return: model with frozen/unfrozen parameters according to the setting
+        """
+        model_name_lower = model_name.lower()
+        
+        # First freeze all parameters
+        if 'resnet' in model_name_lower:
+            for param in model.resnet50.parameters():
+                param.requires_grad = False
+        elif 'densenet' in model_name_lower:
+            for param in model.model.parameters():
+                param.requires_grad = False
+        
+        if unfreeze_setting == 'last_layer':
+            # Only train the classifier/fc layer
+            if 'resnet' in model_name_lower:
+                for param in model.resnet50.fc.parameters():
+                    param.requires_grad = True
+                print("ResNet: Only final classifier (fc) layer unfrozen")
+            elif 'densenet' in model_name_lower:
+                for param in model.model.classifier.parameters():
+                    param.requires_grad = True
+                print("DenseNet: Only final classifier layer unfrozen")
+                
+        elif unfreeze_setting == 'last_block':
+            # Unfreeze the last layer block + classifier
+            if 'resnet' in model_name_lower:
+                # Unfreeze layer4 (last residual block) + fc
+                for param in model.resnet50.layer4.parameters():
+                    param.requires_grad = True
+                for param in model.resnet50.fc.parameters():
+                    param.requires_grad = True
+                print("ResNet: Last residual block (layer4) + classifier unfrozen")
+            elif 'densenet' in model_name_lower:
+                # Unfreeze denseblock4 (last dense block) + classifier
+                for param in model.model.features.denseblock4.parameters():
+                    param.requires_grad = True
+                for param in model.model.classifier.parameters():
+                    param.requires_grad = True
+                print("DenseNet: Last dense block (denseblock4) + classifier unfrozen")
+                
+        elif unfreeze_setting == 'model':
+            # Unfreeze all parameters
+            if 'resnet' in model_name_lower:
+                for param in model.resnet50.parameters():
+                    param.requires_grad = True
+                print("ResNet: All layers unfrozen")
+            elif 'densenet' in model_name_lower:
+                for param in model.model.parameters():
+                    param.requires_grad = True
+                print("DenseNet: All layers unfrozen")
+        else:
+            raise ValueError(f"Unknown unfreeze_setting '{unfreeze_setting}'. Use 'last_layer', 'last_block', or 'model'.")
+        
+        # Count trainable parameters after unfreezing
+        if 'resnet' in model_name_lower:
+            trainable = sum(p.numel() for p in model.resnet50.parameters() if p.requires_grad)
+            total = sum(p.numel() for p in model.resnet50.parameters())
+        elif 'densenet' in model_name_lower:
+            trainable = sum(p.numel() for p in model.model.parameters() if p.requires_grad)
+            total = sum(p.numel() for p in model.model.parameters())
+        
+        print(f"After unfreezing: {trainable:,} trainable / {total:,} total parameters")
+        
+        return model
     
     def get_helpers(self, model):
         loss_fn = AUCMLoss()

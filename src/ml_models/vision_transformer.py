@@ -347,33 +347,35 @@ class VisionTransformer(ImageModel):
         to which unfreeze setting we want to use by freezing those we do not need.
         
         :param model: (timm/pytorch) ViT model which was generated before
-        :param unfreeze_setting: (str) The layers name which we want to train it on 
-        :return: model (timm/pytorch) contains the model with the freezes parameters according to the setting we wanted
+        :param unfreeze_setting: (str) The layers to train: 'last_layer', 'last_block', or 'model'
+        :return: model (timm/pytorch) contains the model with the frozen/unfrozen parameters according to the setting
         """
 
-        # set all parameters to false or freeze all parameters 
-        for param in model.blocks.parameters():
+        # First freeze all parameters
+        for param in model.parameters():
             param.requires_grad = False
+        
+        # Always unfreeze the classifier head (required for all modes)
+        for param in model.head.parameters():
+            param.requires_grad = True
             
-        # for model unfreeze all parameters or activate all parameters
-        if unfreeze_setting == 'model': 
-            for param in model.blocks.parameters():
-                param.requires_grad = True
-            print("Entire model unfreezed")
+        if unfreeze_setting == 'last_layer':
+            # Only train the classifier layer (head)
+            print("ViT: Only classifier head unfrozen")
             
-        # freeze all parameters but the last block
         elif unfreeze_setting == 'last_block':
+            # Unfreeze the last transformer block + classifier
             for param in model.blocks[len(model.blocks)-1].parameters():
                 param.requires_grad = True
-            print("Last block unfreezed")
+            print(f"ViT: Last transformer block (block {len(model.blocks)-1}) + classifier unfrozen")
             
-        # freeze all parameters but the classifier layer
-        elif unfreeze_setting == 'classifier': 
-            print("Classifier unfreezed")
-            raise Exception("It is not yet supported unfreeze the whole classifier.")
+        elif unfreeze_setting == 'model':
+            # Unfreeze all transformer blocks + classifier
+            for param in model.blocks.parameters():
+                param.requires_grad = True
+            print("ViT: All transformer blocks + classifier unfrozen")
         else:
-            print(unfreeze_setting)
-            raise Exception("It is not yet supported to train this part of the model.")
+            raise ValueError(f"Unknown unfreeze_setting '{unfreeze_setting}'. Use 'last_layer', 'last_block', or 'model'.")
         
         # Count trainable parameters after unfreezing
         trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)

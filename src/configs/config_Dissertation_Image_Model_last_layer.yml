@@ -232,11 +232,11 @@ models:
 
 image_model_parameters:
   # defines the method for fine-tuning for the dl models
-  method: last_block
+  method: last_layer
   # different modes for augmented training/testing
   mode: mode1
-  num_epochs_pneumonia: 50
-  num_epochs_ards: 50        
+  num_epochs_pneumonia: 25  # Increased from 15 - CNNs converge well, ViT needs more
+  num_epochs_ards: 40        # Increased from 20 - Fine-tuning benefits from more epochs
   batch_size_pneumonia: 32
   batch_size_ards: 32
   SEED_pneumonia: 47
@@ -439,7 +439,7 @@ evaluation:
   - NPV
   - Precisions
   - Recalls
-  evaluation_name: ImageModels
+  evaluation_name: ImageModels_Last_Layer
   threshold_optimization_algorithms:
   - Standard
   - MaxTPR
