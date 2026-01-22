@@ -235,8 +235,8 @@ image_model_parameters:
   method: last_block
   # different modes for augmented training/testing
   mode: mode1
-  num_epochs_pneumonia: 50
-  num_epochs_ards: 50        
+  num_epochs_pneumonia: 20
+  num_epochs_ards: 20        
   batch_size_pneumonia: 32
   batch_size_ards: 32
   SEED_pneumonia: 47
