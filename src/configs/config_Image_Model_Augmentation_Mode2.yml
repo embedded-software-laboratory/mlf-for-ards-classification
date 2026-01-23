@@ -296,6 +296,18 @@ preprocessing:
     series_start_point: -50000
     update_ards_values: false
 
+# Settings for feature selection before training or classification
+feature_selection:
+  method: univariate
+  variance: 0.16
+  k: 50
+
+# Settings about how the data is split into training and test data
+data_segregation:
+  training_test_ratio: 0.8
+  percentage_of_ards_patients: 0.15
+  splitting_seed: 1
+
 # Configurations about the evaluation of the models and which metrics to calculate
 evaluation:
   cross_validation:
