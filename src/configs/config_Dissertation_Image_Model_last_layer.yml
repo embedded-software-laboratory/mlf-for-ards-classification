@@ -232,19 +232,50 @@ models:
 
 image_model_parameters:
   # defines the method for fine-tuning for the dl models
+  # Options: last_layer, last_block, model
   method: last_layer
-  # different modes for augmented training/testing
+  
+  # Data augmentation modes (controls which datasets use augmented data)
+  # mode1: No augmentation - standard training with original images
+  # mode2: Reserved for future use (augmentation during training only via transforms)
+  # mode3: ARDS training data uses pre-augmented dataset (MIMIC-DB-AUG folder)
+  # mode4: ARDS training AND test data use pre-augmented datasets
+  # Note: PNEUMONIA training always uses non-augmented data (CheXpert-DB-PNEUMONIA)
   mode: mode1
-  num_epochs_pneumonia: 20  # Increased from 15 - CNNs converge well, ViT needs more
-  num_epochs_ards: 30        # Increased from 20 - Fine-tuning benefits from more epochs
+  
+  # =========================
+  # CNN Models (ResNet, DenseNet)
+  # =========================
+  # Pretraining parameters
+  learning_rate_pre_cnn: 0.001
+  batch_size_pre_cnn: 64
+  weight_decay_pre_cnn: 0.00001
+  
+  # Main training parameters
+  learning_rate_cnn: 0.05
+  epoch_decay_cnn: 0.002 
+  weight_decay_cnn: 0.00001
+  margin_cnn: 1.0
+  
+  # Pneumonia pretraining stage
+  num_epochs_pneumonia: 20
   batch_size_pneumonia: 32
-  batch_size_ards: 32
   SEED_pneumonia: 47
+  
+  # ARDS fine-tuning stage
+  num_epochs_ards: 30
+  batch_size_ards: 32
   SEED_ards: 11
-  # Model-specific learning rates (CNNs need higher LR than ViT)
-  learning_rate_cnn: 0.05     # For ResNet and DenseNet
-  learning_rate_vit: 0.001    # For Vision Transformer
+  
+  # Cross-validation
   k_folds: 1  # Use 1 for simple 80/20 split (faster), 2+ for k-fold cross-validation
+  
+  # =========================
+  # ViT Models (Vision Transformer)
+  # =========================
+  learning_rate_vit: 0.001
+  batch_size_vit: 32
+  k_folds_vit: 1
 
 # Path to the algorithms if they need to be loaded for execution
 algorithm_base_path:

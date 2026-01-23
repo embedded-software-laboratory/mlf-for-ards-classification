@@ -1,0 +1,183 @@
+# Information about the process itself - defines which steps are executed by the framework
+process:
+  # Information for time-series models
+  load_models: false
+  load_timeseries_data: false
+  perform_anomaly_detection: false
+  perform_imputation: false
+  perform_unit_conversion: false
+  calculate_missing_params: false
+  perform_ards_onset_detection: false
+  perform_filtering: false
+  perform_feature_selection: false
+  perform_data_segregation: false
+  perform_timeseries_training: false
+  perform_timeseries_classification: false
+  perform_threshold_optimization: false
+  calculate_evaluation_metrics: false
+  perform_cross_validation: false
+  save_models: false
+  # Information for image models
+  load_image_data: true
+  train_image_models: true
+  execute_image_models: true
+  test_image_models: true
+
+# Current supported algorithms by the framework 
+supported_algorithms:
+  timeseries_models:
+  - AdaBoostModel
+  - LightGBMModel
+  - LogisticRegressionModel
+  - RandomForestModel
+  # - SupportVectorMachineModel
+  - XGBoostModel
+  image_models:
+  - ResNetModel
+  - DenseNetModel
+  - VITModel
+
+# Configurations about the models to train, execute, cross-validate
+models:
+  image_models:
+    base_path_config:
+      to_cross_validate: Data/Models/ImageModels/Config/CrossValidation/
+      to_train: Data/Models/ImageModels/Config/Training/
+    to_train:
+      ResNet:
+        Active: true
+        Configs:
+        - default
+        Names:
+        - ResNet
+      DenseNet:
+        Active: true
+        Configs:
+        - default
+        Names:
+        - DenseNet
+      ViT:
+        Active: true
+        Configs:
+        - default
+        Names:
+        - ViT
+    to_evaluate:
+      ResNet:
+        Active: true
+        Names:
+        - ResNet
+      DenseNet:
+        Active: true
+        Names:
+        - DenseNet
+      ViT:
+        Active: true
+        Names:
+        - ViT
+    to_execute:
+      ResNet:
+        Active: true
+        Names:
+        - ResNet
+      DenseNet:
+        Active: true
+        Names:
+        - DenseNet
+      ViT:
+        Active: true
+        Names:
+        - ViT
+
+image_model_parameters:
+  # defines the method for fine-tuning for the dl models
+  # Options: last_layer, last_block, model
+  method: last_block
+  
+  # Data augmentation modes (controls which datasets use augmented data)
+  # mode1: No augmentation - standard training with original images
+  # mode2: Reserved for future use (augmentation during training only via transforms)
+  # mode3: ARDS training data uses pre-augmented dataset (MIMIC-DB-AUG folder)
+  # mode4: ARDS training AND test data use pre-augmented datasets
+  # Note: PNEUMONIA training always uses non-augmented data (CheXpert-DB-PNEUMONIA)
+  mode: mode3
+  
+  # =========================
+  # CNN Models (ResNet, DenseNet)
+  # =========================
+  # Pretraining parameters
+  learning_rate_pre_cnn: 0.001
+  batch_size_pre_cnn: 64
+  weight_decay_pre_cnn: 0.00001
+  
+  # Main training parameters
+  learning_rate_cnn: 0.05
+  epoch_decay_cnn: 0.002 
+  weight_decay_cnn: 0.00001
+  margin_cnn: 1.0
+  
+  # Pneumonia pretraining stage
+  num_epochs_pneumonia: 20
+  batch_size_pneumonia: 128
+  SEED_pneumonia: 47
+  
+  # ARDS fine-tuning stage
+  num_epochs_ards: 30
+  batch_size_ards: 8
+  SEED_ards: 11
+  
+  # Cross-validation
+  k_folds: 5  # Use 1 for simple 80/20 split (faster), 2+ for k-fold cross-validation
+  
+  # =========================
+  # ViT Models (Vision Transformer)
+  # =========================
+  learning_rate_vit: 0.0005
+  batch_size_vit: 32
+  k_folds_vit: 5
+
+# Path to the algorithms if they need to be loaded for execution
+algorithm_base_path:
+  # Image models
+  DensetNet: default
+  ResNet: default
+  VIT: default
+
+# Path to store or load the results of the experiments
+storage_path: ../Save/ImageModels/Augmentation_Mode3/
+
+# Information about the data that is used to train and evaluate the models
+data:
+  # image dataset information
+  database: CALIBRATION
+  pneumonia_image_dataset: balanced
+  ards_image_dataset: weighted
+  import_type: split
+  image_file_path: /work/rwth1474/Data/image/
+
+# Configurations about the evaluation of the models and which metrics to calculate
+evaluation:
+  cross_validation:
+    n_splits: 5
+    random_state: 11
+    shuffle: true
+  evaluation_metrics:
+  - AUC
+  - Accuracy
+  - F1Score
+  - FPR
+  - MCC
+  - OptimalProbability
+  - Sensitivity
+  - Specificity
+  - TPR
+  - PPV
+  - NPV
+  - Precisions
+  - Recalls
+  evaluation_name: ImageModels_Mode3_TrainAugmented
+  threshold_optimization_algorithms:
+  - Standard
+  - MaxTPR
+  - MaxTPRMinFPR
+  - GeometricRoot
