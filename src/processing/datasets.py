@@ -281,7 +281,8 @@ class ImageDataset(Dataset):
         AUG_TECH = ['colorinvert', 'jitter', 'emboss', 'fog', 'gamma']
         
         # only save original image paths if is training set or if it is a testset without augmentation
-        if dataset_name != 'test' or (dataset_name == 'test' and not augment): 
+        # Skip this if augment=True because the non-augmented image/label folders don't exist in MIMIC-DB-AUG
+        if (dataset_name != 'test' or (dataset_name == 'test' and not augment)) and os.path.exists(path[0]): 
             for file in sorted(os.listdir(path[0]), key=lambda x:float(re.findall("(\d+)",x)[0])):
                 path_walk_image.append(path[0]+"/"+file)
                 path_walk_label.append(path[1]+"/"+file)
