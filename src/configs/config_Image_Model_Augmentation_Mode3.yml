@@ -39,6 +39,98 @@ supported_algorithms:
 
 # Configurations about the models to train, execute, cross-validate
 models:
+  timeseries_models:
+    base_path_config:
+      to_cross_validate: Data/Models/TimeSeriesModels/Config/CrossValidation/
+      to_train: Data/Models/TimeSeriesModels/Config/Training/
+    to_train:
+      AdaBoost:
+        Active: false
+        Configs: []
+        Names: []
+      LightGBM:
+        Active: false
+        Configs: []
+        Names: []
+      LogisticRegression:
+        Active: false
+        Configs: []
+        Names: []
+      RandomForest:
+        Active: false
+        Configs: []
+        Names: []
+      SupportVectorMachine:
+        Active: false
+        Configs: []
+        Names: []
+      XGBoost:
+        Active: false
+        Configs: []
+        Names: []
+    to_cross_validate:
+      AdaBoost:
+        Active: false
+        Configs: []
+        Names: []
+      LightGBM:
+        Active: false
+        Configs: []
+        Names: []
+      LogisticRegression:
+        Active: false
+        Configs: []
+        Names: []
+      RandomForest:
+        Active: false
+        Configs: []
+        Names: []
+      SupportVectorMachine:
+        Active: false
+        Configs: []
+        Names: []
+      XGBoost:
+        Active: false
+        Configs: []
+        Names: []
+    to_evaluate:
+      AdaBoost:
+        Active: false
+        Names: []
+      LightGBM:
+        Active: false
+        Names: []
+      LogisticRegression:
+        Active: false
+        Names: []
+      RandomForest:
+        Active: false
+        Names: []
+      SupportVectorMachine:
+        Active: false
+        Names: []
+      XGBoost:
+        Active: false
+        Names: []
+    to_execute:
+      AdaBoost:
+        Active: false
+        Names: []
+      LightGBM:
+        Active: false
+        Names: []
+      LogisticRegression:
+        Active: false
+        Names: []
+      RandomForest:
+        Active: false
+        Names: []
+      SupportVectorMachine:
+        Active: false
+        Names: []
+      XGBoost:
+        Active: false
+        Names: []
   image_models:
     base_path_config:
       to_cross_validate: Data/Models/ImageModels/Config/CrossValidation/
@@ -138,6 +230,14 @@ image_model_parameters:
 
 # Path to the algorithms if they need to be loaded for execution
 algorithm_base_path:
+  # Timeseries models
+  AdaBoost: default
+  LightGBM: default
+  LogisticRegression: default
+  RandomForest: default
+  RecurrentNeuralNetwork: Save/Cross validation results/Recurrent neural network_1
+  SupportVectorMachine: default
+  XGBoost: default
   # Image models
   DensetNet: default
   ResNet: default
