@@ -183,6 +183,19 @@ class Evaluation:
                         # Has additional suffix - likely augmentation technique
                         aug_technique = metrics_filename.replace(metrics_filename_base + '_', '').replace('.pt', '')
                         logger.info(f"Processing results for augmentation technique: {aug_technique}")
+                    else:
+                        # No suffix found - check if 'all' technique was used from config
+                        config_technique = self.config.get('image_model_parameters', {}).get('augmentation_techniques', 'none')
+                        if config_technique == 'all' and mode in ['mode3', 'mode4']:
+                            aug_technique = 'all'
+                            logger.info(f"Processing results for augmentation technique: {aug_technique} (from config)")
+                        elif config_technique not in ['all', 'iterate_all', 'none'] and mode in ['mode3', 'mode4']:
+                            # Single technique or list of techniques without suffix
+                            if isinstance(config_technique, list):
+                                aug_technique = '+'.join(config_technique)  # Combined techniques
+                            else:
+                                aug_technique = config_technique
+                            logger.info(f"Processing results for augmentation technique: {aug_technique} (from config)")
                     
                     # Read the CSV file with test metrics
                     try:
