@@ -85,6 +85,11 @@ class Framework:
         self.image_file_path = config["data"]["image_file_path"]
         self.method = config["image_model_parameters"]["method"]
         self.mode = config["image_model_parameters"]["mode"]
+        # Read augmentation techniques from config, default to 'all' if not specified
+        # Special value 'iterate_all' will train separate models for each technique
+        self.augmentation_techniques = config["image_model_parameters"].get("augmentation_techniques", "all")
+        # Read augmentation subfolder from config, default to 'weighted'
+        self.augmentation_subfolder = config["data"].get("augmentation_subfolder", "weighted")
         self.image_model_use_config = self.config['models']['image_models']
         self.image_models_to_train = self.create_needed_models(self.image_model_use_config, 'to_train')
         self.image_models_to_evaluate = self.create_needed_models(self.image_model_use_config, 'to_evaluate')
@@ -390,6 +395,8 @@ class Framework:
         Loads timeseries data from file, applies preprocessing and feature selection,
         segregates data into training and test sets, and saves all datasets with metadata.
         """
+        from processing.datasets import ImageDataset
+        
         logger.info("=" * 80)
         logger.info("STEP 6: Loading and Processing Image Data")
         logger.info("=" * 80)
@@ -399,30 +406,86 @@ class Framework:
         logger.info(f"Pneumonia dataset name: {self.pneumonia_image_dataset}")
         logger.info(f"ARDS dataset name: {self.ards_image_dataset}")
 
-        for dl_method in self.image_models_to_train:
-            logger.info(f"Building datasets for DL method: {dl_method}")
+        # Check if we should iterate over all available augmentation techniques
+        if self.augmentation_techniques == 'iterate_all':
+            logger.info("Augmentation mode: 'iterate_all' - Discovering available techniques...")
+            logger.info(f"Augmentation subfolder: {self.augmentation_subfolder}")
+            available_techniques = ImageDataset.discover_augmentation_techniques(self.image_file_path, 'ARDS', self.augmentation_subfolder)
+            if not available_techniques:
+                logger.warning("No augmentation techniques found. Falling back to 'all' mode.")
+                techniques_to_iterate = ['all']
+            else:
+                techniques_to_iterate = available_techniques
+                logger.info(f"Will train separate models for each of {len(techniques_to_iterate)} techniques")
+        else:
+            # Single run with specified techniques
+            techniques_to_iterate = [self.augmentation_techniques]
+
+        # Store datasets for each augmentation technique
+        self.augmentation_datasets = {}
+        
+        for technique in techniques_to_iterate:
+            logger.info("=" * 80)
+            logger.info(f"Processing augmentation technique: {technique}")
+            logger.info("=" * 80)
             
-            # Determine augmentation based on mode
-            use_ards_train_augmentation = self._should_use_augmentation('ARDS', self.mode)
-            use_ards_test_augmentation = use_ards_train_augmentation and self.mode == 'mode4'
-            
-            logger.info(f"Building PNEUMONIA training dataset: '{self.pneumonia_image_dataset}' (augment=False)")
-            self.image_pneumonia_training_data = self.dataset_generator.build_dataset(self.pneumonia_image_dataset, dl_method,
-                                                                                      'PNEUMONIA',
-                                                                                      path=self.image_file_path,
-                                                                                      augment=False)
-            logger.info(f"PNEUMONIA training dataset built successfully. Size: {len(self.image_pneumonia_training_data)}")
-            
-            logger.info(f"Building ARDS training dataset: '{self.ards_image_dataset}' (augment={use_ards_train_augmentation}, mode={self.mode})")
-            self.image_ards_training_data = self.dataset_generator.build_dataset(self.ards_image_dataset, dl_method, 'ARDS',
-                                                                                 path=self.image_file_path,
-                                                                                 augment=use_ards_train_augmentation)
-            logger.info(f"ARDS training dataset built successfully. Size: {len(self.image_ards_training_data)}")
-            
-            logger.info(f"Building ARDS test dataset: 'test' (augment={use_ards_test_augmentation}, mode={self.mode})")
-            self.image_ards_test_data = self.dataset_generator.build_dataset('test', dl_method, 'ARDS',
-                                                                             path=self.image_file_path, augment=use_ards_test_augmentation)
-            logger.info(f"ARDS test dataset built successfully. Size: {len(self.image_ards_test_data)}")
+            for dl_method in self.image_models_to_train:
+                logger.info(f"Building datasets for DL method: {dl_method}")
+                
+                # Determine augmentation based on mode
+                use_ards_train_augmentation = self._should_use_augmentation('ARDS', self.mode)
+                use_ards_test_augmentation = use_ards_train_augmentation and self.mode == 'mode4'
+                
+                # Log augmentation configuration
+                logger.info(f"Augmentation configuration:")
+                logger.info(f"  - Mode: {self.mode}")
+                logger.info(f"  - ARDS train augmentation: {use_ards_train_augmentation}")
+                logger.info(f"  - ARDS test augmentation: {use_ards_test_augmentation}")
+                logger.info(f"  - Current technique: {technique}")
+                
+                logger.info(f"Building PNEUMONIA training dataset: '{self.pneumonia_image_dataset}' (augment=False)")
+                pneumonia_data = self.dataset_generator.build_dataset(self.pneumonia_image_dataset, dl_method,
+                                                                      'PNEUMONIA',
+                                                                      path=self.image_file_path,
+                                                                      augment=False)
+                logger.info(f"PNEUMONIA training dataset built successfully. Size: {len(pneumonia_data)}")
+                
+                logger.info(f"Building ARDS training dataset: '{self.ards_image_dataset}' (augment={use_ards_train_augmentation})")
+                ards_train_data = self.dataset_generator.build_dataset(self.ards_image_dataset, dl_method, 'ARDS',
+                                                                       path=self.image_file_path,
+                                                                       augment=use_ards_train_augmentation,
+                                                                       augmentation_techniques=technique if use_ards_train_augmentation else None,
+                                                                       augmentation_subfolder=self.augmentation_subfolder)
+                logger.info(f"ARDS training dataset built successfully. Size: {len(ards_train_data)}")
+                
+                logger.info(f"Building ARDS test dataset: 'test' (augment={use_ards_test_augmentation})")
+                ards_test_data = self.dataset_generator.build_dataset('test', dl_method, 'ARDS',
+                                                                      path=self.image_file_path,
+                                                                      augment=use_ards_test_augmentation,
+                                                                      augmentation_techniques=technique if use_ards_test_augmentation else None,
+                                                                      augmentation_subfolder=self.augmentation_subfolder)
+                logger.info(f"ARDS test dataset built successfully. Size: {len(ards_test_data)}")
+                
+                # Store datasets for this technique
+                if technique not in self.augmentation_datasets:
+                    self.augmentation_datasets[technique] = {}
+                
+                self.augmentation_datasets[technique] = {
+                    'pneumonia_train': pneumonia_data,
+                    'ards_train': ards_train_data,
+                    'ards_test': ards_test_data
+                }
+        
+        # Set default datasets to the first technique (or single technique)
+        first_technique = techniques_to_iterate[0]
+        self.image_pneumonia_training_data = self.augmentation_datasets[first_technique]['pneumonia_train']
+        self.image_ards_training_data = self.augmentation_datasets[first_technique]['ards_train']
+        self.image_ards_test_data = self.augmentation_datasets[first_technique]['ards_test']
+        self.current_augmentation_technique = first_technique
+        
+        logger.info("=" * 80)
+        logger.info(f"Image data loading complete. Loaded datasets for {len(techniques_to_iterate)} technique(s)")
+        logger.info("=" * 80)
 
 
     def load_image_models(self, stage: str):
@@ -525,41 +588,54 @@ class Framework:
         total_models = sum(len(models) for models in model_dict.values())
         current_model = 0
         
-        for model_type, models in model_dict.items():
-            # Ensure model_type exists in available_image_models
-            if model_type not in self.available_image_models:
-                self.available_image_models[model_type] = []
+        # Check if we're iterating over multiple augmentation techniques
+        if hasattr(self, 'augmentation_datasets') and len(self.augmentation_datasets) > 1:
+            techniques_to_process = list(self.augmentation_datasets.keys())
+            logger.info(f"Training separate models for {len(techniques_to_process)} augmentation techniques")
+        else:
+            techniques_to_process = [getattr(self, 'current_augmentation_technique', None)]
+        
+        for technique in techniques_to_process:
+            if technique is not None:
+                logger.info("=" * 80)
+                logger.info(f"Training models with augmentation technique: {technique}")
+                logger.info("=" * 80)
+                # Switch to the datasets for this technique
+                if hasattr(self, 'augmentation_datasets') and technique in self.augmentation_datasets:
+                    self.image_pneumonia_training_data = self.augmentation_datasets[technique]['pneumonia_train']
+                    self.image_ards_training_data = self.augmentation_datasets[technique]['ards_train']
+                    self.current_augmentation_technique = technique
+            
+            for model_type, models in model_dict.items():
+                # Ensure model_type exists in available_image_models
+                if model_type not in self.available_image_models:
+                    self.available_image_models[model_type] = []
+                    
+                for model in models:
+                    current_model += 1
+                    logger.info(f"[{current_model}/{total_models}] Starting training of '{model.name}' (Architecture: {model_type})")
+                    if technique is not None and technique != 'all':
+                        logger.info(f"  Using augmentation technique: {technique}")
+                    
+                    # Prepare info_list with augmentation technique
+                    info_list = [
+                        self.pneumonia_image_dataset,
+                        self.ards_image_dataset,
+                        model.name,
+                        self.method,
+                        self.mode,
+                        technique if technique is not None else 'none'  # Add technique as 6th element
+                    ]
                 
-            for model in models:
-                current_model += 1
-                logger.info(f"[{current_model}/{total_models}] Starting training of '{model.name}' (Architecture: {model_type})")
-                
-                # Prepare info_list
-                info_list = [
-                    self.pneumonia_image_dataset,
-                    self.ards_image_dataset,
-                    model.name,
-                    self.method,
-                    self.mode
-                ]
-                
-                # Train the model
-                model.train_image_model(
-                    self.image_pneumonia_training_data,
-                    self.image_ards_training_data,
-                    info_list
-                )
-                
-                # Save if configured
-                if self.process["save_models"]:
-                    save_path = (self.config["algorithm_base_path"].get(model_type, "default")
-                               if self.config["algorithm_base_path"].get(model_type, "default") != "default"
-                               else self.outdir)
-                    # Model is already saved during training
-                    logger.info(f"Model '{model.name}' saved to: {save_path}")
-                
-                logger.info(f"[{current_model}/{total_models}] Successfully trained '{model.name}'")
-                self.available_image_models[model_type].append(model)
+                    # Train the model
+                    model.train_image_model(
+                        self.image_pneumonia_training_data,
+                        self.image_ards_training_data,
+                        info_list
+                    )
+                    
+                    logger.info(f"[{current_model}/{total_models}] Successfully trained '{model.name}'")
+                    self.available_image_models[model_type].append(model)
         
         logger.info(f"Model training completed. Total models trained: {total_models}")
         
@@ -577,30 +653,51 @@ class Framework:
         
         self.load_image_models("to_execute")
         
-        logger.info(f"ARDS test dataset size: {len(self.image_ards_test_data)}")
+        # Check if we're iterating over multiple augmentation techniques
+        if hasattr(self, 'augmentation_datasets') and len(self.augmentation_datasets) > 1:
+            techniques_to_process = list(self.augmentation_datasets.keys())
+            logger.info(f"Testing models for {len(techniques_to_process)} augmentation techniques")
+        else:
+            techniques_to_process = [getattr(self, 'current_augmentation_technique', None)]
         
         total_tests = 0
-        for model_type, model_names in self.image_models_to_execute.items():
-            for model in self.available_image_models[model_type]:
-                if model.name not in model_names["Names"]:
-                    continue
+        
+        for technique in techniques_to_process:
+            if technique is not None:
+                logger.info("=" * 80)
+                logger.info(f"Testing models with augmentation technique: {technique}")
+                logger.info("=" * 80)
+                # Switch to the test dataset for this technique
+                if hasattr(self, 'augmentation_datasets') and technique in self.augmentation_datasets:
+                    self.image_ards_test_data = self.augmentation_datasets[technique]['ards_test']
+                    self.current_augmentation_technique = technique
+            
+            logger.info(f"ARDS test dataset size: {len(self.image_ards_test_data)}")
+            
+            for model_type, model_names in self.image_models_to_execute.items():
+                for model in self.available_image_models[model_type]:
+                    if model.name not in model_names["Names"]:
+                        continue
+                        
+                    logger.info(f"Testing model '{model.name}' ({model.algorithm}) on ARDS test data...")
+                    if technique is not None and technique != 'all':
+                        logger.info(f"  Using augmentation technique: {technique}")
                     
-                logger.info(f"Testing model '{model.name}' ({model.algorithm}) on ARDS test data...")
-                
-                # Prepare info_list
-                info_list = [
-                    self.pneumonia_image_dataset,
-                    self.ards_image_dataset,
-                    model.name,
-                    self.method,
-                    self.mode
-                ]
-                
-                # Test the model (internally saves results to CSV)
-                model.test_image_model(self.image_ards_test_data, info_list)
-                
-                logger.info(f"Finished testing '{model.name}'. Results saved to model's results directory")
-                total_tests += 1
+                    # Prepare info_list with augmentation technique
+                    info_list = [
+                        self.pneumonia_image_dataset,
+                        self.ards_image_dataset,
+                        model.name,
+                        self.method,
+                        self.mode,
+                        technique if technique is not None else 'none'  # Add technique as 6th element
+                    ]
+                    
+                    # Test the model (internally saves results to CSV)
+                    model.test_image_model(self.image_ards_test_data, info_list)
+                    
+                    logger.info(f"Finished testing '{model.name}'. Results saved to model's results directory")
+                    total_tests += 1
         
         logger.info(f"Testing completed. Total models tested: {total_tests}")
 

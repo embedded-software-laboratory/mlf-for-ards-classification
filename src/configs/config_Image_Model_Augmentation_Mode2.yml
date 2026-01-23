@@ -207,6 +207,14 @@ image_model_parameters:
   # Note: PNEUMONIA training always uses non-augmented data (CheXpert-DB-PNEUMONIA)
   mode: mode2
   
+  # Augmentation techniques to use when augmentation is enabled (mode3 or mode4)
+  # Options:
+  #   - 'all': Use all available augmentation techniques (colorinvert, jitter, emboss, fog, gamma)
+  #   - list: Use specific techniques, e.g., ['colorinvert'] or ['jitter', 'emboss']
+  # Available techniques: colorinvert, jitter, emboss, fog, gamma
+  # Note: This parameter is only used when mode is mode3 or mode4
+  augmentation_techniques: 'all'  # Not used in mode2, but included for consistency
+  
   # =========================
   # CNN Models (ResNet, DenseNet)
   # =========================
@@ -265,6 +273,8 @@ data:
   database: CALIBRATION
   pneumonia_image_dataset: balanced
   ards_image_dataset: weighted
+  # Subfolder for augmented datasets ('weighted' or 'unweighted')
+  augmentation_subfolder: weighted
   timeseries_file_path: /work/rwth1474/Data/time_series/Calibration/Base50
   import_type: split
   image_file_path: /work/rwth1474/Data/image/

@@ -154,166 +154,191 @@ class Evaluation:
                 logger.info(f"Evaluating model: {image_model.name}")
                 
                 # Construct the path to the saved metrics file
+                # Try both with and without augmentation technique suffix
                 dataset_name = f"{pneumonia_dataset}_{ards_dataset}"
-                metrics_filename = f'test_metrics_{image_model.name}_{dataset_name}_{method}_{mode}.pt'
-                metrics_path = os.path.join(image_model.path_results_ards, metrics_filename)
+                metrics_filename_base = f'test_metrics_{image_model.name}_{dataset_name}_{method}_{mode}'
                 
-                if not os.path.exists(metrics_path):
-                    logger.warning(f"Metrics file not found for model '{image_model.name}': {metrics_path}")
+                # First try to find any matching files (with or without technique suffix)
+                metrics_files = []
+                if hasattr(image_model, 'path_results_ards') and os.path.exists(image_model.path_results_ards):
+                    for filename in os.listdir(image_model.path_results_ards):
+                        if filename.startswith(metrics_filename_base) and filename.endswith('.pt'):
+                            metrics_files.append(filename)
+                
+                if not metrics_files:
+                    logger.warning(f"No metrics files found for model '{image_model.name}' with base pattern: {metrics_filename_base}")
+                    logger.warning(f"Searched in: {image_model.path_results_ards if hasattr(image_model, 'path_results_ards') else 'N/A'}")
                     logger.warning(f"Skipping evaluation for this model")
                     continue
                 
-                # Read the CSV file with test metrics
-                try:
-                    with open(metrics_path, 'r') as f:
-                        reader = csv.DictReader(f)
-                        test_results = next(reader)  # Read first (and only) row
+                logger.info(f"Found {len(metrics_files)} metrics file(s) for '{image_model.name}': {metrics_files}")
+                
+                # Process each metrics file (handles multiple augmentation techniques)
+                for metrics_filename in metrics_files:
+                    metrics_path = os.path.join(image_model.path_results_ards, metrics_filename)
                     
-                    # Extract metrics - handle tensor strings, lists, or plain floats
-                    test_loss = parse_metric_value(test_results['test_loss'])
-                    test_accuracy = parse_metric_value(test_results['test_acc'])
-                    test_precision = parse_metric_value(test_results['test_prec'])
-                    test_recall = parse_metric_value(test_results['test_recall'])
-                    test_specificity = parse_metric_value(test_results['test_specificity'])
-                    test_auroc = parse_metric_value(test_results['test_auroc'])
-                    test_f1 = parse_metric_value(test_results['test_f1'])
-                    test_mcc = parse_metric_value(test_results['test_mcc'])
+                    # Extract augmentation technique from filename if present
+                    aug_technique = 'none'
+                    if metrics_filename.count('_') > metrics_filename_base.count('_'):
+                        # Has additional suffix - likely augmentation technique
+                        aug_technique = metrics_filename.replace(metrics_filename_base + '_', '').replace('.pt', '')
+                        logger.info(f"Processing results for augmentation technique: {aug_technique}")
                     
-                    logger.info(f"Successfully loaded metrics for '{image_model.name}':")
-                    logger.info(f"  Accuracy: {test_accuracy:.4f}")
-                    logger.info(f"  AUROC: {test_auroc:.4f}")
-                    logger.info(f"  F1: {test_f1:.4f}")
-                    logger.info(f"  MCC: {test_mcc:.4f}")
-                    
-                    # Store image-specific metadata in the model's additional info
-                    if not hasattr(image_model, 'additional_info'):
-                        image_model.additional_info = {}
-                    image_model.additional_info.update({
-                        'pneumonia_dataset': pneumonia_dataset,
-                        'ards_dataset': ards_dataset,
-                        'unfreeze_method': method,
-                        'augmentation_mode': mode,
-                        'test_loss': test_loss
-                    })
-                    
-                    # Create proper metadata for image model evaluation
-                    from processing.datasets_metadata import ImageMetaData
-                    
-                    # Build comprehensive additional information string
-                    additional_info = (
-                        f"Model: {image_model.name} | "
-                        f"Pneumonia Dataset: {pneumonia_dataset} ({pneumonia_train_size} images) | "
-                        f"ARDS Dataset: {ards_dataset} (train: {ards_train_size}, test: {ards_test_size} images) | "
-                        f"Unfreeze Method: {method} | "
-                        f"Augmentation Mode: {mode} | "
-                        f"Test Loss: {test_loss:.4f} | "
-                        f"Learning Rate CNN: {self.config.get('image_model_parameters', {}).get('learning_rate_cnn', 'N/A')} | "
-                        f"Learning Rate ViT: {self.config.get('image_model_parameters', {}).get('learning_rate_vit', 'N/A')} | "
-                        f"Epochs Pneumonia: {self.config.get('image_model_parameters', {}).get('num_epochs_pneumonia', 'N/A')} | "
-                        f"Epochs ARDS: {self.config.get('image_model_parameters', {}).get('num_epochs_ards', 'N/A')} | "
-                        f"Batch Size: {self.config.get('image_model_parameters', {}).get('batch_size_ards', 'N/A')} | "
-                        f"K-Folds: {self.config.get('image_model_parameters', {}).get('k_folds', 'N/A')}"
-                    )
-                    
-                    # Create separate metadata for training and test datasets
-                    pneumonia_metadata = ImageMetaData(
-                        datasource=pneumonia_dataset,
-                        dataset_location=image_model.path_results_pneumonia,
-                        disease_type='PNEUMONIA',
-                        additional_information=additional_info,
-                        number_of_images=pneumonia_train_size  # Use actual training set size
-                    )
-
-                    # Create separate metadata for training and test datasets
-                    ards_training_metadata = ImageMetaData(
-                        datasource=ards_dataset,
-                        dataset_location=image_model.path_results_ards,
-                        disease_type='ARDS',
-                        additional_information=additional_info,
-                        number_of_images=ards_train_size  # Use actual training set size
-                    )
-                    
-                    ards_test_metadata = ImageMetaData(
-                        datasource=ards_dataset,
-                        dataset_location=image_model.path_results_ards,
-                        disease_type='ARDS',
-                        additional_information=additional_info,
-                        number_of_images=ards_test_size  # Use actual test set size
-                    )
-                    
-                    # Create proper metric objects matching timeseries format
-                    contained_metrics = {
-                        'Accuracy': GenericMetric(
-                            metric_name='Accuracy Evaluation',
-                            metric_value=FloatValue(metric_value=test_accuracy),
-                            metric_spec=Accuracy()
-                        ),
-                        'AUC': GenericMetric(
-                            metric_name='AUC Evaluation',
-                            metric_value=FloatValue(metric_value=test_auroc),
-                            metric_spec=AUC()
-                        ),
-                        'F1Score': GenericMetric(
-                            metric_name='F1Score Evaluation',
-                            metric_value=FloatValue(metric_value=test_f1),
-                            metric_spec=F1Score()
-                        ),
-                        'Sensitivity': GenericMetric(
-                            metric_name='Sensitivity Evaluation',
-                            metric_value=FloatValue(metric_value=test_recall),
-                            metric_spec=Sensitivity()
-                        ),
-                        'Specificity': GenericMetric(
-                            metric_name='Specificity Evaluation',
-                            metric_value=FloatValue(metric_value=test_specificity),
-                            metric_spec=Specificity()
-                        ),
-                        'MCC': GenericMetric(
-                            metric_name='MCC Evaluation',
-                            metric_value=FloatValue(metric_value=test_mcc),
-                            metric_spec=MCC()
+                    # Read the CSV file with test metrics
+                    try:
+                        with open(metrics_path, 'r') as f:
+                            reader = csv.DictReader(f)
+                            test_results = next(reader)  # Read first (and only) row
+                        
+                        # Extract metrics - handle tensor strings, lists, or plain floats
+                        test_loss = parse_metric_value(test_results['test_loss'])
+                        test_accuracy = parse_metric_value(test_results['test_acc'])
+                        test_precision = parse_metric_value(test_results['test_prec'])
+                        test_recall = parse_metric_value(test_results['test_recall'])
+                        test_specificity = parse_metric_value(test_results['test_specificity'])
+                        test_auroc = parse_metric_value(test_results['test_auroc'])
+                        test_f1 = parse_metric_value(test_results['test_f1'])
+                        test_mcc = parse_metric_value(test_results['test_mcc'])
+                        
+                        if aug_technique != 'none':
+                            logger.info(f"Successfully loaded metrics for '{image_model.name}' with technique '{aug_technique}':")
+                        else:
+                            logger.info(f"Successfully loaded metrics for '{image_model.name}':")
+                        logger.info(f"  Accuracy: {test_accuracy:.4f}")
+                        logger.info(f"  AUROC: {test_auroc:.4f}")
+                        logger.info(f"  F1: {test_f1:.4f}")
+                        logger.info(f"  MCC: {test_mcc:.4f}")
+                        
+                        # Store image-specific metadata in the model's additional info
+                        if not hasattr(image_model, 'additional_info'):
+                            image_model.additional_info = {}
+                        image_model.additional_info.update({
+                            'pneumonia_dataset': pneumonia_dataset,
+                            'ards_dataset': ards_dataset,
+                            'unfreeze_method': method,
+                            'augmentation_mode': mode,
+                            'augmentation_technique': aug_technique,
+                            'test_loss': test_loss
+                        })
+                        
+                        # Create proper metadata for image model evaluation
+                        from processing.datasets_metadata import ImageMetaData
+                        
+                        # Build comprehensive additional information string
+                        additional_info = (
+                            f"Model: {image_model.name} | "
+                            f"Pneumonia Dataset: {pneumonia_dataset} ({pneumonia_train_size} images) | "
+                            f"ARDS Dataset: {ards_dataset} (train: {ards_train_size}, test: {ards_test_size} images) | "
+                            f"Unfreeze Method: {method} | "
+                            f"Augmentation Mode: {mode} | "
+                            f"Augmentation Technique: {aug_technique} | "
+                            f"Test Loss: {test_loss:.4f} | "
+                            f"Learning Rate CNN: {self.config.get('image_model_parameters', {}).get('learning_rate_cnn', 'N/A')} | "
+                            f"Learning Rate ViT: {self.config.get('image_model_parameters', {}).get('learning_rate_vit', 'N/A')} | "
+                            f"Epochs Pneumonia: {self.config.get('image_model_parameters', {}).get('num_epochs_pneumonia', 'N/A')} | "
+                            f"Epochs ARDS: {self.config.get('image_model_parameters', {}).get('num_epochs_ards', 'N/A')} | "
+                            f"Batch Size: {self.config.get('image_model_parameters', {}).get('batch_size_ards', 'N/A')} | "
+                            f"K-Folds: {self.config.get('image_model_parameters', {}).get('k_folds', 'N/A')}"
                         )
-                    }
-                    
-                    # Create split (similar to timeseries evaluation split)
-                    eval_split = GenericSplit(
-                        split_name='Evaluation split',
-                        contained_metrics=contained_metrics
-                    )
-                    
-                    # Create optimizer (use "Standard" like timeseries models)
-                    optimizer = GenericThresholdOptimization(
-                        optimization_name='Standard',
-                        contained_splits={'Evaluation split': eval_split}
-                    )
-                    
-                    # Create EvalResult with proper ImageMetaData structure
-                    eval_result = EvalResultFactory.factory_method(
-                        optimizer_list=[optimizer],
-                        training_set_meta_data=ards_training_metadata,  # Use training dataset size
-                        test_set_meta_data=ards_test_metadata,  # Use test dataset size
-                        evaltype='Evaluation',
-                        crossvalidation_performed=False,
-                        evaluation_performed=True
-                    )
-                    
-                    # Create ModelResult using factory method
-                    model_eval_info = ModelEvaluationInformation(self.config, image_model)
-                    model_result = ModelResultFactory.factory_method(
-                        model_eval_info,
-                        {'Evaluation': eval_result},
-                        training_evaluation=None,
-                        stage="Evaluation"
-                    )
-                    
-                    self.model_results[image_model.name] = model_result
-                    logger.info(f"Stored evaluation result for model: {image_model.name}")
-                    
-                except Exception as e:
-                    logger.error(f"Failed to read or process metrics for '{image_model.name}': {e}")
-                    logger.exception("Full traceback:")
-                    logger.warning(f"Skipping evaluation for this model")
-                    continue
+                        
+                        # Create separate metadata for training and test datasets
+                        pneumonia_metadata = ImageMetaData(
+                            datasource=pneumonia_dataset,
+                            dataset_location=image_model.path_results_pneumonia,
+                            disease_type='PNEUMONIA',
+                            additional_information=additional_info,
+                            number_of_images=pneumonia_train_size
+                        )
+
+                        ards_training_metadata = ImageMetaData(
+                            datasource=ards_dataset,
+                            dataset_location=image_model.path_results_ards,
+                            disease_type='ARDS',
+                            additional_information=additional_info,
+                            number_of_images=ards_train_size
+                        )
+                        
+                        ards_test_metadata = ImageMetaData(
+                            datasource=ards_dataset,
+                            dataset_location=image_model.path_results_ards,
+                            disease_type='ARDS',
+                            additional_information=additional_info,
+                            number_of_images=ards_test_size
+                        )
+                        
+                        # Create proper metric objects matching timeseries format
+                        contained_metrics = {
+                            'Accuracy': GenericMetric(
+                                metric_name='Accuracy Evaluation',
+                                metric_value=FloatValue(metric_value=test_accuracy),
+                                metric_spec=Accuracy()
+                            ),
+                            'AUC': GenericMetric(
+                                metric_name='AUC Evaluation',
+                                metric_value=FloatValue(metric_value=test_auroc),
+                                metric_spec=AUC()
+                            ),
+                            'F1Score': GenericMetric(
+                                metric_name='F1Score Evaluation',
+                                metric_value=FloatValue(metric_value=test_f1),
+                                metric_spec=F1Score()
+                            ),
+                            'Sensitivity': GenericMetric(
+                                metric_name='Sensitivity Evaluation',
+                                metric_value=FloatValue(metric_value=test_recall),
+                                metric_spec=Sensitivity()
+                            ),
+                            'Specificity': GenericMetric(
+                                metric_name='Specificity Evaluation',
+                                metric_value=FloatValue(metric_value=test_specificity),
+                                metric_spec=Specificity()
+                            ),
+                            'MCC': GenericMetric(
+                                metric_name='MCC Evaluation',
+                                metric_value=FloatValue(metric_value=test_mcc),
+                                metric_spec=MCC()
+                            )
+                        }
+                        
+                        # Create split (similar to timeseries evaluation split)
+                        eval_split = GenericSplit(
+                            split_name='Evaluation split',
+                            contained_metrics=contained_metrics
+                        )
+                        
+                        # Create optimizer (use "Standard" like timeseries models)
+                        optimizer = GenericThresholdOptimization(
+                            optimization_name='Standard',
+                            contained_splits={'Evaluation split': eval_split}
+                        )
+                        
+                        # Create EvalResult with proper ImageMetaData structure
+                        eval_result = EvalResultFactory.factory_method(
+                            optimizer_list=[optimizer],
+                            training_set_meta_data=ards_training_metadata,
+                            test_set_meta_data=ards_test_metadata,
+                            evaltype='Evaluation',
+                            crossvalidation_performed=False,
+                            evaluation_performed=True
+                        )
+                        
+                        # Create ModelResult using factory method (use technique-specific name if applicable)
+                        model_eval_info = ModelEvaluationInformation(self.config, image_model)
+                        result_key = f"{image_model.name}_{aug_technique}" if aug_technique != 'none' else image_model.name
+                        model_result = ModelResultFactory.factory_method(
+                            model_eval_info,
+                            {'Evaluation': eval_result},
+                            training_evaluation=None,
+                            stage="Evaluation"
+                        )
+                        
+                        self.model_results[result_key] = model_result
+                        logger.info(f"Stored evaluation result for model: {result_key}")
+                        
+                    except Exception as e:
+                        logger.error(f"Failed to read or process metrics file '{metrics_filename}' for model '{image_model.name}': {e}")
+                        logger.exception("Full traceback:")
+                        continue
         
         ingredients = {"EvaluationInformation": self.eval_info, "model_results": self.model_results}
         overall_result = ResultManagement().factory_method("new", ingredients)

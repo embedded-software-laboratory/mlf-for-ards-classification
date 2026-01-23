@@ -92,6 +92,29 @@ class ImageModel(Model):
         self._storage_location = None
         self.training_history = {}  # Store training histories for both stages
 
+    # ==================== HELPER METHODS ====================
+    
+    @staticmethod
+    def _build_model_filename(name, dataset, method, mode, augmentation_technique='none', extension='.pt'):
+        """
+        Constructs a standardized filename for model or metrics files.
+        
+        Args:
+            name: Model name (e.g., 'ResNet', 'DenseNet')
+            dataset: Dataset name (e.g., 'balanced_weighted')
+            method: Training method (e.g., 'last_block')
+            mode: Training mode (e.g., 'mode3')
+            augmentation_technique: Augmentation technique name (default: 'none')
+            extension: File extension (default: '.pt')
+            
+        Returns:
+            str: Formatted filename with technique suffix if applicable
+        """
+        if augmentation_technique and augmentation_technique not in ['none', 'all']:
+            return f'{name}_{dataset}_{method}_{mode}_{augmentation_technique}{extension}'
+        else:
+            return f'{name}_{dataset}_{method}_{mode}{extension}'
+
     # ==================== PUBLIC API ====================
 
     def train_image_model(self, pneumonia_train, ards_train, info_list):
@@ -110,6 +133,8 @@ class ImageModel(Model):
         model_name = info_list[2]
         method = info_list[3]
         mode = info_list[4]
+        # Handle augmentation technique (may not be present in older code)
+        augmentation_technique = info_list[5] if len(info_list) > 5 else 'none'
 
         # run twice: one time for pneumonia and one time for ards with transfer learning
         for disease in ['PNEUMONIA', 'ARDS']:
@@ -127,13 +152,14 @@ class ImageModel(Model):
                 dataset_ards=dataset_ards,
                 model_name=model_name,
                 method=current_method,
-                mode=mode
+                mode=mode,
+                augmentation_technique=augmentation_technique
             )
 
     # ==================== TEMPLATE METHODS ====================
 
     def _train_single_stage(self, disease, pneumonia_train, ards_train, 
-                           dataset_pneumonia, dataset_ards, model_name, method, mode):
+                           dataset_pneumonia, dataset_ards, model_name, method, mode, augmentation_technique='none'):
         """Template method for single training stage"""
         
         # Setup parameters based on disease
@@ -235,7 +261,7 @@ class ImageModel(Model):
                 best_acc, best_auroc, early_stop = self.perform_training(device, train_loader, model, valid_loader, loss_fn, 
                                     optimizer, scheduler, epoch, history, model_name, 
                                     dataset_name, method, PATH_MODEL, PATH_RESULTS, 
-                                    best_acc, best_auroc, mode)
+                                    best_acc, best_auroc, mode, augmentation_technique)
                 if early_stop:
                     print(f"Training stopped early at epoch {epoch+1} due to learning rate reaching 0.", flush=True)
                     break
@@ -282,7 +308,7 @@ class ImageModel(Model):
                     best_acc, best_auroc, early_stop = self.perform_training(device, train_loader, model, valid_loader, loss_fn,
                                         optimizer, scheduler, epoch, history, model_name,
                                         dataset_name, method, PATH_MODEL, PATH_RESULTS,
-                                        best_acc, best_auroc, mode)
+                                        best_acc, best_auroc, mode, augmentation_technique)
                     if early_stop:
                         print(f"Training stopped early at epoch {epoch+1} due to learning rate reaching 0.", flush=True)
                         break
@@ -343,12 +369,14 @@ class ImageModel(Model):
         logger.info("TESTING IMAGE MODEL")
         logger.info("=" * 70)
 
-        # structure of info_list: [DATASET_PNEUMONIA, DATASET_ARDS, MODEL_NAME_CNN, cnn_method, mode n]
+        # structure of info_list: [DATASET_PNEUMONIA, DATASET_ARDS, MODEL_NAME, cnn_method, mode n, augmentation_technique]
         dataset_pneumonia = info_list[0]
         dataset_ards = info_list[1]
         model_name = info_list[2]
         method = info_list[3]
         mode = info_list[4]
+        # Handle augmentation technique (may not be present in older code)
+        augmentation_technique = info_list[5] if len(info_list) > 5 else 'none'
         device = self.get_device()
         dataset_name = dataset_pneumonia+'_'+dataset_ards
         
@@ -357,11 +385,12 @@ class ImageModel(Model):
         logger.info(f"ARDS dataset: {dataset_ards}")
         logger.info(f"Method: {method}")
         logger.info(f"Mode: {mode}")
+        logger.info(f"Augmentation technique: {augmentation_technique}")
         logger.info(f"Test dataset size: {len(ards_test)} samples")
         logger.info(f"Batch size: {self.batch_size_ards}")
         
-        # find testing models
-        test_model_pattern = '{name}_{dataset}_{method}_{mode}.pt'.format(name=model_name, dataset=dataset_name, method=method, mode=mode)
+        # find testing models - use helper method for filename construction
+        test_model_pattern = self._build_model_filename(model_name, dataset_name, method, mode, augmentation_technique)
         test_model_list = [name for name in os.listdir(self.path_models_ards) if name == test_model_pattern]
         
         if not test_model_list:
@@ -373,9 +402,6 @@ class ImageModel(Model):
         
         test_dataloader = DataLoader(ards_test, batch_size=self.batch_size_ards, shuffle=True)
         logger.info(f"Test dataloader created with {len(test_dataloader)} batches")
-
-        lr = 1e-2
-        batch_size = 64
 
         loss_fn, kfold, optimizer, scheduler = self.get_helpers(self.model)
 
@@ -418,8 +444,8 @@ class ImageModel(Model):
                 logger.info(f"  MCC:         {test_results['test_mcc']:.4f}")
             logger.info("=" * 70)
 
-            # save results/metrics for testing
-            path_test_res = 'test_metrics_{name}_{dataset}_{method}_{mode}.pt'.format(name=model_name, dataset=dataset_name, method=method, mode=mode)
+            # save results/metrics for testing - use helper method for filename
+            path_test_res = 'test_metrics_' + self._build_model_filename(model_name, dataset_name, method, mode, augmentation_technique)
             output_path = os.path.join(self.path_results_ards, path_test_res)
             with open(output_path, 'w') as f:
                     w = csv.DictWriter(f, test_results.keys())

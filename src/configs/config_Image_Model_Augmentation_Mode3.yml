@@ -207,6 +207,20 @@ image_model_parameters:
   # Note: PNEUMONIA training always uses non-augmented data (CheXpert-DB-PNEUMONIA)
   mode: mode3
   
+  # Augmentation techniques to use when augmentation is enabled (mode3 or mode4)
+  # Options:
+  #   - 'all': Use all available augmentation techniques combined in one dataset (colorinvert, jitter, emboss, fog, gamma)
+  #   - 'iterate_all': Automatically discover and train separate models for each augmentation technique found
+  #   - list: Use specific techniques, e.g., ['colorinvert'] or ['jitter', 'emboss']
+  # Available techniques: colorinvert, jitter, emboss, fog, gamma
+  # 
+  # Examples:
+  #   augmentation_techniques: 'all'                    # All techniques combined
+  #   augmentation_techniques: 'iterate_all'            # Train separate model per technique
+  #   augmentation_techniques: ['colorinvert']          # Only colorinvert
+  #   augmentation_techniques: ['jitter', 'emboss']     # Only jitter and emboss combined
+  augmentation_techniques: 'all'  # Uses all augmentation techniques combined
+  
   # =========================
   # CNN Models (ResNet, DenseNet)
   # =========================
@@ -265,6 +279,9 @@ data:
   database: CALIBRATION
   pneumonia_image_dataset: balanced
   ards_image_dataset: weighted
+  # Subfolder for augmented datasets ('weighted' or 'unweighted')
+  # This determines which folder to use in MIMIC-DB-AUG/
+  augmentation_subfolder: weighted
   timeseries_file_path: /work/rwth1474/Data/time_series/Calibration/Base50
   import_type: split
   image_file_path: /work/rwth1474/Data/image/

@@ -1,3 +1,19 @@
+# Example configuration showing different ways to specify augmentation techniques
+# 
+# Option 1 (this file): Train on ONLY colorinvert
+#   augmentation_techniques: ['colorinvert']
+#
+# Option 2: Train on multiple specific techniques
+#   augmentation_techniques: ['colorinvert', 'jitter']
+#
+# Option 3: Train on ALL techniques combined
+#   augmentation_techniques: 'all'
+#
+# Option 4: Automatically iterate - train SEPARATE models for EACH technique found
+#   augmentation_techniques: 'iterate_all'
+#
+# This example uses Option 1 (single technique: colorinvert only)
+
 # Information about the process itself - defines which steps are executed by the framework
 process:
   # Information for time-series models
@@ -200,19 +216,13 @@ image_model_parameters:
   method: last_block
   
   # Data augmentation modes (controls which datasets use augmented data)
-  # mode1: No augmentation - standard training with original images
-  # mode2: Reserved for future use (augmentation during training only via transforms)
   # mode3: ARDS training data uses pre-augmented dataset (MIMIC-DB-AUG folder)
-  # mode4: ARDS training AND test data use pre-augmented datasets
-  # Note: PNEUMONIA training always uses non-augmented data (CheXpert-DB-PNEUMONIA)
-  mode: mode4
+  mode: mode3
   
-  # Augmentation techniques to use when augmentation is enabled (mode3 or mode4)
-  # Options:
-  #   - 'all': Use all available augmentation techniques (colorinvert, jitter, emboss, fog, gamma)
-  #   - list: Use specific techniques, e.g., ['colorinvert'] or ['jitter', 'emboss']
+  # Augmentation techniques to use - ONLY colorinvert for this experiment
+  # This will only load images from MIMIC-DB-AUG/weighted/colorinvert/image/
   # Available techniques: colorinvert, jitter, emboss, fog, gamma
-  augmentation_techniques: 'all'  # Uses all augmentation techniques combined
+  augmentation_techniques: ['colorinvert']  # Single technique
   
   # =========================
   # CNN Models (ResNet, DenseNet)
@@ -264,7 +274,7 @@ algorithm_base_path:
   VIT: default
 
 # Path to store or load the results of the experiments
-storage_path: ../Save/ImageModels/Augmentation_Mode4/
+storage_path: ../Save/ImageModels/Augmentation_Colorinvert/
 
 # Information about the data that is used to train and evaluate the models
 data:
@@ -279,7 +289,6 @@ data:
   image_file_path: /work/rwth1474/Data/image/
 
 # Settings for preprocessing the data before training or classification
-# Includes anomaly detection, filtering, imputation, calculation of additional parameters and ARDS onset detection
 preprocessing:
   patients_per_process: 5000
   max_processes: 4
@@ -350,9 +359,29 @@ evaluation:
   - NPV
   - Precisions
   - Recalls
-  evaluation_name: ImageModels_Mode4_TrainTestAugmented
+  evaluation_name: ImageModels_Colorinvert_Only
   threshold_optimization_algorithms:
   - Standard
   - MaxTPR
   - MaxTPRMinFPR
   - GeometricRoot
+
+# =========================
+# TIMESERIES MODEL SECTION
+# =========================
+timeseries_models:
+  AdaBoost:
+    Active: false
+  LightGBM:
+    Active: false
+  LogisticRegression:
+    Active: false
+  RandomForest:
+    Active: false
+  SupportVectorMachine:
+    Active: false
+  XGBoost:
+    Active: false
+
+# To be cross-validated indicator
+to_cross_validate: []

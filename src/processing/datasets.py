@@ -175,7 +175,7 @@ class TimeSeriesDatasetManagement:
 class ImageDataset(Dataset):
     """Class to generate the dataset to run it in DL models"""
     
-    def __init__(self, name, dl_method, disease, augment, path_datasets):
+    def __init__(self, name, dl_method, disease, augment, path_datasets, augmentation_techniques=None, augmentation_subfolder='weighted'):
         """
         Generate dataset object.
         
@@ -183,6 +183,9 @@ class ImageDataset(Dataset):
         :param dl_method: (str) Name of the DL method used
         :param disease: (str) Name of the diseases which are being used to classify with DL
         :param augment (bool) Whether we use the augmented version of the dataset or not
+        :param augmentation_techniques: (list or str) List of augmentation techniques to use (['colorinvert', 'jitter', etc.]) 
+                                        or 'all' for all techniques. If None and augment=True, uses all techniques.
+        :param augmentation_subfolder: (str) Subfolder in augmented dataset ('weighted' or 'unweighted')
         """
         
         # initialise some varibles
@@ -190,14 +193,16 @@ class ImageDataset(Dataset):
         self.dl_method = dl_method
         self.disease = disease
         self.augment = augment
+        self.augmentation_techniques = augmentation_techniques
+        self.augmentation_subfolder = augmentation_subfolder
         
         # get image and label path in a list
         self.path_dataset = path_datasets
-        self.path = self.get_path(self.disease, self.name)
+        self.path = self.get_path(self.disease, self.name, self.augmentation_subfolder)
         self.folder_path = self.path
         
         # get all leaves of the path root
-        self.path_walk_image, self.path_walk_label = self.child_node_path(self.path, self.name, self.augment)
+        self.path_walk_image, self.path_walk_label = self.child_node_path(self.path, self.name, self.augment, self.augmentation_techniques)
         
         # initialise function for resizing and normalizing the images
         self.IMAGE_SIZE = self.get_image_size(self.dl_method)
@@ -236,12 +241,50 @@ class ImageDataset(Dataset):
     def __len__(self):
         return len(self.path_walk_image)
 
-    def get_path(self, disease, name):
+    @staticmethod
+    def discover_augmentation_techniques(image_file_path, disease='ARDS', augmentation_subfolder='weighted'):
+        """
+        Discovers available augmentation techniques in the augmented dataset folder.
+        
+        :param image_file_path: (str) Base path to the image datasets
+        :param disease: (str) Disease type (default: 'ARDS')
+        :param augmentation_subfolder: (str) Subfolder to search ('weighted' or 'unweighted')
+        :return: list of available augmentation technique folder names
+        """
+        import os
+        
+        # Determine the augmented dataset folder
+        if disease == 'ARDS':
+            aug_folder = os.path.join(image_file_path, 'MIMIC-DB-AUG', augmentation_subfolder)
+        elif disease == 'PNEUMONIA':
+            aug_folder = os.path.join(image_file_path, 'CheXpert-DB-AUG', augmentation_subfolder)
+        else:
+            return []
+        
+        if not os.path.exists(aug_folder):
+            logger.warning(f"Augmented dataset folder not found: {aug_folder}")
+            return []
+        
+        # Get all subdirectories in the augmentation subfolder
+        available_techniques = []
+        for item in os.listdir(aug_folder):
+            item_path = os.path.join(aug_folder, item)
+            if os.path.isdir(item_path) and not item.startswith('.'):
+                # Check if it has an 'image' subdirectory
+                if os.path.exists(os.path.join(item_path, 'image')):
+                    available_techniques.append(item)
+        
+        available_techniques.sort()
+        logger.info(f"Discovered {len(available_techniques)} augmentation techniques in '{augmentation_subfolder}': {available_techniques}")
+        return available_techniques
+
+    def get_path(self, disease, name, augmentation_subfolder='weighted'):
         """
         Gets the right dataset path for the specific disease and dataset name.
         
         :param disease: (str) Either PNEUMONIA or ARDS, which determines if we use the chexpert or mimic dataset
         :param name: (str) The dataset name which was chosen before
+        :param augmentation_subfolder: (str) Subfolder for augmented data ('weighted' or 'unweighted')
         :return: list of paths with length 4
                 path_image (str) contains the path to the image folder according to which disease and dataset name was chosen
                 path_label (str) contains the path to the label folder according to which disease and dataset name was chosen
@@ -256,36 +299,67 @@ class ImageDataset(Dataset):
         elif disease == 'ARDS':
             path_image = os.path.join(self.path_dataset, name+'/image')
             path_label = os.path.join(self.path_dataset, name+'/label')
-            path_image_augmented = os.path.join(self.path_dataset, name) 
-            path_label_augmented = os.path.join(self.path_dataset, name) 
+            path_image_augmented = os.path.join(self.path_dataset, augmentation_subfolder) 
+            path_label_augmented = os.path.join(self.path_dataset, augmentation_subfolder) 
         else:
             raise Exception(str("Disease is not supported. Supported diseases are PNEUMONIA AND ARDS."))
             
         return [path_image, path_label, path_image_augmented, path_label_augmented]
     
-    def child_node_path(self, path, dataset_name, augment):
+    def child_node_path(self, path, dataset_name, augment, augmentation_techniques=None):
         """
         Get all child nodes of the path, that means for augmented path, get all augmentation files in each folder for each 
         augmentation technique.
         
-        :param path_images: (str) A string path which leads to the images 
-        :param path_labels: (str) A string path which leads to the labels
+        :param path: (list) List of paths [image_path, label_path, augmented_image_path, augmented_label_path]
         :param dataset_name: (str) The dataset name of the dataset used
         :param augment: (bool) Whether we use the augmented version of the dataset or not
-        :return: path_walk_image (str) contains all image file names which are leaves of the root path
-                path_walk_label (str) contains all label file names which are leaves of the root path
+        :param augmentation_techniques: (list, str, or None) Augmentation techniques to include:
+                                        - list: specific techniques like ['colorinvert', 'jitter']
+                                        - 'all': all available techniques
+                                        - None or other: all available techniques (backward compatible)
+        :return: path_walk_image (list) contains all image file names which are leaves of the root path
+                 path_walk_label (list) contains all label file names which are leaves of the root path
         """
         path_walk_image = []
         path_walk_label = []
         
-        AUG_TECH = ['colorinvert', 'jitter', 'emboss', 'fog', 'gamma']
+        # Define all available augmentation techniques
+        ALL_AUG_TECH = ['colorinvert', 'jitter', 'emboss', 'fog', 'gamma']
+        
+        # Determine which techniques to include
+        if isinstance(augmentation_techniques, list):
+            # Use specified techniques only
+            AUG_TECH = [tech for tech in augmentation_techniques if tech in ALL_AUG_TECH]
+            if not AUG_TECH:
+                logger.warning(f"No valid augmentation techniques in {augmentation_techniques}. Using all.")
+                AUG_TECH = ALL_AUG_TECH
+        elif augmentation_techniques == 'all' or augmentation_techniques is None:
+            # Use all techniques
+            AUG_TECH = ALL_AUG_TECH
+        elif isinstance(augmentation_techniques, str):
+            # Single technique as string (e.g., 'colorinvert')
+            if augmentation_techniques in ALL_AUG_TECH:
+                AUG_TECH = [augmentation_techniques]
+            else:
+                logger.warning(f"Invalid augmentation technique '{augmentation_techniques}'. Using all.")
+                AUG_TECH = ALL_AUG_TECH
+        else:
+            AUG_TECH = ALL_AUG_TECH
         
         # only save original image paths if is training set or if it is a testset without augmentation
         # Skip this if augment=True because the non-augmented image/label folders don't exist in MIMIC-DB-AUG
-        if (dataset_name != 'test' or (dataset_name == 'test' and not augment)) and os.path.exists(path[0]): 
-            for file in sorted(os.listdir(path[0]), key=lambda x:float(re.findall("(\d+)",x)[0])):
-                path_walk_image.append(path[0]+"/"+file)
-                path_walk_label.append(path[1]+"/"+file)
+        if (dataset_name != 'test' or (dataset_name == 'test' and not augment)) and os.path.exists(path[0]):
+            try:
+                for file in sorted(os.listdir(path[0]), key=lambda x: float(re.findall("(\d+)", x)[0])):
+                    path_walk_image.append(os.path.join(path[0], file))
+                    path_walk_label.append(os.path.join(path[1], file))
+            except (IndexError, ValueError) as e:
+                logger.error(f"Error parsing filenames in {path[0]}: {e}")
+                # Fallback to simple sorting if regex fails
+                for file in sorted(os.listdir(path[0])):
+                    path_walk_image.append(os.path.join(path[0], file))
+                    path_walk_label.append(os.path.join(path[1], file))
                 
         # only include augmented image path if asked for it
         # for testset only include augmented image path without original/normal testset
@@ -293,12 +367,23 @@ class ImageDataset(Dataset):
         if augment:
             for (dir_path, dir_names, file_names) in os.walk(path[2]):
                 dir_names.sort()
-                if len(file_names) != 0 and os.path.basename(dir_path) == 'image' and os.path.split(os.path.split(dir_path)[0])[1] in AUG_TECH:
-                    for file in sorted(file_names, key=lambda x:float(re.findall("(\d+)",x)[0])):
-                        path_walk_image.append(dir_path+"/"+file)
-                if len(file_names) != 0 and os.path.basename(dir_path) == 'label' and os.path.split(os.path.split(dir_path)[0])[1] in AUG_TECH:
-                    for file in sorted(file_names, key=lambda x:float(re.findall("(\d+)",x)[0])):
-                        path_walk_label.append(dir_path+"/"+file)
+                # Check if this directory's augmentation technique should be included
+                technique_name = os.path.split(os.path.split(dir_path)[0])[1]
+                if len(file_names) != 0 and os.path.basename(dir_path) == 'image' and technique_name in AUG_TECH:
+                    try:
+                        for file in sorted(file_names, key=lambda x: float(re.findall("(\d+)", x)[0])):
+                            path_walk_image.append(os.path.join(dir_path, file))
+                    except (IndexError, ValueError):
+                        for file in sorted(file_names):
+                            path_walk_image.append(os.path.join(dir_path, file))
+                            
+                if len(file_names) != 0 and os.path.basename(dir_path) == 'label' and technique_name in AUG_TECH:
+                    try:
+                        for file in sorted(file_names, key=lambda x: float(re.findall("(\d+)", x)[0])):
+                            path_walk_label.append(os.path.join(dir_path, file))
+                    except (IndexError, ValueError):
+                        for file in sorted(file_names):
+                            path_walk_label.append(os.path.join(dir_path, file))
                     
         return path_walk_image, path_walk_label
     
@@ -322,7 +407,7 @@ class ImageDataset(Dataset):
         return IMAGE_SIZE
 
 class DatasetGenerator:
-    def build_dataset(self, dataset_name, dl_method, disease, path, augment=False):
+    def build_dataset(self, dataset_name, dl_method, disease, path, augment=False, augmentation_techniques=None, augmentation_subfolder='weighted'):
         """
         Function to build the dataset of Class Dataset
         
@@ -331,6 +416,8 @@ class DatasetGenerator:
         :param disease: (str) Either PNEUMONIA or ARDS, the disease which is being classifies
         :param path: (str) The base path to the datasets
         :param augment: (bool) Whether the dataset should be taken from the pre augmented or not, default is False
+        :param augmentation_techniques: (list or str) List of augmentation techniques to use or 'all' for all techniques
+        :param augmentation_subfolder: (str) Subfolder for augmented data ('weighted' or 'unweighted')
         :return: dataset (Dataset) contains a dataset with the aformentioned properties
         """
         
@@ -362,7 +449,13 @@ class DatasetGenerator:
         if not (dataset_name in datasets_available):
             logger.error(f"Dataset '{dataset_name}' not found in available datasets: {datasets_available}")
             raise Exception(str("Dataset is not supported. Supported datasets are: "+ ', '.join(datasets_available)))
+        
+        # Log augmentation info
+        if augment:
+            if augmentation_techniques:
+                logger.info(f"Augmentation techniques: {augmentation_techniques}")
+            logger.info(f"Augmentation subfolder: {augmentation_subfolder}")
             
         # generate Dataset Object with properties
-        dataset = ImageDataset(dataset_name, dl_method, disease, augment, dataset_path)
+        dataset = ImageDataset(dataset_name, dl_method, disease, augment, dataset_path, augmentation_techniques, augmentation_subfolder)
         return dataset

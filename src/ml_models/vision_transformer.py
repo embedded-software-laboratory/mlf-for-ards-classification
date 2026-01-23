@@ -83,7 +83,7 @@ class VisionTransformer(ImageModel):
 
         return loss_fn, kfold, optimizer, scheduler
     
-    def perform_training(self, device, train_dataloader, model, valid_dataloader, loss_fn, optimizer, scheduler, epoch, history, model_name, dataset_name, method, PATH_RESULT_MODEL, PATH_RESULTS, best_acc, best_auroc, mode):
+    def perform_training(self, device, train_dataloader, model, valid_dataloader, loss_fn, optimizer, scheduler, epoch, history, model_name, dataset_name, method, PATH_RESULT_MODEL, PATH_RESULTS, best_acc, best_auroc, mode, augmentation_technique='none'):
         # Show learning rate and device info
         current_lr = optimizer.param_groups[0]['lr']
         print(f"Learning Rate: {current_lr:.6f}, Device: {device}, AMP: {self.use_amp}", flush=True)
@@ -137,11 +137,11 @@ class VisionTransformer(ImageModel):
         # save and replace for best model
         if best_acc < valid_accuracy:
             best_acc = valid_accuracy
-            path = '{name}_{dataset}_{unfreeze_setting}_{pMode}.pt'.format(name=model_name, dataset=dataset_name, unfreeze_setting=method, pMode=mode)
+            path = ImageModel._build_model_filename(model_name, dataset_name, method, mode, augmentation_technique)
             torch.save(model.state_dict(), os.path.join(PATH_RESULT_MODEL, path))
         if best_auroc < valid_auroc:
             best_auroc = valid_auroc
-            path = '{name}_{dataset}_{unfreeze_setting}_{pMode}.pt'.format(name=model_name, dataset=dataset_name, unfreeze_setting=method, pMode=mode)
+            path = ImageModel._build_model_filename(model_name, dataset_name, method, mode, augmentation_technique)
             torch.save(model.state_dict(), os.path.join(PATH_RESULT_MODEL, path))
 
         print("Training Loss:{:.3f} AVG Training Acc:{:.2f} Valid Loss:{:.3f} AVG Valid Acc:{:.2f} Valid Precision:{:.3f} Valid Recall:{:.3f} Valid Specificity:{:.3f} Valid AUROC:{:.3f} Best ACC:{:.3f}, Train Time:{:0.4f}\n".format(
