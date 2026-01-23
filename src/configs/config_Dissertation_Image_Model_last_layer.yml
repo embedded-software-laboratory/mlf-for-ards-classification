@@ -293,7 +293,7 @@ algorithm_base_path:
   VIT: default
 
 # Path to store or load the results of the experiments
-storage_path: ../Save/ImageModels/
+storage_path: ../Save/ImageModels/Last_Layer/
 
 # Information about the data that is used to train and evaluate the models
 data:
