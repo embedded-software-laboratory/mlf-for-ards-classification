@@ -252,8 +252,49 @@ data:
   database: CALIBRATION
   pneumonia_image_dataset: balanced
   ards_image_dataset: weighted
+  timeseries_file_path: /work/rwth1474/Data/time_series/Calibration/Base50
   import_type: split
   image_file_path: /work/rwth1474/Data/image/
+
+# Settings for preprocessing the data before training or classification
+# Includes anomaly detection, filtering, imputation, calculation of additional parameters and ARDS onset detection
+preprocessing:
+  patients_per_process: 5000
+  max_processes: 4
+
+  anomaly_detection:
+    ALAD:
+      active: false
+    DeepAnt:
+      active: false
+    Physiological_Outliers:
+      active: false
+    SW_ABSAD_MOD:
+      active: false
+
+  filtering:
+    filter:
+    - BD
+    - Strict
+
+  imputation:
+    default_imputation_method: forward
+    impute_empty_cells: true
+    params_to_impute:
+    - ards, forward
+    - all
+
+  params_to_calculate:
+  - horovitz
+
+  ards_onset_detection:
+    detection_rule: first_horovitz
+    impute_missing_rows: false
+    remove_ards_patients_without_onset: false
+    return_rule: datapoint
+    series_end_point: 50000
+    series_start_point: -50000
+    update_ards_values: false
 
 # Configurations about the evaluation of the models and which metrics to calculate
 evaluation:
