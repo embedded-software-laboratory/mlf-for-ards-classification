@@ -180,6 +180,19 @@ models:
         Active: true
         Names:
         - ViT
+    to_cross_validate:
+      ResNet:
+        Active: false
+        Configs: []
+        Names: []
+      DenseNet:
+        Active: false
+        Configs: []
+        Names: []
+      ViT:
+        Active: false
+        Configs: []
+        Names: []
 
 image_model_parameters:
   # defines the method for fine-tuning for the dl models
