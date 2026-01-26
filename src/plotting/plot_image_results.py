@@ -30,22 +30,18 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Set style for plots
-plt.style.use('seaborn-v0_8-darkgrid')
-sns.set_palette("husl")
-
-# Color scheme for models
+# Pastel color scheme for models (matching plot_overview.py)
 MODEL_COLORS = {
-    'ResNet': '#8ebae5',      # Coral red
-    'DenseNet': '#a8859e',    # Turquoise
-    'ViT': '#fdd48f'         # Mint green
+    'ResNet': '#d0d95c',
+    'DenseNet': '#834e75',
+    'ViT': '#ced1f8',
 }
 
-# Color scheme for methods
+# Pastel color scheme for methods
 METHOD_COLORS = {
-    'Last_Layer': '#8ebae5',  # Yellow
-    'Last_Block': '#a8859e',  # Green
-    'Model': '#fdd48f'        # Blue
+    'Last_Layer': '#407fb7',
+    'Last_Block': '#fabe50',
+    'Model': '#d85c41'
 }
 
 
@@ -282,23 +278,24 @@ class ImageResultsAnalyzer:
                     if height > 0:
                         ax.text(bar.get_x() + bar.get_width() / 2., height,
                                f'{height:.3f}', ha='center', va='bottom', 
-                               fontsize=7, rotation=0)
+                               fontsize=14, rotation=0)
             
-            ax.set_ylabel(metric, fontsize=12, fontweight='bold')
-            ax.set_xlabel('Model', fontsize=12, fontweight='bold')
-            ax.set_title(f'{metric} Comparison', fontsize=13, fontweight='bold')
+            ax.set_ylabel(metric, fontsize=14, fontweight='bold')
+            ax.set_xlabel('Model', fontsize=14, fontweight='bold')
+            ax.set_title(f'{metric} Comparison', fontsize=14, fontweight='bold')
             ax.set_xticks(x)
-            ax.set_xticklabels(all_models, rotation=45, ha='right')
+            ax.set_xticklabels(all_models, rotation=45, ha='right', fontsize=14)
             ax.set_ylim([0, 1.05])
-            ax.legend(loc='lower right', fontsize=9)
+            ax.tick_params(axis='y', labelsize=14)
+            ax.legend(title='Method', loc='lower left', fontsize=14, title_fontsize=14, framealpha=1, facecolor='white')
             ax.grid(axis='y', alpha=0.3, linestyle='--')
             ax.set_axisbelow(True)
         
-        plt.suptitle('Image Model Performance Across Methods', 
-                     fontsize=16, fontweight='bold', y=0.995)
+        # plt.suptitle('Image Model Performance Across Methods', 
+        #              fontsize=16, fontweight='bold', y=0.995)
         plt.tight_layout()
         
-        output_path = self.output_dir / 'metrics_by_method.png'
+        output_path = self.output_dir / 'metrics_by_method.pdf'
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Saved metrics by method plot to {output_path}")
         plt.close()
@@ -331,21 +328,22 @@ class ImageResultsAnalyzer:
                 for bar in bars:
                     height = bar.get_height()
                     ax.text(bar.get_x() + bar.get_width() / 2., height,
-                           f'{height:.4f}', ha='center', va='bottom', fontsize=10)
+                           f'{height:.4f}', ha='center', va='bottom', fontsize=14)
                 
-                ax.set_ylabel(metric, fontsize=12, fontweight='bold')
-                ax.set_xlabel('Model', fontsize=12, fontweight='bold')
-                ax.set_title(f'{metric}', fontsize=13, fontweight='bold')
+                ax.set_ylabel(metric, fontsize=14, fontweight='bold')
+                ax.set_xlabel('Model', fontsize=14, fontweight='bold')
+                ax.set_title(f'{metric}', fontsize=14, fontweight='bold')
                 ax.set_ylim([0, 1.05])
-                ax.set_xticklabels(models, rotation=45, ha='right')
+                ax.set_xticklabels(models, rotation=45, ha='right', fontsize=14)
+                ax.tick_params(axis='y', labelsize=14)
                 ax.grid(axis='y', alpha=0.3, linestyle='--')
                 ax.set_axisbelow(True)
             
-            plt.suptitle(f'Model Performance - {method_name}', 
-                        fontsize=16, fontweight='bold')
+            # plt.suptitle(f'Model Performance - {method_name}', 
+            #             fontsize=16, fontweight='bold')
             plt.tight_layout()
             
-            output_path = self.output_dir / f'metrics_{method_name}.png'
+            output_path = self.output_dir / f'metrics_{method_name}.pdf'
             plt.savefig(output_path, dpi=300, bbox_inches='tight')
             logger.info(f"Saved metrics plot for {method_name} to {output_path}")
             plt.close()
@@ -374,20 +372,19 @@ class ImageResultsAnalyzer:
         
         df = pd.DataFrame(rows, columns=metrics_to_include, index=index_labels)
         
-        fig, ax = plt.subplots(figsize=(10, len(index_labels) * 0.5 + 2))
+        fig, ax = plt.subplots(figsize=(12, len(index_labels) * 0.5 + 2))
         
-        sns.heatmap(df, annot=True, fmt='.4f', cmap='YlGnBu', 
+        sns.heatmap(df, annot=True, fmt='.4f', cmap='Blues', 
                    vmin=0, vmax=1, cbar_kws={'label': 'Metric Value'}, 
                    linewidths=0.5, ax=ax, cbar=True, square=False)
         
-        ax.set_title('Performance Heatmap - All Methods and Models', 
-                    fontsize=14, fontweight='bold', pad=20)
-        ax.set_xlabel('Metrics', fontsize=12, fontweight='bold')
-        ax.set_ylabel('Method_Model', fontsize=12, fontweight='bold')
+        ax.set_xlabel('Metrics', fontsize=14, fontweight='bold')
+        ax.set_ylabel('Method_Model', fontsize=14, fontweight='bold')
+        ax.tick_params(axis='both', labelsize=14)
         
         plt.tight_layout()
         
-        output_path = self.output_dir / 'performance_heatmap.png'
+        output_path = self.output_dir / 'performance_heatmap.pdf'
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Saved heatmap to {output_path}")
         plt.close()
@@ -421,23 +418,160 @@ class ImageResultsAnalyzer:
                 
                 ax.plot(angles, values, 'o-', linewidth=2, 
                        label=model_name, color=MODEL_COLORS.get(model_name, '#CCCCCC'))
-                ax.fill(angles, values, alpha=0.15, color=MODEL_COLORS.get(model_name, '#CCCCCC'))
+                ax.fill(angles, values, alpha=0.25, color=MODEL_COLORS.get(model_name, '#CCCCCC'))
             
             ax.set_xticks(angles[:-1])
-            ax.set_xticklabels(metrics, fontsize=11, fontweight='bold')
+            ax.set_xticklabels(metrics, fontsize=11)
             ax.set_ylim(0, 1)
             ax.set_yticks([0.2, 0.4, 0.6, 0.8, 1.0])
             ax.set_yticklabels(['0.2', '0.4', '0.6', '0.8', '1.0'], fontsize=9)
-            ax.grid(True, linestyle='--', alpha=0.7)
-            ax.legend(loc='upper right', bbox_to_anchor=(1.3, 1.1), fontsize=10)
+            ax.grid(True, linestyle='--', alpha=0.5)
             
-            plt.title(f'Model Performance Radar - {method_name}', 
-                     fontsize=14, fontweight='bold', pad=20)
-            
-            output_path = self.output_dir / f'radar_chart_{method_name}.png'
+            plt.legend(loc='upper right', bbox_to_anchor=(1.3, 1.1), fontsize=12, framealpha=1, facecolor='white')
+            plt.title(f'Model Performance Radar Chart - {method_name}', fontsize=14, fontweight='bold', pad=20)
+            plt.tight_layout()
+
+            output_path = self.output_dir / f'radar_chart_{method_name}.pdf'
             plt.savefig(output_path, dpi=300, bbox_inches='tight')
             logger.info(f"Saved radar chart for {method_name} to {output_path}")
             plt.close()
+
+    def plot_f1_comparison(self):
+        """Create a focused bar chart comparing F1-Scores across fine-tuning methods for each model."""
+        if not self.all_results:
+            logger.warning("No results available for F1 comparison")
+            return
+        
+        logger.info("Creating F1-Score comparison plot...")
+        
+        # Collect all unique models across all methods
+        all_models = set()
+        for method_results in self.all_results.values():
+            all_models.update(method_results.keys())
+        all_models = sorted(list(all_models))
+        
+        fig, ax = plt.subplots(figsize=(12, 8))
+        
+        # Prepare data for grouped bar chart
+        x = np.arange(len(all_models))
+        width = 0.25  # Width of bars
+        
+        for i, method in enumerate(self.methods_found):
+            method_results = self.all_results[method]
+            f1_values = [method_results.get(model, {}).get('F1Score', 0) for model in all_models]
+            
+            offset = (i - len(self.methods_found)/2 + 0.5) * width
+            bars = ax.bar(x + offset, f1_values, width, 
+                         label=method, 
+                         color=METHOD_COLORS.get(method, '#CCCCCC'),
+                         edgecolor='black', linewidth=1)
+            
+            # Add value labels on bars
+            for bar in bars:
+                height = bar.get_height()
+                if height > 0:
+                    ax.text(bar.get_x() + bar.get_width() / 2., height,
+                           f'{height:.4f}', ha='center', va='bottom', 
+                           fontsize=14, rotation=0)
+        
+        ax.set_ylabel('F1-Score', fontsize=14, fontweight='bold')
+        ax.set_xlabel('Model', fontsize=14, fontweight='bold')
+        ax.set_xticks(x)
+        ax.set_xticklabels(all_models, fontsize=14)
+        ax.set_ylim([0, 1.05])
+        ax.tick_params(axis='y', labelsize=14)
+        ax.legend(title='Fine-tuning Method', loc='lower left', fontsize=14, title_fontsize=14, framealpha=1, facecolor='white')
+        ax.grid(axis='y', alpha=0.3, linestyle='--')
+        ax.set_axisbelow(True)
+        
+        plt.tight_layout()
+        
+        output_path = self.output_dir / 'f1_comparison.pdf'
+        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        logger.info(f"Saved F1-Score comparison plot to {output_path}")
+        plt.close()
+
+    def plot_last_block_metrics(self):
+        """Create two bar charts for Last_Block: one with Accuracy and F1-Score, another with Sensitivity and Specificity."""
+        # Check if Last_Block results exist
+        if 'Last_Block' not in self.all_results:
+            logger.warning("Last_Block results not found, skipping Last_Block metrics plot")
+            return
+        
+        logger.info("Creating Last_Block metrics comparison plots...")
+        
+        last_block_data = self.all_results['Last_Block']
+        models = sorted(list(last_block_data.keys()))
+        
+        # First plot: Accuracy and F1-Score
+        fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+        
+        metrics_plot1 = ['Accuracy', 'F1Score']
+        labels_plot1 = ['Accuracy', 'F1-Score']
+        
+        for idx, (metric, label) in enumerate(zip(metrics_plot1, labels_plot1)):
+            ax = axes[idx]
+            values = [last_block_data[model].get(metric, 0) for model in models]
+            model_colors = [MODEL_COLORS.get(m, '#CCCCCC') for m in models]
+            
+            bars = ax.bar(models, values, color=model_colors, 
+                         edgecolor='black', linewidth=1.5, width=1.0)
+            
+            # Add value labels on bars
+            for bar in bars:
+                height = bar.get_height()
+                ax.text(bar.get_x() + bar.get_width() / 2., height,
+                       f'{height:.4f}', ha='center', va='bottom', fontsize=14)
+            
+            ax.set_ylabel(label, fontsize=14, fontweight='bold')
+            ax.set_xlabel('Model', fontsize=14, fontweight='bold')
+            ax.set_ylim([0, 1.05])
+            ax.set_xticklabels(models, fontsize=14)
+            ax.tick_params(axis='y', labelsize=14)
+            ax.grid(axis='y', alpha=0.3, linestyle='--')
+            ax.set_axisbelow(True)
+        
+        plt.tight_layout()
+        
+        output_path1 = self.output_dir / 'last_block_accuracy_f1.pdf'
+        plt.savefig(output_path1, dpi=300, bbox_inches='tight')
+        logger.info(f"Saved Last_Block Accuracy and F1-Score plot to {output_path1}")
+        plt.close()
+        
+        # Second plot: Sensitivity and Specificity
+        fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+        
+        metrics_plot2 = ['Sensitivity', 'Specificity']
+        labels_plot2 = ['Sensitivity', 'Specificity']
+        
+        for idx, (metric, label) in enumerate(zip(metrics_plot2, labels_plot2)):
+            ax = axes[idx]
+            values = [last_block_data[model].get(metric, 0) for model in models]
+            model_colors = [MODEL_COLORS.get(m, '#CCCCCC') for m in models]
+            
+            bars = ax.bar(models, values, color=model_colors, 
+                         edgecolor='black', linewidth=1.5, width=1.0)
+            
+            # Add value labels on bars
+            for bar in bars:
+                height = bar.get_height()
+                ax.text(bar.get_x() + bar.get_width() / 2., height,
+                       f'{height:.4f}', ha='center', va='bottom', fontsize=14)
+            
+            ax.set_ylabel(label, fontsize=14, fontweight='bold')
+            ax.set_xlabel('Model', fontsize=14, fontweight='bold')
+            ax.set_ylim([0, 1.05])
+            ax.set_xticklabels(models, fontsize=14)
+            ax.tick_params(axis='y', labelsize=14)
+            ax.grid(axis='y', alpha=0.3, linestyle='--')
+            ax.set_axisbelow(True)
+        
+        plt.tight_layout()
+        
+        output_path2 = self.output_dir / 'last_block_sensitivity_specificity.pdf'
+        plt.savefig(output_path2, dpi=300, bbox_inches='tight')
+        logger.info(f"Saved Last_Block Sensitivity and Specificity plot to {output_path2}")
+        plt.close()
 
     def generate_summary_report(self):
         """Generate a text summary report."""
@@ -520,6 +654,8 @@ class ImageResultsAnalyzer:
         self.plot_metrics_by_model()
         self.plot_heatmap()
         self.plot_radar_chart()
+        self.plot_f1_comparison()
+        self.plot_last_block_metrics()
         self.generate_summary_report()
         
         logger.info("=" * 80)
