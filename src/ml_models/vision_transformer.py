@@ -1,6 +1,6 @@
 from ml_models.image_model import ImageModel
 import torch
-from processing.datasets import ImageDataset
+from processing.dataset_manager import ImageDataset
 from torch import nn
 from sklearn.model_selection import KFold
 from torch.optim.lr_scheduler import ExponentialLR

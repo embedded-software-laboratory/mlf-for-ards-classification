@@ -2,19 +2,29 @@
 
 ## Erstmalige Installation
 
-Bei der erstmaligen Benutzung des Programms müssen folgende Schritte durchgeführt werden:
+**Empfohlene Methode: Devcontainer**
+
+Die empfohlene Art, das Framework zu nutzen, ist über den Devcontainer. Die Anleitung dazu findet sich in der readme.md (auf Englisch).
+
+**Alternative Methode: Conda Environment (veraltet)**
+
+Die Conda-Environment-Dateien werden nicht mehr aktiv gepflegt. Falls Sie dennoch Conda verwenden möchten:
 1. Anaconda herunterladen und installieren (https://www.anaconda.com/download/)
-2. Anaconda-Konsole öffnen und in den Implementation-Ordner navigieren
+2. Anaconda-Konsole öffnen und in den Projekt-Ordner navigieren
 3. Die Anaconda-Umgebung installieren mit folgender Anweisung: conda env create -f environment.yml
 
-Alternativ können auch Python und alle benötigten Pakete per Hand installiert werden, aber das ist deutlich aufwändiger. 
+Hinweis: Es kann zu Kompatibilitätsproblemen kommen, da die environment.yml-Dateien nicht mehr aktualisiert werden.
 
 ## Das Framework ausführen
 
+### Mit Devcontainer (empfohlen)
+Siehe readme.md für die vollständige Anleitung zum Devcontainer-Setup.
+
+### Mit Conda (veraltet)
 Sobald die o.g. Installationsschritte ausgeführt wurden, kann das Programm wie folgt gestartet werden:
-1. Anaconda-Konsole öffnen und in den Implementation-Ordner navigieren
+1. Anaconda-Konsole öffnen und in den Projekt-Ordner navigieren
 2. Die Anaconda-Umgebung aktivieren, mit folgender Anweisung: conda activate mlp_framework
-3. Die Anweisung *python main.py -f config.yml* ausführen
+3. Die Anweisung *python src/main.py -f src/configs/config.yml* ausführen (oder eine andere Config-Datei angeben)
 
 ## Fehlerbehenung
 

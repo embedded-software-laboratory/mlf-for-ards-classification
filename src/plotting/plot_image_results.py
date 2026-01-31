@@ -278,16 +278,16 @@ class ImageResultsAnalyzer:
                     if height > 0:
                         ax.text(bar.get_x() + bar.get_width() / 2., height,
                                f'{height:.3f}', ha='center', va='bottom', 
-                               fontsize=14, rotation=0)
+                               fontsize=12, rotation=0)
             
-            ax.set_ylabel(metric, fontsize=14, fontweight='bold')
-            ax.set_xlabel('Model', fontsize=14, fontweight='bold')
-            ax.set_title(f'{metric} Comparison', fontsize=14, fontweight='bold')
+            ax.set_ylabel(metric, fontsize=18, fontweight='bold')
+            ax.set_xlabel('Model', fontsize=18, fontweight='bold')
+            ax.set_title(f'{metric} Comparison', fontsize=18, fontweight='bold')
             ax.set_xticks(x)
-            ax.set_xticklabels(all_models, rotation=45, ha='right', fontsize=14)
+            ax.set_xticklabels(all_models, rotation=45, ha='right', fontsize=18)
             ax.set_ylim([0, 1.05])
-            ax.tick_params(axis='y', labelsize=14)
-            ax.legend(title='Method', loc='lower left', fontsize=14, title_fontsize=14, framealpha=1, facecolor='white')
+            ax.tick_params(axis='y', labelsize=18)
+            ax.legend(title='Method', loc='lower left', fontsize=18, title_fontsize=18, framealpha=1, facecolor='white')
             ax.grid(axis='y', alpha=0.3, linestyle='--')
             ax.set_axisbelow(True)
         
@@ -330,12 +330,12 @@ class ImageResultsAnalyzer:
                     ax.text(bar.get_x() + bar.get_width() / 2., height,
                            f'{height:.4f}', ha='center', va='bottom', fontsize=14)
                 
-                ax.set_ylabel(metric, fontsize=14, fontweight='bold')
-                ax.set_xlabel('Model', fontsize=14, fontweight='bold')
-                ax.set_title(f'{metric}', fontsize=14, fontweight='bold')
+                ax.set_ylabel(metric, fontsize=18, fontweight='bold')
+                ax.set_xlabel('Model', fontsize=18, fontweight='bold')
+                ax.set_title(f'{metric}', fontsize=18, fontweight='bold')
                 ax.set_ylim([0, 1.05])
-                ax.set_xticklabels(models, rotation=45, ha='right', fontsize=14)
-                ax.tick_params(axis='y', labelsize=14)
+                ax.set_xticklabels(models, rotation=45, ha='right', fontsize=18)
+                ax.tick_params(axis='y', labelsize=18)
                 ax.grid(axis='y', alpha=0.3, linestyle='--')
                 ax.set_axisbelow(True)
             
@@ -378,9 +378,9 @@ class ImageResultsAnalyzer:
                    vmin=0, vmax=1, cbar_kws={'label': 'Metric Value'}, 
                    linewidths=0.5, ax=ax, cbar=True, square=False)
         
-        ax.set_xlabel('Metrics', fontsize=14, fontweight='bold')
-        ax.set_ylabel('Method_Model', fontsize=14, fontweight='bold')
-        ax.tick_params(axis='both', labelsize=14)
+        ax.set_xlabel('Metrics', fontsize=18, fontweight='bold')
+        ax.set_ylabel('Method_Model', fontsize=18, fontweight='bold')
+        ax.tick_params(axis='both', labelsize=18)
         
         plt.tight_layout()
         
@@ -421,14 +421,14 @@ class ImageResultsAnalyzer:
                 ax.fill(angles, values, alpha=0.25, color=MODEL_COLORS.get(model_name, '#CCCCCC'))
             
             ax.set_xticks(angles[:-1])
-            ax.set_xticklabels(metrics, fontsize=11)
+            ax.set_xticklabels(metrics, fontsize=16)
             ax.set_ylim(0, 1)
             ax.set_yticks([0.2, 0.4, 0.6, 0.8, 1.0])
-            ax.set_yticklabels(['0.2', '0.4', '0.6', '0.8', '1.0'], fontsize=9)
+            ax.set_yticklabels(['0.2', '0.4', '0.6', '0.8', '1.0'], fontsize=16)
             ax.grid(True, linestyle='--', alpha=0.5)
             
-            plt.legend(loc='upper right', bbox_to_anchor=(1.3, 1.1), fontsize=12, framealpha=1, facecolor='white')
-            plt.title(f'Model Performance Radar Chart - {method_name}', fontsize=14, fontweight='bold', pad=20)
+            plt.legend(loc='upper right', bbox_to_anchor=(1.3, 1.1), fontsize=16, framealpha=1, facecolor='white')
+            plt.title(f'Model Performance Radar Chart - {method_name}', fontsize=18, fontweight='bold', pad=20)
             plt.tight_layout()
 
             output_path = self.output_dir / f'radar_chart_{method_name}.pdf'
@@ -454,7 +454,7 @@ class ImageResultsAnalyzer:
         
         # Prepare data for grouped bar chart
         x = np.arange(len(all_models))
-        width = 0.25  # Width of bars
+        width = 0.22  # Width of bars
         
         for i, method in enumerate(self.methods_found):
             method_results = self.all_results[method]
@@ -472,15 +472,15 @@ class ImageResultsAnalyzer:
                 if height > 0:
                     ax.text(bar.get_x() + bar.get_width() / 2., height,
                            f'{height:.4f}', ha='center', va='bottom', 
-                           fontsize=14, rotation=0)
+                           fontsize=12, rotation=0)
         
-        ax.set_ylabel('F1-Score', fontsize=14, fontweight='bold')
-        ax.set_xlabel('Model', fontsize=14, fontweight='bold')
+        ax.set_ylabel('F1-Score', fontsize=18, fontweight='bold')
+        ax.set_xlabel('Model', fontsize=18, fontweight='bold')
         ax.set_xticks(x)
-        ax.set_xticklabels(all_models, fontsize=14)
+        ax.set_xticklabels(all_models, fontsize=18)
         ax.set_ylim([0, 1.05])
-        ax.tick_params(axis='y', labelsize=14)
-        ax.legend(title='Fine-tuning Method', loc='lower left', fontsize=14, title_fontsize=14, framealpha=1, facecolor='white')
+        ax.tick_params(axis='y', labelsize=18)
+        ax.legend(title='Fine-tuning Method', loc='lower left', fontsize=18, title_fontsize=18, framealpha=1, facecolor='white')
         ax.grid(axis='y', alpha=0.3, linestyle='--')
         ax.set_axisbelow(True)
         
@@ -515,19 +515,19 @@ class ImageResultsAnalyzer:
             model_colors = [MODEL_COLORS.get(m, '#CCCCCC') for m in models]
             
             bars = ax.bar(models, values, color=model_colors, 
-                         edgecolor='black', linewidth=1.5, width=1.0)
+                         edgecolor='black', linewidth=1.5, width=0.6)
             
             # Add value labels on bars
             for bar in bars:
                 height = bar.get_height()
                 ax.text(bar.get_x() + bar.get_width() / 2., height,
-                       f'{height:.4f}', ha='center', va='bottom', fontsize=14)
+                       f'{height:.4f}', ha='center', va='bottom', fontsize=12)
             
-            ax.set_ylabel(label, fontsize=14, fontweight='bold')
-            ax.set_xlabel('Model', fontsize=14, fontweight='bold')
+            ax.set_ylabel(label, fontsize=18, fontweight='bold')
+            ax.set_xlabel('Model', fontsize=18, fontweight='bold')
             ax.set_ylim([0, 1.05])
-            ax.set_xticklabels(models, fontsize=14)
-            ax.tick_params(axis='y', labelsize=14)
+            ax.set_xticklabels(models, fontsize=18)
+            ax.tick_params(axis='y', labelsize=18)
             ax.grid(axis='y', alpha=0.3, linestyle='--')
             ax.set_axisbelow(True)
         
@@ -550,19 +550,19 @@ class ImageResultsAnalyzer:
             model_colors = [MODEL_COLORS.get(m, '#CCCCCC') for m in models]
             
             bars = ax.bar(models, values, color=model_colors, 
-                         edgecolor='black', linewidth=1.5, width=1.0)
+                         edgecolor='black', linewidth=1.5, width=0.6)
             
             # Add value labels on bars
             for bar in bars:
                 height = bar.get_height()
                 ax.text(bar.get_x() + bar.get_width() / 2., height,
-                       f'{height:.4f}', ha='center', va='bottom', fontsize=14)
+                       f'{height:.4f}', ha='center', va='bottom', fontsize=12)
             
-            ax.set_ylabel(label, fontsize=14, fontweight='bold')
-            ax.set_xlabel('Model', fontsize=14, fontweight='bold')
+            ax.set_ylabel(label, fontsize=18, fontweight='bold')
+            ax.set_xlabel('Model', fontsize=18, fontweight='bold')
             ax.set_ylim([0, 1.05])
-            ax.set_xticklabels(models, fontsize=14)
-            ax.tick_params(axis='y', labelsize=14)
+            ax.set_xticklabels(models, fontsize=18)
+            ax.tick_params(axis='y', labelsize=18)
             ax.grid(axis='y', alpha=0.3, linestyle='--')
             ax.set_axisbelow(True)
         

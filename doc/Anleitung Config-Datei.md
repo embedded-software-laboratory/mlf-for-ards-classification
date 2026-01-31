@@ -1,6 +1,8 @@
 # Anleitung zur Config-Datei
 
-Mit der Konfigurationsdatei "config.yml" kann gesteuert werden, welche Schritte das Framework durchführen soll und es können diverse Parameter eingestellt werden, die das Endergebnis beeinflussen.
+Mit den Konfigurationsdateien im Ordner "src/configs/" (z.B. "config.yml") kann gesteuert werden, welche Schritte das Framework durchführen soll und es können diverse Parameter eingestellt werden, die das Endergebnis beeinflussen.
+
+**Wichtig:** Die Config-Dateien befinden sich im Ordner `src/configs/`. Es gibt mehrere Beispiel-Configs für verschiedene Szenarien (z.B. `config_Dissertation_Test.yml`, `config_Dissertation_Calibration_50.yml`, etc.).
 
 ## process
 
@@ -47,22 +49,57 @@ In diesem Abschnitt wird festgelegt, welche Schritte ausgeführt werden sollen. 
 18. **train_image_models**: Falls aktiviert, werden die unter "image_models_to_execute" angegebenen Modelle für Röntenbilder trainiert. Dies umfasst das Training für die Erkennung von Lungenentzündungen sowie das Transfer-Learning zu ARDS. 
 19. **test_image_models**: Falls aktiviert,w erden die trainierten Bilddaten-Modelle mit dem geladenen ARDS-Bilddatensatz evaluiert. 
 
+## supported_algorithms
+
+In diesem Abschnitt werden die vom Framework unterstützten Algorithmen definiert. Dies dient als zentrale Liste verfügbarer Modelle.
+
+### timeseries_models
+Liste der unterstützten Zeitreihen-Modelle:
+- AdaBoostModel
+- LightGBMModel
+- LogisticRegressionModel
+- RandomForestModel
+- SupportVectorMachineModel (optional auskommentierbar)
+- XGBoostModel
+
+### image_models
+Liste der unterstützten Bildmodelle:
+- ResNetModel
+- DenseNetModel
+- ViTModel (Vision Transformer)
+
 ## models
-In diesem Abschnitt werden die Modelle, die in den unterschiedlichen Schritten des Frameworks verwendet werden sollen festgelgt.
+
+In diesem Abschnitt werden die Modelle, die in den unterschiedlichen Schritten des Frameworks verwendet werden sollen, festgelegt.
 
 ### timeseries_models
 Dieser Abschnitt enthält die Modelle, die für die Zeitreihenklassifizierung verwendet werden sollen.
 
-Für jede Phase des Frameworks (Training, Klassifizierung, Evaluation, Cross Validation) gibt es eine eigene Liste, in der die unterschiedlichen Algorithmen aufgeführt werden. Die einzelnen Algorithmen müssen durch das Setzen von "Active: True" aktiviert werden.
+#### base_path_config
+Hier werden die Basispfade für Konfigurationsdateien der Modelle angegeben:
+- **to_cross_validate**: Pfad zu den Config-Dateien für Kreuzvalidierung
+- **to_train**: Pfad zu den Config-Dateien für das Training
 
-Die für die einzelnen Phasen zu verwendenden Modelle werden mit ihrem Namen in einer Liste unter "Names:" aufgeführt. Für die Phasen to_train und to_cross_validate ist es darüber hinaus möglich, den Namen von Konfigurationsdateien für die Hyperparameter anzugeben. Diese Dateien müssen in dem unter "base_path_config" angegebenen Verzeichnis in einem Ordner mit dem Algorithmennamen liegen (siehe Beispielstruktur in Data). Sollte keine Konfigurationsdatei angegeben werden, so muss für dieses Modell der Wert "default" angegeben werden. Einzelnen Modelle werden sowohl in "Names" als auch in "Configs" durch ein Komma getrennt.
+Für jede Phase des Frameworks (Training, Klassifizierung, Evaluation, Cross Validation) gibt es eine eigene Liste, in der die unterschiedlichen Algorithmen aufgeführt werden. Die einzelnen Algorithmen müssen durch das Setzen von "Active: true" aktiviert werden.
+
+Die für die einzelnen Phasen zu verwendenden Modelle werden mit ihrem Namen in einer Liste unter "Names:" aufgeführt. Für die Phasen to_train und to_cross_validate ist es darüber hinaus möglich, den Namen von Konfigurationsdateien für die Hyperparameter anzugeben. Diese Dateien müssen in dem unter "base_path_config" angegebenen Verzeichnis in einem Ordner mit dem Algorithmennamen liegen (siehe Beispielstruktur in Data). Sollte keine Konfigurationsdatei angegeben werden, so muss für dieses Modell der Wert "default" angegeben werden.
+
+**Phasen:**
+- **to_train**: Modelle, die trainiert werden sollen (benötigt: Active, Configs, Names)
+- **to_cross_validate**: Modelle für Kreuzvalidierung (benötigt: Active, Configs, Names)
+- **to_evaluate**: Modelle, die evaluiert werden sollen (benötigt: Active, Names)
+- **to_execute**: Modelle, die zur Klassifizierung ausgeführt werden sollen (benötigt: Active, Names)
 
 Es wird sichergestellt, dass Modelle, die bisher nicht durch Training verfügbar waren, in der Phase, in der sie benötigt werden, von der Festplatte geladen werden. Das Laden von der Festplatte macht nur für die Phasen to_execute und to_evaluate Sinn. Der Speicherort setzt sich dabei aus dem unter "algorithm_base_path" angegebenen Pfad und dem Namen des Modells zusammen.
 
+### image_models
 
-## image_models_to_execute
+Analog zu timeseries_models gibt es hier Konfigurationen für Bildmodelle. Die gleichen Phasen (to_train, to_cross_validate, to_evaluate, to_execute) sind verfügbar.
 
-Hier wird festgelegt, welche Bilddatenmodelle vom Framework berücksichtigt werden sollen. Jedes zu berücksichtigende Modell wird als eigener Unterpunkt aufgeführt. Der Unterpunkt muss hierbei der Name der entsprechenden Klasse sein. 
+Für jedes Modell (ResNet, DenseNet, ViT):
+- **Active**: true/false - aktiviert oder deaktiviert das Modell
+- **Configs**: Liste der Config-Namen (nur für to_train und to_cross_validate)
+- **Names**: Liste der Modellnamen 
 
 ## algorithm_base_path
 
@@ -77,23 +114,29 @@ Sollte dieser Eintrag nicht gesetzt sein, so wird das Standard-Output-Verzeichni
 
 ## data
 
-Hier wird definiert, wo die Patientendaten liegen, die geladen werden und zum Training oder zur Klassifizierung / Evaluation verwendet werden sollen. 
-Mit dem Unterpunkt "file_path" wird der Dateipfad für die Zeitreihenmodelle angegeben. Aktuell werden npy-Dateien und csv-Dateien unterstützt in dem Format, dass vom [Data-Extractor](https://git-ce.rwth-aachen.de/smith-project/ARDS-MLP/data-basis/data-extraction) erzeugt wird. Falls npy verwendet wird, muss ebenfalls die dazugehörige vars-Datei, die vom Data-Extractor beim Download erzeugt wird, im gleichen Ordner liegen.
-Im Unterpunkt "database" wird angegeben, aus welcher Datenbank die Daten kommen. Dies ist für die Umrechnung der Einheiten relevant, s.o. Aktuell unterstützt werden "eICU", "MIMIC3", "MIMIC4" und "UKA", "CALIBRATION", "CONTROL".
-Unter "image_file_path" wird angegeben, wo die Datensätze für die Bilddaten-Modelle liegen. Dies muss ein Ordner sein, der die folgenden Elemente enthält:
-	- Einen Ordner "chexpert" und einen Ordner "mimic", der jeweils die Trainings-, und im Falle von mimic den ARDS-Testdatensatz enthält. Jeder Datensatz besteht aus einem Ordner, der die Bilder enthält ("image") und einem Ordner, der die Label enthält ("label"). 
-	- Einen Ordner "models", der die trainierten Modelle speichert. Für jedes Modell muss ein Ordner vorhanden sein, und jeder dieser Modell-Ordner muss zwei Unterordner enthalten: Einen für das Modell für die Lungenentzündung ("pneumonia") und einen für die Erkennung von ARDS ("ards"). In jedem dieser Ordner muss noch ein Ordner "main" eingefügt werden.
-	- Einen Ordner "results", in welchem die Evaluationsergebnisse gespeichert werden. Hier muss dieselbe Unterordnerstruktur angelegt werden wie für den Ordner "models". 
-	- Ein Datei "aug_tech.txt", welche den folgenden Inhalt enthält: 
-		colorinvert
-		jitter
-		emboss
-		fog
-		gamma
-	Die Funktion dieser Datei bzw. der einzelnen Einträge ist mir zum Zeitpunkt der Erstellung dieser Dokumentation leider selbst nicht bekannt. 
+Hier wird definiert, wo die Patientendaten liegen, die geladen werden und zum Training oder zur Klassifizierung / Evaluation verwendet werden sollen.
 
-	
-Mit den Unterpunkten "pneumonia_dataset" bzw. "ards_dataset" wird angegeben, welche Datensets genau für das Pneumonie-Training bzw. das ARDS-Training verwendet werden solle. (Hier gibt es verschiedene, da in den Vorarbeiten mehrere Datensets mit jeweils unterschiedlichen Gewichtungen und Balancierungen erzeugt wurden). Es muss der Name des Ordners, in dem das Datenset liegt, angegeben werden. 
+### Zeitreihendaten
+- **timeseries_file_path**: Dateipfad für die Zeitreihenmodelle. Aktuell werden verschiedene Formate unterstützt (siehe import_type).
+- **import_type**: Definiert das Format der Eingabedaten. Optionen:
+  - **numpy**: .npy-Dateien (benötigt auch .vars-Datei im gleichen Ordner)
+  - **csv**: CSV-Dateien im Format des Data-Extractors
+  - **pkl**: Pickle-Dateien
+  - **split**: Voraufgeteilte Datensätze
+- **database**: Gibt an, aus welcher Datenbank die Daten kommen. Dies ist für die Umrechnung der Einheiten relevant (siehe perform_unit_conversion). Unterstützte Werte: "eICU", "MIMIC3", "MIMIC4", "UKA", "CALIBRATION", "CONTROL"
+
+### Bilddaten  
+- **image_file_path**: Pfad zum Ordner mit Bilddaten-Datensätzen. Dieser Ordner muss folgende Struktur haben:
+  - Einen Ordner "chexpert" und einen Ordner "mimic", der jeweils die Trainings- und (für mimic) den ARDS-Testdatensatz enthält
+  - Jeder Datensatz besteht aus einem Ordner "image" (Bilder) und einem Ordner "label" (Labels)
+  - Einen Ordner "models" für trainierte Modelle mit Unterordnern für jedes Modell und darin "pneumonia" und "ards" Ordner, die jeweils einen "main" Ordner enthalten
+  - Einen Ordner "results" mit gleicher Struktur wie "models" für Evaluationsergebnisse
+  - Eine Datei "aug_tech.txt" mit Augmentierungs-Techniken (eine pro Zeile)
+
+- **pneumonia_image_dataset**: Name des Datensatzes für Pneumonie-Training (z.B. "balanced")
+- **ards_image_dataset**: Name des Datensatzes für ARDS-Training (z.B. "weighted")
+
+Hinweis: Die Bilddaten-Struktur ist komplex aufgrund verschiedener Datensätze mit unterschiedlichen Gewichtungen und Balancierungen aus den Vorarbeiten. 
 
 
 ## preprocessing
@@ -233,22 +276,53 @@ Hier wird festgelegt, wie genau die geladenen Daten in Trainings- und Testdaten 
 
 ## image_model_parameters
 
-Hier können einige Parameter definieren, die den Trainingsprozess für die Bilddatenmodelle steuern. 
-- **method**: Hier wird eingestellt, welche Schichten des ursprünglichen Modells (vor dem Transfer auf das neue Problem; beim Transfer Learning werden diese Schichten eingefroren und neue Schichten dem Modell hinzugefügt) für ein finales Fine-Tuning "entfroren" werden sollen. Zur Auswahl stehen:
-	- *model*: Das ganze Modell wird entfroren
-	- *last_block*: Der letzte Block wird entfroren
-	- *classifier*: Die Schicht des Klassifizierers wird entfroren.
-- **mode**: Hiermit wird ausgewählt, ob die ursprünglichen oder die augmentierten Datensätze für das Training und das Testen verwendet werden sollen.
-	- *mode1": Nicht-augmentierte Datensätze
-	- *mode2": Nicht-augmentiertes Training, augmentiertes Testen
-	- *mode3": Augmentiertes Training, nicht-augmentiertes Testen
-	- *mode4": Augmentiertes Training und Testen
-- **num_epochs_pneumonia**: Anzahl der Trainingsdurchläufe für das Pneumonie-Modell
-- **num_epochs_ards**: Anzahl der Trainingsdurchläufe für das ARDS-Modell
-- **batch_size_pneumonia**: Anzahl der Batches, in die der Trainingsdatensatz für das Pneumonie-Modell für einen einzigen Trainingsdurchlauf aufgeteilt wird
-- **batch_size_ards**: Anzahl der Batches, in die der Trainingsdatensatz für das ARDS-Modell für einen einzigen Trainingsdurchlauf aufgeteilt wird
-- **SEED_pneumonia**: Für verschiedene beim Training des Pneumonie-Modells verwendete Zufallsfunktionen manuell festgelegter Seed, um Reproduzierbarkeit sicherzustellen
-- **SEED_ards**: Für verschiedene beim Training des ARDS-Modells verwendete Zufallsfunktionen manuell festgelegter Seed, um Reproduzierbarkeit sicherzustellen
-- **learning_rate**: Lernrate (Hyperparameter, der vorgibt, wie stark die Gewichte des Netzwerks beim Trainingsdurchlauf angepasst werden)
+Hier können Parameter definiert werden, die den Trainingsprozess für die Bilddatenmodelle steuern. 
+
+### Allgemeine Parameter
+- **method**: Definiert, welche Schichten des vortrainierten Modells für Fine-Tuning "entfroren" werden. Optionen:
+  - **last_layer**: Nur die letzte Schicht wird entfroren
+  - **last_block**: Der letzte Block wird entfroren  
+  - **model**: Das komplette Modell wird entfroren
+
+- **mode**: Steuert die Verwendung von Datenaugmentierung. Optionen:
+  - **mode1**: Keine Augmentierung - Training mit Originalbildern
+  - **mode2**: Reserviert für zukünftige Verwendung (Augmentierung nur während Training via Transforms)
+  - **mode3**: ARDS-Trainingsdaten verwenden voraugmentierte Datensätze (MIMIC-DB-AUG Ordner)
+  - **mode4**: ARDS-Trainings- UND Testdaten verwenden voraugmentierte Datensätze
+  
+  Hinweis: PNEUMONIA-Training verwendet immer nicht-augmentierte Daten (CheXpert-DB-PNEUMONIA)
+
+### CNN-Modelle (ResNet, DenseNet)
+
+**Pretraining-Parameter:**
+- **learning_rate_pre_cnn**: Lernrate für Pretraining (z.B. 0.001)
+- **batch_size_pre_cnn**: Batch-Größe für Pretraining (z.B. 64)
+- **weight_decay_pre_cnn**: Weight Decay für Regularisierung (z.B. 0.00001)
+
+**Haupttraining-Parameter:**
+- **learning_rate_cnn**: Lernrate für Haupttraining (z.B. 0.05)
+- **epoch_decay_cnn**: Lernraten-Decay pro Epoche (z.B. 0.002)
+- **weight_decay_cnn**: Weight Decay für Regularisierung (z.B. 0.00001)
+- **margin_cnn**: Margin-Parameter für Loss-Funktion (z.B. 1.0)
+
+**Pneumonie-Pretraining:**
+- **num_epochs_pneumonia**: Anzahl der Trainingsepochen für Pneumonie-Modell
+- **batch_size_pneumonia**: Batch-Größe für Pneumonie-Training (z.B. 32)
+- **SEED_pneumonia**: Seed für Reproduzierbarkeit (z.B. 123)
+
+**ARDS-Fine-Tuning:**
+- **num_epochs_ards**: Anzahl der Trainingsepochen für ARDS-Modell
+- **batch_size_ards**: Batch-Größe für ARDS-Training (z.B. 32)
+- **SEED_ards**: Seed für Reproduzierbarkeit (z.B. 105)
+
+**Kreuzvalidierung:**
+- **k_folds**: Anzahl der Folds für Kreuzvalidierung
+  - 1 = einfacher 80/20 Split (schneller)
+  - 2+ = k-Fold Kreuzvalidierung
+
+### ViT-Modelle (Vision Transformer)
+- **learning_rate_vit**: Lernrate für ViT-Modelle (z.B. 0.0005)
+- **batch_size_vit**: Batch-Größe für ViT-Training (z.B. 32)
+- **k_folds_vit**: Anzahl der Folds für Kreuzvalidierung bei ViT
 - **k_folds*: Anzahl der Teilmengen, in die die Trainingsdatensätze für die Kreuzvalidierung aufgeteilt werden. 
 -- **path*: Pfad zu den Datensätzen für die Bilddatenmodelle, siehe *image_file_path*

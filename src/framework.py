@@ -395,7 +395,7 @@ class Framework:
         Loads timeseries data from file, applies preprocessing and feature selection,
         segregates data into training and test sets, and saves all datasets with metadata.
         """
-        from processing.datasets import ImageDataset
+        from processing.dataset_manager import ImageDataset
         
         logger.info("=" * 80)
         logger.info("STEP 6: Loading and Processing Image Data")

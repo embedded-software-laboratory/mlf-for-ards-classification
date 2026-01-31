@@ -1,4 +1,4 @@
-# ML Framwork
+# ML Framework
 
 This repository contains a software which can be used to
 * train new machine learning models for the automated detection of ARDS,
@@ -24,10 +24,9 @@ for extracting timeseries data. The image data can be found in the SMITH Coscine
 To prevent compatibility issues and minimalize the installation expense, Anaconda was used to provide an environment which contains all necessary python packages.
 A manual for the installation of the framework can be found under "doc/Programm ausführen.md".
 
-In the folder "src", you will find a file named "config.yml", which is used to set which steps the framework should execute and how they should be executed. A manual
-on how to use this config file can be found under "doc/Anleitung Config-Datei.md".
+In the folder "src/configs", you will find configuration files (e.g., "config.yml"), which are used to set which steps the framework should execute and how they should be executed. A manual on how to use these config files can be found under "doc/Anleitung Config-Datei.md".
 
-In the folder "Save", you will find any outputs of the framework (if you do not change the output paths in the config file). 
+The "Save" folder is used for framework outputs such as trained models and results. The folder "Data/logs" contains execution logs with timestamps. 
 
 If you want to add a new timeseries model into the framework, please refer to the manual at "doc/Neues Zeitreihenmodell hinzufügen.md". Unfortunately, there does
 not exist a manual to add new image models to this point. 
@@ -48,7 +47,9 @@ In order to clone the repository via https. You first need to create an personal
 
 ### Getting Started Locally 
 
-The recommended way to setup the development environment for this project is the devcontainer setup. Although conda environments were used for earlier version the environment.yml is not updated any more. 
+The recommended way to setup the development environment for this project is the devcontainer setup. Although conda environments were used for earlier versions, the environment.yml files are no longer actively maintained. Use the devcontainer setup for the most up-to-date environment.
+
+**Note:** To run the framework, use: `python src/main.py -f src/configs/config.yml` (or specify another config file path). 
 
 #### Devcontainer
 In order for the dev container to work you need to have docker installed. A guide on how to install docker can be found [here]("https://docs.docker.com/desktop").
