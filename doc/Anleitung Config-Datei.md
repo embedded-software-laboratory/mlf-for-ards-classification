@@ -139,7 +139,7 @@ Hier wird definiert, wo die Patientendaten liegen, die geladen werden und zum Tr
 Hinweis: Die Bilddaten-Struktur ist komplex aufgrund verschiedener Datensätze mit unterschiedlichen Gewichtungen und Balancierungen aus den Vorarbeiten. 
 
 
-## preprocessing
+## processing
 
 In diesem Bereich werden einige Einstellungen vorgenommen, die genau festlegen, wie genau das Data-Preprocessing abläuft.
 

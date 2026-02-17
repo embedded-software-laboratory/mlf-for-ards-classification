@@ -1,6 +1,6 @@
 from processing.dataset_manager import  TimeSeriesDataset, TimeSeriesDatasetManagement, DatasetGenerator
 from processing.data_imputator import DataImputator
-from processing.data_processing import DataProcessor
+from processing.data_processor import DataProcessor
 from processing.data_segregator import DataSegregator
 from processing.feature_selection import FeatureSelector
 from processing.data_filter import DataFilter

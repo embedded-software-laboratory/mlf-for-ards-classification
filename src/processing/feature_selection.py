@@ -3,11 +3,12 @@ from processing.datasets_metadata import FeatureSelectionMetaData
 import pandas as pd
 import logging
 
-from sklearn.feature_selection import VarianceThreshold, SelectKBest, f_classif, RFE, RFECV, SelectFromModel, SequentialFeatureSelector
+from sklearn.feature_selection import VarianceThreshold, SelectKBest, f_classif, chi2, RFE, RFECV, SelectFromModel, SequentialFeatureSelector
 from sklearn.svm import SVC, LinearSVC
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import StratifiedKFold
+from ReliefF import ReliefF
 
 logger = logging.getLogger(__name__)
 
@@ -28,10 +29,11 @@ class FeatureSelector:
         """
         logger.info("Initializing FeatureSelection...")
         self.feature_selection_method = "low_variance"
-        self.available_methods = ["low_variance", "univariate", "recursive", "recursive_with_cv", "L1", "tree", "sequential"]
+        self.available_methods = ["low_variance", "univariate", "recursive", "recursive_with_cv", "L1", "tree", "sequential", "chi2", "relief"]
         self.set_selection_method(config["method"])
         self.variance = config["variance"]
         self.k = config["k"]
+        self.neighbor = config.get("neighbor", 5)
         self.meta_data = None
         logger.info(f"Variance threshold: {self.variance}, K value: {self.k}")
         logger.info("FeatureSelection initialized successfully.")
@@ -94,6 +96,12 @@ class FeatureSelector:
         elif self.feature_selection_method == "sequential":
             logger.info("Applying Sequential Feature Selection (KNN-based)")
             dataframe = self.sequential_selection(dataframe)
+        elif self.feature_selection_method == "chi2":
+            logger.info(f"Applying Chi-square selection with k: {self.k}")
+            dataframe = self.chi2_selection(dataframe, self.k)
+        elif self.feature_selection_method == "relief":
+            logger.info(f"Applying ReliefF selection with k: {self.k}, neighbors: {self.neighbor}")
+            dataframe = self.relief_selection(dataframe, self.k, self.neighbor)
         
         final_feature_count = dataframe.shape[1]
         features_removed = initial_feature_count - final_feature_count
@@ -150,6 +158,14 @@ class FeatureSelector:
         result = selection.fit_transform(data, temp["ards"])
         selected_features = selection.get_feature_names_out(data.columns)
         logger.info(f"Selected features: {list(selected_features)}")
+        
+        # Log feature importance scores
+        feature_scores = selection.scores_
+        feature_names = data.columns
+        feature_importance = pd.Series(feature_scores, index=feature_names).sort_values(ascending=False)
+        logger.info("\nFeature importance scores:")
+        logger.info(f"\n{feature_importance}")
+        
         result_dataframe_temp = pd.DataFrame(result, columns=selected_features, index=data.index)
         result_dataframe = pd.concat([temp, result_dataframe_temp], axis=1)
         return result_dataframe
@@ -179,6 +195,13 @@ class FeatureSelector:
             logger.warning(f"k {k} exceeds number of features {len(ranking)}, adjusting to {len(ranking)}")
             k = len(ranking)
         logger.info(f"RFE selected {k} features")
+        
+        # Log feature rankings
+        feature_names = data.columns
+        feature_ranking = pd.Series(ranking, index=feature_names).sort_values()
+        logger.info("\nFeature rankings (sorted):")
+        logger.info(f"\n{feature_ranking}")
+        
         result_dataframe_temp = pd.DataFrame(data.iloc[:, ranking[0:k]], columns=data.iloc[:, ranking[0:k]].columns)
         result_dataframe = pd.concat([temp, result_dataframe_temp], axis=1)
         return result_dataframe
@@ -231,6 +254,14 @@ class FeatureSelector:
         result = model.fit_transform(data)
         selected_features = model.get_feature_names_out(data.columns)
         logger.info(f"L1 selection retained {len(selected_features)} features")
+        
+        # Log feature importance scores
+        feature_scores = abs(lsvc.coef_[0])
+        feature_names = data.columns
+        feature_importance = pd.Series(feature_scores, index=feature_names).sort_values(ascending=False)
+        logger.info("\nFeature importance scores (sorted):")
+        logger.info(f"\n{feature_importance}")
+        
         result_dataframe_temp = pd.DataFrame(result, columns=selected_features, index=data.index)
         result_dataframe = pd.concat([temp, result_dataframe_temp], axis=1)
         return result_dataframe
@@ -255,6 +286,14 @@ class FeatureSelector:
         result = model.fit_transform(data)
         selected_features = model.get_feature_names_out(data.columns)
         logger.info(f"Tree-based selection retained {len(selected_features)} features")
+        
+        # Log feature importance scores
+        feature_scores = clf.feature_importances_
+        feature_names = data.columns
+        feature_importance = pd.Series(feature_scores, index=feature_names).sort_values(ascending=False)
+        logger.info("\nFeature importance scores (sorted):")
+        logger.info(f"\n{feature_importance}")
+        
         result_dataframe_temp = pd.DataFrame(result, columns=selected_features, index=data.index)
         result_dataframe = pd.concat([temp, result_dataframe_temp], axis=1)
         return result_dataframe
@@ -279,6 +318,65 @@ class FeatureSelector:
         result = sfs.fit_transform(data, temp["ards"])
         selected_features = sfs.get_feature_names_out(data.columns)
         logger.info(f"Sequential selection selected features: {list(selected_features)}")
+        result_dataframe_temp = pd.DataFrame(result, columns=selected_features, index=data.index)
+        result_dataframe = pd.concat([temp, result_dataframe_temp], axis=1)
+        return result_dataframe
+    
+    def chi2_selection(self, dataframe, k_value):
+        """
+        Applies chi-square statistical test for feature selection.
+        Selects k best features based on chi-square test scores.
+        
+        Args:
+            dataframe: Input DataFrame
+            k_value: Number of top features to select
+            
+        Returns:
+            DataFrame containing the k best features plus metadata columns
+        """
+        logger.info(f"Selecting top {k_value} features using chi-square test")
+        temp, data = self.split_dataframe(dataframe)
+        if k_value > data.shape[1]:
+            logger.warning(f"k_value {k_value} exceeds number of features {data.shape[1]}, adjusting to {data.shape[1]}")
+            k_value = data.shape[1]
+        selection = SelectKBest(chi2, k=k_value)
+        result = selection.fit_transform(data, temp["ards"])
+        selected_features = selection.get_feature_names_out(data.columns)
+        logger.info(f"Selected features: {list(selected_features)}")
+        
+        # Log feature importance scores
+        feature_scores = selection.scores_
+        feature_names = data.columns
+        feature_importance = pd.Series(feature_scores, index=feature_names).sort_values(ascending=False)
+        logger.info("\nFeature importance scores (sorted):")
+        logger.info(f"\n{feature_importance}")
+        
+        result_dataframe_temp = pd.DataFrame(result, columns=selected_features, index=data.index)
+        result_dataframe = pd.concat([temp, result_dataframe_temp], axis=1)
+        return result_dataframe
+
+    def relief_selection(self, dataframe, k_value, neighbors):
+        """
+        Applies ReliefF algorithm for feature selection.
+        ReliefF evaluates features based on their ability to distinguish between instances from different classes.
+        
+        Args:
+            dataframe: Input DataFrame
+            k_value: Number of top features to select
+            neighbors: Number of nearest neighbors to consider in ReliefF algorithm
+            
+        Returns:
+            DataFrame containing the k best features plus metadata columns
+        """
+        logger.info(f"Selecting top {k_value} features using ReliefF algorithm with {neighbors} neighbors")
+        temp, data = self.split_dataframe(dataframe)
+        if k_value > data.shape[1]:
+            logger.warning(f"k_value {k_value} exceeds number of features {data.shape[1]}, adjusting to {data.shape[1]}")
+            k_value = data.shape[1]
+        selection = ReliefF(neighbors, k_value)
+        result = selection.fit_transform(data.values, temp["ards"].values)
+        selected_features = selection.get_feature_names_out(data.columns)
+        logger.info(f"Selected features: {list(selected_features)}")
         result_dataframe_temp = pd.DataFrame(result, columns=selected_features, index=data.index)
         result_dataframe = pd.concat([temp, result_dataframe_temp], axis=1)
         return result_dataframe
