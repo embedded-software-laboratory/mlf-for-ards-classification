@@ -387,7 +387,8 @@ feature_selection:
   method: univariate
   variance: 0.16
   k: 20
-
+  neighbor: 5 # neighbor parameter for relief algorithm (default is 5)
+  
 image_model_parameters:
   # defines the method for fine-tuning for the dl models
   # Options: last_layer, last_block, model

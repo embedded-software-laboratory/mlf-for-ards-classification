@@ -443,7 +443,8 @@ feature_selection:
   method: univariate
   variance: 0.16
   k: 50
-
+  neighbor: 5 # neighbor parameter for relief algorithm (default is 5)
+  
 # Settings about how the data is split into training and test data
 data_segregation:
   training_test_ratio: 0.8

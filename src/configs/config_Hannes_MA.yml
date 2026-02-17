@@ -42,6 +42,7 @@ evaluation:
   - GeometricRoot
 feature_selection:
   k: 15
+  neighbor: 5
   method: univariate
   variance: 0.16
 models:

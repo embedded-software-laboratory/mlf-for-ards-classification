@@ -195,7 +195,8 @@ feature_selection:
   method: "univariate"
   variance: 0.16
   k: 15
-
+  neighbor: 5 # neighbor parameter for relief algorithm (default is 5)
+  
 data_segregation:
   training_test_ratio: 0.8
   percentage_of_ards_patients: 0.1

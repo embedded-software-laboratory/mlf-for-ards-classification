@@ -132,8 +132,71 @@ models:
           to_train: "Data/Models/TimeSeriesModels/Config/Training/"
           to_cross_validate: "Data/Models/TimeSeriesModels/Config/CrossValidation/"
 
-#image_models_to_execute:
-#  - VisionTransformerModel
+    image_models:
+      to_train:
+        ResNet:
+          Active: False
+          Configs:
+          - default
+          Names:
+          - ResNet
+        DenseNet:
+          Active: False
+          Configs:
+          - default
+          Names:
+          - DenseNet
+        ViT:
+          Active: False
+          Configs:
+          - default
+          Names:
+          - ViT
+      to_evaluate:
+        ResNet:
+          Active: False
+          Names:
+          - ResNet
+        DenseNet:
+          Active: False
+          Names:
+          - DenseNet
+        ViT:
+          Active: False
+          Names:
+          - ViT
+      to_execute:
+        ResNet:
+          Active: False
+          Names:
+          - ResNet
+        DenseNet:
+          Active: False
+          Names:
+          - DenseNet
+        ViT:
+          Active: False
+          Names:
+          - ViT
+      to_cross_validate:
+        ResNet:
+          Active: False
+          Configs:
+          - default
+          Names:
+          - ResNet
+        DenseNet:
+          Active: False
+          Configs:
+          - default
+          Names:
+          - DenseNet
+        ViT:
+          Active: False
+          Configs:
+          - default
+          Names:
+          - ViT
 
 algorithm_base_path:
   AdaBoost: "default"
@@ -148,11 +211,12 @@ algorithm_base_path:
 storage_path: "../Data/ExperimentResult/Seeds"
 
 data:
-  timeseries_file_path: "/work/rwth1474/Data/time_series/uka_data_050623.npy"
   database: "UKA"
-  #image_file_path: "Data/Image_data"
-  pneumonia_dataset: "balanced"
-  ards_dataset: "weighted"
+  pneumonia_image_dataset: "balanced"
+  ards_image_dataset: "weighted"
+  timeseries_file_path: "/work/rwth1474/Data/time_series/uka_data_050623.npy"
+  import_type: numpy # Options: numpy, csv, pkl, split
+  image_file_path: "Data/Image_data"
 
 preprocessing:
   patients_per_process: 500
@@ -295,6 +359,7 @@ feature_selection:
   method: "univariate"
   variance: 0.16
   k: 15
+  neighbor: 5 # neighbor parameter for relief algorithm (default is 5)
 
 data_segregation:
   training_test_ratio: 0.8
@@ -310,18 +375,52 @@ evaluation:
   evaluation_metrics: ["AUC", "Accuracy", "F1Score", "FPR", "MCC", "OptimalProbability", "Sensitivity", "Specificity", "TPR","PPV", "NPV", "Precisions", "Recalls"]
   evaluation_name: "Evaluation ALAD Test"
 
-#image_model_parameters:
-#  method: last_block
-#  mode: mode1
-#  num_epochs_pneumonia: 1
-#  num_epochs_ards: 1
-#  batch_size_pneumonia: 32
-#  batch_size_ards: 32
-#  SEED_pneumonia: 123
-#  SEED_ards: 105
-#  learning_rate: 0.05
-#  k_folds: 2
-#  path: "Data/Image_data"
+image_model_parameters:
+  # defines the method for fine-tuning for the dl models
+  # Options: last_layer, last_block, model
+  method: last_block
+  
+  # Data augmentation modes (controls which datasets use augmented data)
+  # mode1: No augmentation - standard training with original images
+  # mode2: Reserved for future use (augmentation during training only via transforms)
+  # mode3: ARDS training data uses pre-augmented dataset (MIMIC-DB-AUG folder)
+  # mode4: ARDS training AND test data use pre-augmented datasets
+  # Note: PNEUMONIA training always uses non-augmented data (CheXpert-DB-PNEUMONIA)
+  mode: mode1
+  
+  # =========================
+  # CNN Models (ResNet, DenseNet)
+  # =========================
+  # Pretraining parameters
+  learning_rate_pre_cnn: 0.001
+  batch_size_pre_cnn: 64
+  weight_decay_pre_cnn: 0.00001
+  
+  # Main training parameters
+  learning_rate_cnn: 0.05
+  epoch_decay_cnn: 0.002 
+  weight_decay_cnn: 0.00001
+  margin_cnn: 1.0
+  
+  # Pneumonia pretraining stage
+  num_epochs_pneumonia: 1
+  batch_size_pneumonia: 32
+  SEED_pneumonia: 123
+  
+  # ARDS fine-tuning stage
+  num_epochs_ards: 1
+  batch_size_ards: 32
+  SEED_ards: 105
+  
+  # Cross-validation
+  k_folds: 2  # Use 1 for simple 80/20 split (faster), 2+ for k-fold cross-validation
+  
+  # =========================
+  # ViT Models (Vision Transformer)
+  # =========================
+  learning_rate_vit: 0.0005
+  batch_size_vit: 32
+  k_folds_vit: 2
 
 supported_algorithms:
   timeseries_models:
@@ -332,7 +431,7 @@ supported_algorithms:
     - RandomForestModel
     - SupportVectorMachineModel
     - XGBoostModel
-
-  #image_models:
-  #  - VisionTransformerModel
-  #  - ConvolutionalNeuralNetworkModel
+  image_models:
+    - ResNetModel
+    - DenseNetModel
+    - ViTModel
